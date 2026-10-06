@@ -54,6 +54,12 @@ describe('complément de TVA selon l’année de sortie', () => {
     expect(complementTvaLli({ ...unique, motif: 'fin_des_conditions', rang_annee_sortie: 21 }, p).du).toBe(false)
   })
 
+  it('refuse un nombre de logements cédés incohérent', () => {
+    expect(() => complementTvaLli({ ...unique, rang_annee_sortie: 12, logements_detenus: 1, logements_cedes: 2 }, p)).toThrow(
+      RangeError,
+    )
+  })
+
   it('le rang de l’année court depuis la livraison', () => {
     expect(rangAnneeDepuisLivraison('2027-06-30', '2037-06-29')).toBe(10)
     expect(rangAnneeDepuisLivraison('2027-06-30', '2037-06-30')).toBe(11)

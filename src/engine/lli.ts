@@ -108,6 +108,9 @@ export function complementTvaLli(e: EntreeComplementTva, p: ParametresFiscaux): 
   const montant = e.prix_ht * (p.lli.tva_taux_normal.valeur - p.lli.tva_taux_reduit.valeur)
   const detenus = e.logements_detenus ?? 1
   const cedes = e.logements_cedes ?? detenus
+  if (!(detenus >= 1 && cedes >= 1 && cedes <= detenus)) {
+    throw new RangeError(`Logements cédés (${cedes}) et détenus (${detenus}) incohérents`)
+  }
   const rang = e.rang_annee_sortie
   const du = (explication: string): ComplementTva => ({ du: true, montant, explication })
   const libre = (explication: string): ComplementTva => ({ du: false, montant: 0, explication })
