@@ -84,6 +84,16 @@ describe('Denormandie', () => {
     expect(six_ans + somme(initial_six_ans)).toBeCloseTo(0.21, PRECISION)
     expect(neuf_ans + somme(initial_neuf_ans)).toBeCloseTo(0.21, PRECISION)
   })
+
+  it('les engagements initiaux et leurs prorogations mènent tous deux à 12 ans, au même rythme de 2 %/an', () => {
+    const taux = p.denormandie.taux_engagement_initial.valeur
+    const duree = p.denormandie.duree_engagement_initial_ans.valeur
+    const { initial_six_ans, initial_neuf_ans, duree_periode_ans } = p.denormandie.complement_prorogation.valeur
+    expect(duree.six_ans + initial_six_ans.length * duree_periode_ans).toBe(12)
+    expect(duree.neuf_ans + initial_neuf_ans.length * duree_periode_ans).toBe(12)
+    expect(taux.six_ans / duree.six_ans).toBeCloseTo(0.02, PRECISION)
+    expect(taux.neuf_ans / duree.neuf_ans).toBeCloseTo(0.02, PRECISION)
+  })
 })
 
 describe('LLI', () => {

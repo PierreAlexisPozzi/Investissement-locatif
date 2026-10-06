@@ -290,6 +290,7 @@ export interface ParametresFiscaux {
   readonly denormandie: {
     readonly periode: Parametre<Periode>
     readonly taux_engagement_initial: Parametre<{ readonly six_ans: number; readonly neuf_ans: number }>
+    readonly duree_engagement_initial_ans: Parametre<{ readonly six_ans: number; readonly neuf_ans: number }>
     readonly complement_prorogation: Parametre<{
       readonly initial_six_ans: readonly number[]
       readonly initial_neuf_ans: readonly number[]

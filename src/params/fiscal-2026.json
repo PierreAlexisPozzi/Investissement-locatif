@@ -788,6 +788,15 @@
       "statut": "verifie",
       "commentaire": "Réduction répartie par sixièmes ou par neuvièmes, soit 2 %/an. Exemple : 240 000 €, 50 m², 9 ans → 43 200 €, soit 4 800 €/an."
     },
+    "duree_engagement_initial_ans": {
+      "valeur": { "six_ans": 6, "neuf_ans": 9 },
+      "unite": "années de location",
+      "source": "CGI art. 199 novovicies ; service-public F35011 (vérifiée le 11/03/2026) ; BOI-IR-RICI-365-30 du 28/03/2024, §140",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F35011",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Engagement initial de location de 6 ou 9 ans, prorogeable jusqu'à 12 ans (voir complement_prorogation). Durée de répartition de la réduction initiale."
+    },
     "complement_prorogation": {
       "valeur": { "initial_six_ans": [0.06, 0.03], "initial_neuf_ans": [0.03], "duree_periode_ans": 3 },
       "unite": "taux décimal par période triennale ; années",
