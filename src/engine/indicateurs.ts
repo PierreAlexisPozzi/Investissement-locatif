@@ -23,6 +23,7 @@ import { ajouterAnnees, comparerDates } from './dates'
 import { dureeEngagementDenormandie } from './denormandie'
 import type { Dossier } from './dossier'
 import { tableauAmortissement, tauxEndettement } from './emprunt'
+import { calculerImpot } from './impot-revenu'
 import { finEngagementJeanbrun } from './jeanbrun'
 import { prixTtc } from './lli'
 import {
@@ -135,6 +136,28 @@ function tauxEndettementApres(d: Dossier): number {
   return revenusMensuels > 0 ? tauxEndettement(existants + mensualite, revenusMensuels) : Number.POSITIVE_INFINITY
 }
 
+/** Taux d'endettement actuel, avant l'opération (§5.1) ; null sans revenus. */
+export function tauxEndettementActuel(d: Dossier): number | null {
+  const credits = d.foyers.foyers.reduce((total, foyer) => total + (foyer.mensualites_credits_en_cours ?? 0), 0)
+  const revenusMensuels = d.foyers.foyers.reduce((total, foyer) => total + foyer.revenu_imposable, 0) / MOIS_PAR_AN
+  return revenusMensuels > 0 ? tauxEndettement(credits, revenusMensuels) : null
+}
+
+/** Taux marginal de chaque foyer sans l'opération, à ses revenus actuels ou aux revenus fournis. */
+export function tmiDesFoyers(d: Dossier, p: ParametresFiscaux, revenus?: readonly number[]): number[] {
+  const communes = d.foyers.situation === 'marie_pacse'
+  return d.foyers.foyers.map(
+    (f, k) => calculerImpot(revenus?.[k] ?? f.revenu_imposable, { parts: f.parts, imposition_commune: communes }, p).tmi,
+  )
+}
+
+/** TRI retenu pour comparer et classer : borné quand il n'existe pas (flux tous positifs ou tous négatifs). */
+export function triComparable(s: ResultatSimulation): number {
+  const tri = tauxRendementInterne(s.flux)
+  if (tri !== null) return tri
+  return s.flux.every((f) => f.montant >= 0) ? TRI_MAXIMUM : TRI_MINIMUM
+}
+
 function fluxPlacement(s: ResultatSimulation): FluxDate[] {
   return [...s.flux.slice(0, -1), { temps: s.calendrier.duree_detention_ans, montant: s.placement.capital_net }]
 }
@@ -228,10 +251,7 @@ export function comparerAuxHorizons(d: Dossier, p: ParametresFiscaux): Comparais
 /** TRI du scénario, borné : maximal si tous les flux sont positifs, minimal s'ils sont tous négatifs (recherche monotone). */
 function triBorne(d: Dossier, id: IdScenario, options: OptionsSimulation, p: ParametresFiscaux): number {
   const s = simulerScenario(d, id, options, p).simulation
-  if (s === null) return TRI_MINIMUM
-  const tri = tauxRendementInterne(s.flux)
-  if (tri !== null) return tri
-  return s.flux.every((f) => f.montant >= 0) ? TRI_MAXIMUM : TRI_MINIMUM
+  return s === null ? TRI_MINIMUM : triComparable(s)
 }
 
 /** Options qui conservent le régime retenu dans le cas central : seule la variable étudiée change. */

@@ -425,6 +425,11 @@ function loyerMensuelDeBase(d: Dossier, cfg: Configuration, p: ParametresFiscaux
   return { marche, plafond: plafondM2 === undefined ? null : plafondLoyer(plafondM2, b.surface, p).loyer_plafond_mensuel }
 }
 
+/** Loyer de marché et plafond du scénario pour le bien du dossier, aux valeurs de l'année d'acquisition. */
+export function loyerDeBaseScenario(d: Dossier, id: IdScenario, p: ParametresFiscaux): { marche: number; plafond: number | null } {
+  return loyerMensuelDeBase(d, CONFIGURATIONS[id], p)
+}
+
 function cedants(d: Dossier, cfg: Configuration): Cedants {
   const quotes = d.foyers.foyers.map((f) => f.quote_part)
   if (cfg.detention !== 'nom_propre') return { nature: 'sci_ir', quotes_parts: quotes }

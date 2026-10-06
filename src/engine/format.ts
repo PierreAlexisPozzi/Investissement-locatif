@@ -24,6 +24,11 @@ export function formaterTaux(taux: number): string {
   return TAUX.format(taux)
 }
 
+/** Taux éventuellement indéterminé (TRI sans solution) : « non calculable ». */
+export function formaterTauxCalcule(taux: number | null | undefined): string {
+  return taux === null || taux === undefined ? 'non calculable' : formaterTaux(taux)
+}
+
 /** Nombre décimal à la française : 0.5 → « 0,5 ». */
 export function formaterNombre(n: number): string {
   return NOMBRE.format(n)

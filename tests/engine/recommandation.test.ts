@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { hypothesesParDefaut, objectifsParDefaut, type Dossier, type Objectifs } from '../../src/engine/dossier'
-import { avecRevenus } from '../../src/engine/indicateurs'
+import { avecRevenus, comparerScenarios } from '../../src/engine/indicateurs'
 import { classer, CRITERES, recommander, type Classement, type CodeAlerte } from '../../src/engine/recommandation'
 import { SCENARIOS, type IdScenario } from '../../src/engine/scenario'
 import { hypothesesDefaut, parametresFiscaux2026 as p, type PonderationsObjectifs } from '../../src/params'
-import { dossierAncien, dossierFavorable, dossierType } from './fixtures/dossier-type'
+import { dossierAncien, dossierConcubins, dossierFavorable, dossierType } from './fixtures/dossier-type'
 
 const PRECISION = 6
 const NOTE_MAXIMALE = 100
@@ -142,6 +142,21 @@ describe('score sur 100 (§10.3)', () => {
     expect(classer(dossierFavorable, o, p).meilleur_immobilier).toBe('S0')
   })
 
+  it('TRI sans solution à flux tous positifs : meilleure note de TRI, et il bat le placement', () => {
+    // Ancien sans travaux loué dès l’achat, financé au-delà du coût : aucun décaissement.
+    const fluxPositifs: Dossier = {
+      ...dossierAncien,
+      bien: { ...dossierAncien.bien, travaux: 0, date_livraison: '2026-05-10', date_debut_location: '2026-06-01', loyer_marche_nu: 2500, loyer_marche_meuble: 2750 },
+      financement: { ...dossierAncien.financement, emprunt: 175000 },
+    }
+    const c = classer(fluxPositifs, objectifs(), p)
+    const s0 = evaluation(c, 'S0')
+    expect(s0.indicateurs?.tri).toBeNull()
+    expect(s0.notes.find((n) => n.critere === 'tri')?.note).toBe(NOTE_MAXIMALE)
+    expect(s0.bat_le_placement).toBe(true)
+    expect(c.choix).not.toBe('placement')
+  })
+
   it('LMNP au micro-BIC : la note de simplicité du micro remplace celle du réel', () => {
     // Petit prix, loyer élevé, achat comptant : le micro-BIC est retenu.
     const micro: Dossier = {
@@ -226,6 +241,18 @@ describe('la recommandation change de façon cohérente avec la TMI, l’horizon
     expect(r.texte.bascules.some((t) => t.startsWith('En revendant après 11 ans'))).toBe(true)
   })
 
+  it('horizon envisagé au-delà des horizons de calcul : les horizons plus courts sont aussi explorés', () => {
+    const r = recommander(dossierFavorable, p, objectifs(30))
+    expect(r.seuils.horizon_plus_court).not.toBeNull()
+    expect(r.seuils.horizon_plus_court?.horizon ?? 0).toBeLessThan(30)
+  })
+
+  it('une comparaison déjà calculée est réutilisée quand seuls les curseurs changent', () => {
+    const comparaison = comparerScenarios(dossierFavorable, 16, p)
+    const o = objectifs(16, { ponderations: seulement('souplesse') })
+    expect(classer(dossierFavorable, o, p, comparaison)).toEqual(classer(dossierFavorable, o, p))
+  })
+
   it('aucun scénario tenable : ne pas investir, avec les motifs', () => {
     const sansCapacite: Dossier = { ...dossierType, foyers: { ...dossierType.foyers, capacite_epargne_mensuelle: 0 } }
     const r = recommander(sansCapacite, p)
@@ -279,6 +306,11 @@ describe('alertes toujours évaluées (§10.5)', () => {
   it('Jeanbrun : amortissement plafonné au-delà du seuil de prix, pour le seul S1 au cas type', () => {
     // S1 : 300 000 € TTC, au-delà de 285 714 € ; S2 : 275 000 € TTC à 10 %, en deçà.
     expect(vises(dossierType, 'jeanbrun_plafonne')).toEqual(['S1'])
+  })
+
+  it('Jeanbrun entre concubins : seuil apprécié sur la quote-part de chaque foyer', () => {
+    // 150 000 € chacun, sous le seuil : aucun plafonnement.
+    expect(vises(dossierConcubins, 'jeanbrun_plafonne')).toEqual([])
   })
 
   it('valeurs à confirmer utilisées par le scénario retenu ou le mieux classé', () => {

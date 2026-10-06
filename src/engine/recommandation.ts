@@ -14,33 +14,35 @@ import {
   ARRONDI_SEUIL_REVENUS,
   FACTEUR_REVENUS_EXTREME,
   ITERATIONS_RECHERCHE,
-  MOIS_PAR_AN,
   NOMBRE_RAISONS,
   PAS_BALAYAGE_REVENUS,
   PRECISION_SEUIL_REVENUS,
   TOLERANCE_COMPARAISON,
-  TRI_MINIMUM,
 } from './constantes-numeriques'
 import { lireDate } from './dates'
 import { objectifsParDefaut, type BaremesQualitatifs, type Dossier, type Objectifs } from './dossier'
-import { formaterDate, formaterEuros, formaterTaux } from './format'
-import { calculerImpot } from './impot-revenu'
+import { endettementExcessif } from './emprunt'
+import { formaterDate, formaterEuros, formaterTaux, formaterTauxCalcule } from './format'
 import {
   avecRevenus,
   comparerScenarios,
   penaliteSortieAnticipee,
   prixReventeEquilibre,
+  tauxEndettementActuel,
+  tmiDesFoyers,
+  triComparable,
+  type ComparaisonHorizon,
   type Indicateurs,
   type PrixEquilibre,
 } from './indicateurs'
 import { plafondAnnuelJeanbrun, seuilPlafonnementJeanbrun } from './jeanbrun'
 import { prixTtc } from './lli'
-import { plafondLoyerIntermediaire } from './loyer-plafond'
 import {
   ALERTE_JEANBRUN_PLAFONNE,
   caracteristiquesScenario,
   engagementsScenario,
   LIBELLES_SCENARIOS,
+  loyerDeBaseScenario,
   SCENARIOS,
   type IdScenario,
   type ResultatSimulation,
@@ -147,7 +149,7 @@ function valeurBrute(critere: Critere, i: Indicateurs, s: ResultatSimulation, b:
     case 'effort_epargne':
       return i.effort_mensuel_moyen
     case 'tri':
-      return i.tri ?? TRI_MINIMUM
+      return triComparable(s)
     case 'souplesse':
       return noteBareme(b.souplesse, i.id, critere)
     case 'simplicite':
@@ -181,12 +183,27 @@ function motifsNonTenable(d: Dossier, i: Indicateurs, horizon: number, p: Parame
   return motifs
 }
 
-/** Classement des scénarios pour un horizon et des objectifs (§10, points 1 à 3). */
-export function classer(d: Dossier, objectifs: Objectifs, p: ParametresFiscaux): Classement {
+/** TRI au-dessus de celui du placement équivalent ; un TRI sans solution à flux tous positifs le bat. */
+function batLePlacement(s: ResultatSimulation | null, i: Indicateurs | null): boolean {
+  if (s === null || i === null || i.tri_placement === null) return false
+  return triComparable(s) > i.tri_placement
+}
+
+/**
+ * Classement des scénarios pour un horizon et des objectifs (§10, points 1 à 3). Une comparaison déjà
+ * calculée pour le même dossier et le même horizon évite de resimuler quand seuls les curseurs changent.
+ */
+export function classer(
+  d: Dossier,
+  objectifs: Objectifs,
+  p: ParametresFiscaux,
+  comparaisonCalculee?: ComparaisonHorizon,
+): Classement {
   verifierPonderations(objectifs.ponderations)
   const horizon = objectifs.horizon
   const baremes = baremesRetenus(objectifs)
-  const comparaison = comparerScenarios(d, horizon, p)
+  const comparaison =
+    comparaisonCalculee !== undefined && comparaisonCalculee.horizon === horizon ? comparaisonCalculee : comparerScenarios(d, horizon, p)
 
   const bruts = comparaison.scenarios.map((r) => {
     const indicateurs = comparaison.indicateurs.find((i) => i.id === r.id) ?? null
@@ -225,14 +242,9 @@ export function classer(d: Dossier, objectifs: Objectifs, p: ParametresFiscaux):
   })
   const ordre = (id: IdScenario): number => SCENARIOS.indexOf(id)
   scores.sort(
-    (a, b) =>
-      b.score - a.score || (b.indicateurs.tri ?? TRI_MINIMUM) - (a.indicateurs.tri ?? TRI_MINIMUM) || ordre(a.id) - ordre(b.id),
+    (a, b) => b.score - a.score || triComparable(b.simulation) - triComparable(a.simulation) || ordre(a.id) - ordre(b.id),
   )
   const rangs = new Map(scores.map((s, k) => [s.id, k + 1]))
-  const batLePlacement = (i: Indicateurs | null): boolean => {
-    const ecart = i?.ecart_tri_placement ?? null
-    return ecart !== null && ecart > 0
-  }
 
   const evaluation = ({ r, indicateurs, motifs }: (typeof bruts)[number]): EvaluationScenario => {
     const classe = scores.find((s) => s.id === r.id)
@@ -249,7 +261,7 @@ export function classer(d: Dossier, objectifs: Objectifs, p: ParametresFiscaux):
       notes: classe?.notes ?? [],
       score: classe?.score ?? null,
       rang: rangs.get(r.id) ?? null,
-      bat_le_placement: batLePlacement(indicateurs),
+      bat_le_placement: batLePlacement(r.simulation, indicateurs),
     }
   }
   const groupe = (e: EvaluationScenario): number => (e.rang !== null ? 0 : e.eligible ? 1 : 2)
@@ -258,7 +270,7 @@ export function classer(d: Dossier, objectifs: Objectifs, p: ParametresFiscaux):
     .sort((a, b) => groupe(a) - groupe(b) || (a.rang ?? 0) - (b.rang ?? 0) || ordre(a.id) - ordre(b.id))
 
   const meilleur = scores[0]?.id ?? null
-  const placementDomine = !scores.some((s) => batLePlacement(s.indicateurs))
+  const placementDomine = !scores.some((s) => batLePlacement(s.simulation, s.indicateurs))
   return {
     horizon,
     ponderations: objectifs.ponderations,
@@ -294,12 +306,6 @@ export interface Alerte {
   readonly scenarios: readonly IdScenario[]
 }
 
-/** Taux marginal de chaque foyer sans l'opération, à un revenu donné. */
-function tmiDesFoyers(d: Dossier, revenus: readonly number[], p: ParametresFiscaux): number[] {
-  const communes = d.foyers.situation === 'marie_pacse'
-  return d.foyers.foyers.map((f, k) => calculerImpot(revenus[k] ?? f.revenu_imposable, { parts: f.parts, imposition_commune: communes }, p).tmi)
-}
-
 function evaluerAlertes(d: Dossier, c: Classement, p: ParametresFiscaux): Alerte[] {
   const alertes: Alerte[] = []
   const b = d.bien
@@ -308,9 +314,10 @@ function evaluerAlertes(d: Dossier, c: Classement, p: ParametresFiscaux): Alerte
 
   // Loyer plafond au-dessus du marché : le plafond ne contraint pas, un loyer annoncé au plafond serait surévalué.
   const intermediaires = ids((e) => caracteristiquesScenario(e.id).niveau_loyer === 'intermediaire')
-  if (intermediaires.length > 0) {
-    const plafond = plafondLoyerIntermediaire(b.zone, b.surface, p).loyer_plafond_mensuel
-    if (plafond > b.loyer_marche_nu) {
+  const premierIntermediaire = intermediaires[0]
+  if (premierIntermediaire !== undefined) {
+    const plafond = loyerDeBaseScenario(d, premierIntermediaire, p).plafond ?? Number.POSITIVE_INFINITY
+    if (plafond > b.loyer_marche_nu && Number.isFinite(plafond)) {
       alertes.push({
         code: 'plafond_superieur_marche',
         message: `Loyer plafond de ${formaterEuros(plafond)} par mois supérieur au loyer de marché (${formaterEuros(b.loyer_marche_nu)}) : le plafond ne contraint pas, mais un loyer annoncé au plafond serait surévalué`,
@@ -333,7 +340,7 @@ function evaluerAlertes(d: Dossier, c: Classement, p: ParametresFiscaux): Alerte
   }
 
   // Tranche marginale faible : l'avantage Jeanbrun est faible.
-  const tmis = tmiDesFoyers(d, d.foyers.foyers.map((f) => f.revenu_imposable), p)
+  const tmis = tmiDesFoyers(d, p)
   const premiereTrancheImposee = p.impot_revenu.bareme.valeur.find((t) => t.taux > 0)?.taux ?? 0
   const jeanbrun = ids((e) => engagementsScenario(e.id).jeanbrun !== null)
   if (jeanbrun.length > 0 && tmis.some((t) => t <= premiereTrancheImposee)) {
@@ -349,7 +356,7 @@ function evaluerAlertes(d: Dossier, c: Classement, p: ParametresFiscaux): Alerte
     const changement = f.changement_revenu
     if (changement === undefined) return
     const avant = tmis[k] ?? 0
-    const apres = tmiDesFoyers(d, d.foyers.foyers.map((x, j) => (j === k ? changement.revenu_imposable : x.revenu_imposable)), p)[k] ?? 0
+    const apres = tmiDesFoyers(d, p, d.foyers.foyers.map((x, j) => (j === k ? changement.revenu_imposable : x.revenu_imposable)))[k] ?? 0
     if (!(apres < avant)) return
     const engages = ids((e) => {
       const fin = e.indicateurs?.date_sortie_sans_penalite ?? null
@@ -376,15 +383,18 @@ function evaluerAlertes(d: Dossier, c: Classement, p: ParametresFiscaux): Alerte
     }
   }
 
-  // Jeanbrun : amortissement plafonné au-delà du seuil de prix.
+  // Jeanbrun : amortissement plafonné au-delà du seuil de prix, apprécié sur la quote-part de chaque foyer.
+  const quotePartMax = Math.max(...d.foyers.foyers.map((f) => f.quote_part))
   for (const e of eligibles) {
     const niveau = engagementsScenario(e.id).jeanbrun
     if (niveau === null || e.simulation === null) continue
     const seuil = seuilPlafonnementJeanbrun(niveau, p)
-    if (e.simulation.prix_acquisition > seuil) {
+    const prix = e.simulation.prix_acquisition
+    if (prix * quotePartMax > seuil) {
+      const part = quotePartMax < 1 ? ` (quote-part de ${formaterEuros(prix * quotePartMax)})` : ''
       alertes.push({
         code: 'jeanbrun_plafonne',
-        message: `${e.id} : prix de ${formaterEuros(e.simulation.prix_acquisition)} au-delà de ${formaterEuros(seuil)}, amortissement Jeanbrun plafonné à ${formaterEuros(plafondAnnuelJeanbrun(niveau, p))} par an`,
+        message: `${e.id} : prix de ${formaterEuros(prix)}${part} au-delà de ${formaterEuros(seuil)}, amortissement Jeanbrun plafonné à ${formaterEuros(plafondAnnuelJeanbrun(niveau, p))} par an`,
         scenarios: [e.id],
       })
     }
@@ -424,13 +434,11 @@ function evaluerAlertes(d: Dossier, c: Classement, p: ParametresFiscaux): Alerte
   }
 
   // Endettement actuel au-delà du seuil, avant toute opération.
-  const revenusMensuels = d.foyers.foyers.reduce((total, f) => total + f.revenu_imposable, 0) / MOIS_PAR_AN
-  const credits = d.foyers.foyers.reduce((total, f) => total + (f.mensualites_credits_en_cours ?? 0), 0)
-  const endettementMax = p.financement.taux_endettement_max.valeur
-  if (revenusMensuels > 0 && credits / revenusMensuels > endettementMax) {
+  const actuel = tauxEndettementActuel(d)
+  if (actuel !== null && endettementExcessif(actuel, p)) {
     alertes.push({
       code: 'endettement_actuel',
-      message: `Taux d’endettement actuel de ${formaterTaux(credits / revenusMensuels)}, déjà au-delà de ${formaterTaux(endettementMax)}`,
+      message: `Taux d’endettement actuel de ${formaterTaux(actuel)}, déjà au-delà de ${formaterTaux(p.financement.taux_endettement_max.valeur)}`,
       scenarios: [],
     })
   }
@@ -518,7 +526,7 @@ function basculeRevenus(
     return {
       facteur: apres,
       revenus,
-      tmi: tmiDesFoyers(d, revenus, p),
+      tmi: tmiDesFoyers(d, p, revenus),
       choix: classementApres.choix,
       motif: motifDeBascule(classementApres, initial),
     }
@@ -526,9 +534,9 @@ function basculeRevenus(
   return null
 }
 
-/** Horizon le plus proche de l'horizon envisagé où le choix change, dans la plage des horizons de calcul. */
+/** Horizon le plus proche de l'horizon envisagé où le choix change, jusqu'au plus long des horizons de calcul. */
 function basculeHorizon(d: Dossier, objectifs: Objectifs, initial: Choix, pas: 1 | -1, p: ParametresFiscaux): BasculeHorizon | null {
-  const maximum = Math.max(...hypothesesDefaut.horizons_ans.valeur)
+  const maximum = Math.max(objectifs.horizon, ...hypothesesDefaut.horizons_ans.valeur)
   const b = d.bien
   for (let h = objectifs.horizon + pas; h >= 1 && h <= maximum; h += pas) {
     const c = classer(d, { ...objectifs, horizon: h }, p)
@@ -581,19 +589,16 @@ function effetImpot(montant: number): string {
   return montant > 0 ? `une économie d’impôt de ${formaterEuros(montant)}` : `un surcroît d’impôt de ${formaterEuros(-montant)}`
 }
 
-function formaterTri(t: number | null | undefined): string {
-  return t === null || t === undefined ? 'non calculable' : formaterTaux(t)
-}
+const tri = (i: Indicateurs | null): string => formaterTauxCalcule(i?.tri)
+const triPlacement = (i: Indicateurs | null): string => formaterTauxCalcule(i?.tri_placement)
 
-const tri = (i: Indicateurs | null): string => formaterTri(i?.tri)
-const triPlacement = (i: Indicateurs | null): string => formaterTri(i?.tri_placement)
-
-function rendreCritere(n: NoteCritere, second: EvaluationScenario | undefined): string {
+function rendreCritere(n: NoteCritere, e: EvaluationScenario, second: EvaluationScenario | undefined): string {
   const autre = second?.notes.find((x) => x.critere === n.critere)?.valeur
   const contre = (texte: string): string => (second === undefined || autre === undefined ? '' : `, contre ${texte} pour ${second.id}`)
   switch (n.critere) {
     case 'tri':
-      return `TRI après impôt de ${formaterTaux(n.valeur)}${contre(formaterTaux(autre ?? 0))}`
+      // TRI publié, et non la valeur bornée qui sert au classement quand il n'existe pas.
+      return `TRI après impôt de ${tri(e.indicateurs)}${contre(tri(second?.indicateurs ?? null))}`
     case 'effort_epargne':
       return `Effort d’épargne moyen de ${formaterEuros(n.valeur)} par mois${contre(formaterEuros(autre ?? 0))}`
     case 'economie_impot':
@@ -610,7 +615,7 @@ function raisonsScenario(e: EvaluationScenario, second: EvaluationScenario | und
     .map((n) => ({ n, ecart: n.points - (second?.notes.find((x) => x.critere === n.critere)?.points ?? 0) }))
     .filter((a) => a.n.poids > 0 && a.ecart > TOLERANCE_COMPARAISON)
     .sort((a, b) => b.ecart - a.ecart)
-  const raisons = avantages.slice(0, NOMBRE_RAISONS).map((a) => rendreCritere(a.n, second))
+  const raisons = avantages.slice(0, NOMBRE_RAISONS).map((a) => rendreCritere(a.n, e, second))
   const i = e.indicateurs
   const complements = [
     `TRI après impôt de ${tri(i)}, contre ${triPlacement(i)} pour le placement de référence`,
@@ -641,7 +646,7 @@ function rediger(d: Dossier, c: Classement, seuils: SeuilsDeBascule, alertes: re
     raisons = [
       `TRI après impôt de ${premier.id} : ${tri(i)}, contre ${triPlacement(i)} pour le placement de référence`,
       `Capital net après ${c.horizon} ans : ${formaterEuros(i?.capital_net_sortie ?? 0)} pour ${premier.id}, ${formaterEuros(i?.capital_net_placement ?? 0)} pour le placement`,
-      prix?.prix === null || prix === null
+      prix === null || prix.prix === null
         ? `Aucun prix de revente plausible ne permet à ${premier.id} d’égaler le placement`
         : `Il faudrait revendre au moins ${formaterEuros(prix.prix)}, contre ${formaterEuros(prix.prix_central)} attendus, pour égaler le placement`,
     ]
@@ -699,7 +704,8 @@ function rediger(d: Dossier, c: Classement, seuils: SeuilsDeBascule, alertes: re
     if (bascule === null) continue
     const total = bascule.revenus.reduce((s, r) => s + r, 0)
     const environ = Math.round(total / ARRONDI_SEUIL_REVENUS) * ARRONDI_SEUIL_REVENUS
-    const variation = Math.round((bascule.facteur - 1) * NOTE_MAXIMALE) / NOTE_MAXIMALE
+    // Variation arrondie au point de pourcentage.
+    const variation = Math.round((bascule.facteur - 1) * 100) / 100
     bascules.push(
       `Avec environ ${formaterEuros(environ)} de revenu imposable (${variation > 0 ? '+' : ''}${formaterTaux(variation)}), soit une tranche marginale de ${bascule.tmi.map(formaterTaux).join(' et ')}, ${nomChoix(bascule.choix)} passerait devant ${devant(c.choix)}${pourquoi(bascule.motif)}.`,
     )
