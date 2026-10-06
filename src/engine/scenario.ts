@@ -1290,11 +1290,15 @@ function regimeAdmissible(simulation: ResultatSimulation, cfg: Configuration, d:
   if (simulation.regime !== 'micro') return true
   return simulation.annees.every((a) => {
     if (cfg.regime === 'lmnp') return microBic(a.annee, a.loyers_encaisses, p).eligible
-    const recettes = d.foyers.foyers.reduce(
-      (total, foyer) => total + a.loyers_encaisses * foyer.quote_part + (foyer.revenus_fonciers_existants?.recettes ?? 0),
-      0,
+    // Le seuil du micro-foncier s'apprécie foyer par foyer, sur l'ensemble de ses recettes foncières.
+    return d.foyers.foyers.every(
+      (foyer) =>
+        revenuFoncierMicro(
+          a.annee,
+          a.loyers_encaisses * foyer.quote_part + (foyer.revenus_fonciers_existants?.recettes ?? 0),
+          p,
+        ).eligible,
     )
-    return revenuFoncierMicro(a.annee, recettes, p).eligible
   })
 }
 

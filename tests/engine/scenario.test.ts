@@ -213,6 +213,19 @@ describe('Denormandie (S5, logement ancien avec travaux)', () => {
   })
 })
 
+describe('micro-foncier entre concubins', () => {
+  it('le seuil s’apprécie foyer par foyer : deux moitiés de loyer restent sous le seuil', () => {
+    // Achat comptant et 18 000 € de loyers par an, soit 9 000 € par foyer : l'abattement de 30 %
+    // dépasse les charges réelles, le micro-foncier est retenu pour chacun des deux foyers.
+    const comptant: Dossier = {
+      ...dossierConcubins,
+      bien: { ...dossierConcubins.bien, loyer_marche_nu: 1500 },
+      financement: { ...dossierConcubins.financement, emprunt: 0, frais_dossier: 0, frais_garantie: 0 },
+    }
+    expect(simulerScenario(comptant, 'S0', { horizon: 16 }, p).simulation?.regime).toBe('micro')
+  })
+})
+
 describe('placement de référence équivalent (S6)', () => {
   it('reçoit l’apport puis les efforts d’épargne du scénario, sur la même durée', () => {
     const s = simuler(dossierType, 'S0', 16)
