@@ -9,7 +9,7 @@ Application web locale qui simule un investissement locatif sous plusieurs dispo
 | Étape | Contenu | État |
 |---|---|---|
 | 1 | Squelette, paramètres fiscaux sourcés, `HYPOTHESES.md`, intégration continue | livrée |
-| 2 | Moteur : impôt, loyer plafond, emprunt, revenus fonciers, plus-value | à venir |
+| 2 | Moteur : impôt, loyer plafond, emprunt, revenus fonciers, plus-value | livrée |
 | 3 | Moteur : Jeanbrun, LLI/SCI, LMNP, Denormandie, placement de référence | à venir |
 | 4 | Orchestration des scénarios, indicateurs, sensibilités | à venir |
 | 5 | Recommandation et contre-expertise | à venir |
@@ -41,6 +41,7 @@ src/
   engine/          moteur de calcul : fonctions pures sans effet de bord (étapes 2 à 5)
   ui/              interface React, sans aucun calcul fiscal (étape 6)
 tests/
+  engine/          tests du moteur : valeurs du cahier des charges et exemples officiels
   params/          validation et cohérence des paramètres
   garde-fous/      aucune valeur fiscale en dur, HYPOTHESES.md à jour
 scripts/           outils de mise à jour annuelle des paramètres
@@ -49,6 +50,21 @@ docs/              cas de test officiels relevés lors de la vérification
 
 Choix techniques : Vite 8, React 19, TypeScript 6.0 en mode strict, Vitest 5, ESLint 10 avec l'analyse typée de typescript-eslint. TypeScript est figé sur la version 6.0 : la version 7 n'expose plus l'API utilisée par typescript-eslint et par le garde-fou des valeurs en dur. Recharts sera ajouté avec l'interface (étape 6).
 
+## Moteur de calcul
+
+Le moteur (`src/engine/`) est fait de fonctions pures : chacune reçoit les paramètres fiscaux en argument, ce qui permet de recalculer avec des paramètres modifiés ou indexés, et retourne un objet détaillé (chaque étape intermédiaire) pour que tout indicateur puisse être déplié jusqu'à sa formule.
+
+| Module | Rôle |
+|---|---|
+| `impot-revenu.ts` | Barème, quotient familial plafonné, décote, réductions sous plafond des niches, seuil de recouvrement, revenu global et déficits globaux, impôt différentiel avec et sans l'opération, indexation du barème |
+| `loyer-plafond.ts` | Surface prise en compte, coefficient de surface, plafond de loyer, loyer retenu et manque à gagner, plafonds de ressources |
+| `emprunt.ts` | Tableau d'amortissement au centime, assurance, différé, annuités par année civile, indemnités de remboursement anticipé, taux d'endettement |
+| `revenus-fonciers.ts` | Régime réel et ventilation du déficit, micro-foncier, prélèvements sociaux, maintien de la location |
+| `plus-value.ts` | Prix d'acquisition corrigé, abattements, impôt et prélèvements sociaux, surtaxe par cédant, surcoût de la réintégration des amortissements |
+| `deficits.ts`, `arrondis.ts` | Stocks de déficits par millésime, arrondis commerciaux |
+
+Les autres modules (Jeanbrun, LLI, SCI, LMNP, Denormandie, placement de référence, orchestration, indicateurs, recommandation, contre-expertise) arrivent aux étapes 3 à 5.
+
 ## Paramètres fiscaux
 
 Chaque valeur de `src/params/fiscal-2026.json` porte `valeur`, `unite`, `source`, `url_officielle`, `date_verification`, `statut` et `commentaire`. Le statut vaut :
@@ -56,6 +72,8 @@ Chaque valeur de `src/params/fiscal-2026.json` porte `valeur`, `unite`, `source`
 - `verifie` : lu sur une source officielle à la date indiquée ;
 - `texte_non_consulte` : règle rapportée de la loi mais non lue directement ;
 - `a_confirmer` : à valider par un notaire, un expert-comptable ou par rescrit, y compris les hypothèses de modélisation que les textes ne fixent pas.
+
+Un paramètre peut aussi porter un champ `arbitrage` (date, choix retenu, option écartée) : c'est une hypothèse choisie par l'utilisateur lorsqu'une règle admettait plusieurs lectures ou contredisait le cahier des charges. Les arbitrages sont listés dans `HYPOTHESES.md` (section 4) et seront signalés dans l'interface.
 
 Seuls les domaines de l'État listés dans `src/params/sources-officielles.ts` sont admis comme sources. La liste des points non vérifiés, les écarts relevés avec le cahier des charges et les simplifications figurent dans [`HYPOTHESES.md`](HYPOTHESES.md).
 
@@ -75,7 +93,7 @@ Outils :
 ## Mise à jour annuelle des paramètres
 
 1. Créer `src/params/fiscal-AAAA.json` à partir du fichier de l'année précédente et adapter l'import de `src/params/index.ts`.
-2. Pour chaque paramètre, ouvrir `url_officielle`, relire la règle et mettre à jour `valeur`, `source` (version du BOFiP, date de la fiche), `date_verification`, `statut` et `commentaire`. Valeurs révisées chaque année : barème de l'impôt, plafond du quotient familial, décote, abattement de 10 %, plafonds de loyer et de ressources (BOI-BAREME-000017), seuils des régimes micro, taux de prélèvements sociaux, dates de fin des dispositifs. Contrôler aussi la loi de finances de l'année et les textes en discussion (section 6 de `HYPOTHESES.md`).
+2. Pour chaque paramètre, ouvrir `url_officielle`, relire la règle et mettre à jour `valeur`, `source` (version du BOFiP, date de la fiche), `date_verification`, `statut` et `commentaire`. Valeurs révisées chaque année : barème de l'impôt, plafond du quotient familial, décote, abattement de 10 %, plafonds de loyer et de ressources (BOI-BAREME-000017), seuils des régimes micro, taux de prélèvements sociaux, dates de fin des dispositifs. Contrôler aussi la loi de finances de l'année et les textes en discussion (section 7 de `HYPOTHESES.md`).
 3. Mettre à jour la section `meta` (date d'arrêt, textes pris en compte).
 4. Lancer `npm run params:liens`, `npm test` et `npm run params:rapport`, puis mettre à jour `HYPOTHESES.md` (les tests signalent tout écart).
 5. Ouvrir une pull request dédiée.
@@ -89,7 +107,7 @@ Le dépôt ne contient aucune donnée personnelle : ni revenus, ni dossier de si
 - Paramètres arrêtés au 06/10/2026 et vérifiés sur des sources officielles (liste dans `HYPOTHESES.md`, section 1). La loi de finances pour 2027 et le projet de loi visant la relance et la décentralisation du logement, en cours d'examen, ne sont pas pris en compte.
 - Légifrance n'a pas pu être lu automatiquement. Le texte de la loi de finances pour 2026 a été lu dans sa version définitivement adoptée, publiée par l'Assemblée nationale, et ses articles 47 (Jeanbrun) et 98 (LLI) n'ont pas été censurés. Les règles marquées `texte_non_consulte` restent à relire sur Légifrance.
 - Le cumul Jeanbrun + LLI n'est mentionné par aucune source officielle consultée, ni pour l'autoriser ni pour l'interdire.
-- Hors périmètre ou simplifiés : SCI à l'IS (variante indicative), IFI, CEHR et CDHR, démembrement de propriété, intérêts intercalaires détaillés (différé simple), CSG déductible (option désactivée par défaut), Jeanbrun dans l'ancien, déficit foncier majoré pour travaux de rénovation énergétique, outre-mer, demi-parts particulières et frais réels, option du PFU pour le barème, sortie du LLI par cession des parts de la SCI. Détail dans `HYPOTHESES.md`, section 5.
+- Hors périmètre ou simplifiés : SCI à l'IS (variante indicative), IFI, CEHR et CDHR, démembrement de propriété, intérêts intercalaires détaillés (différé simple), CSG déductible (option désactivée par défaut), Jeanbrun dans l'ancien, déficit foncier majoré pour travaux de rénovation énergétique, outre-mer, demi-parts particulières et frais réels, option du PFU pour le barème, sortie du LLI par cession des parts de la SCI. Détail dans `HYPOTHESES.md`, section 6.
 - Les points `a_confirmer` doivent être validés par un notaire ou un expert-comptable avant toute signature.
 
 ## Conventions

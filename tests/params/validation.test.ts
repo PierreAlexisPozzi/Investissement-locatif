@@ -24,13 +24,13 @@ describe('chargement des paramètres', () => {
     expect(hypothesesDefaut.horizons_ans.valeur.length).toBeGreaterThan(0)
   })
 
-  it('chaque paramètre porte les sept champs du cahier des charges', () => {
+  it('chaque paramètre porte les sept champs du cahier des charges, et au plus un arbitrage en plus', () => {
+    const obligatoires = ['commentaire', 'date_verification', 'source', 'statut', 'unite', 'url_officielle', 'valeur']
     const entrees = listerParametres(donnees)
     expect(entrees.length).toBeGreaterThan(50)
     for (const { chemin, parametre } of entrees) {
-      expect(Object.keys(parametre).sort(), chemin).toEqual(
-        ['commentaire', 'date_verification', 'source', 'statut', 'unite', 'url_officielle', 'valeur'].sort(),
-      )
+      const champs = Object.keys(parametre).filter((champ) => champ !== 'arbitrage')
+      expect(champs.sort(), chemin).toEqual([...obligatoires].sort())
       expect(STATUTS_PARAMETRE, chemin).toContain(parametre.statut)
     }
   })
@@ -59,6 +59,12 @@ describe('la validation détecte les anomalies', () => {
     const d = copie()
     Object.assign(d.micro_foncier.abattement, { date_verification: '2027-01-01' })
     expect(listerAnomalies(d)).toEqual([expect.stringContaining('postérieure')])
+  })
+
+  it('un arbitrage incomplet', () => {
+    const d = copie()
+    Object.assign(d.micro_foncier.abattement, { arbitrage: { date: '2026-10-06', choix: 'Un choix' } })
+    expect(listerAnomalies(d)).toEqual([expect.stringContaining('micro_foncier.abattement : arbitrage sans')])
   })
 
   it('une valeur énumérée inconnue', () => {

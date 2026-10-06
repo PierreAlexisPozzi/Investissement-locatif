@@ -8,6 +8,18 @@
 export const STATUTS_PARAMETRE = ['verifie', 'texte_non_consulte', 'a_confirmer'] as const
 export type StatutParametre = (typeof STATUTS_PARAMETRE)[number]
 
+/**
+ * Hypothèse choisie par l'utilisateur lorsqu'une règle admettait plusieurs
+ * lectures ou s'écartait du cahier des charges. Elle est listée dans
+ * HYPOTHESES.md (section « Arbitrages retenus ») et signalée dans l'interface.
+ */
+export interface Arbitrage {
+  /** Date de la décision (AAAA-MM-JJ). */
+  readonly date: string
+  readonly choix: string
+  readonly alternative_ecartee: string
+}
+
 export interface Parametre<T> {
   readonly valeur: T
   readonly unite: string
@@ -17,6 +29,7 @@ export interface Parametre<T> {
   readonly date_verification: string | null
   readonly statut: StatutParametre
   readonly commentaire: string
+  readonly arbitrage?: Arbitrage
 }
 
 /*
@@ -78,6 +91,13 @@ export interface TrancheSurtaxe {
 }
 
 export type ModeAppreciationSurtaxe = (typeof MODES_APPRECIATION_SURTAXE)[number]
+
+/** Années de détention révolues de `de` à `a` (incluses), chacune abattue de `taux_annuel`. */
+export interface TrancheAbattement {
+  readonly de: number
+  readonly a: number
+  readonly taux_annuel: number
+}
 
 export interface MetaParametres {
   readonly version: string
@@ -289,19 +309,8 @@ export interface ParametresFiscaux {
 
   readonly plus_value_immobiliere: {
     readonly taux_ir: Parametre<number>
-    readonly abattement_ir: Parametre<{
-      readonly annees_sans_abattement: number
-      readonly taux_annuel_6e_a_21e: number
-      readonly taux_22e: number
-      readonly exoneration_apres: number
-    }>
-    readonly abattement_ps: Parametre<{
-      readonly annees_sans_abattement: number
-      readonly taux_annuel_6e_a_21e: number
-      readonly taux_22e: number
-      readonly taux_annuel_23e_a_30e: number
-      readonly exoneration_apres: number
-    }>
+    readonly abattement_ir: Parametre<{ readonly tranches: readonly TrancheAbattement[] }>
+    readonly abattement_ps: Parametre<{ readonly tranches: readonly TrancheAbattement[] }>
     readonly forfait_frais_acquisition: Parametre<number>
     readonly forfait_travaux: Parametre<{ readonly taux: number; readonly detention_superieure_a_ans: number }>
     readonly forfait_travaux_bien_neuf_amorti: Parametre<boolean>

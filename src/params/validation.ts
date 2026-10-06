@@ -51,6 +51,21 @@ function anomaliesDeForme(racine: unknown, dateArret: string): string[] {
     if (p.statut === 'verifie' && date === null) {
       anomalies.push(`${chemin} : un paramètre vérifié doit porter sa date de vérification`)
     }
+    if ('arbitrage' in p) anomalies.push(...anomaliesArbitrage(chemin, p.arbitrage, dateArret))
+  }
+  return anomalies
+}
+
+/** Un arbitrage porte sa date de décision, le choix retenu et l'option écartée. */
+function anomaliesArbitrage(chemin: string, arbitrage: unknown, dateArret: string): string[] {
+  if (typeof arbitrage !== 'object' || arbitrage === null) return [`${chemin} : arbitrage mal formé`]
+  const a = arbitrage as Record<string, unknown>
+  const anomalies: string[] = []
+  if (typeof a.date !== 'string' || !estDateIso(a.date) || a.date > dateArret) {
+    anomalies.push(`${chemin} : date d'arbitrage invalide ou postérieure à la date d'arrêt`)
+  }
+  for (const champ of ['choix', 'alternative_ecartee'] as const) {
+    if (!estTexteRenseigne(a[champ])) anomalies.push(`${chemin} : arbitrage sans « ${champ} »`)
   }
   return anomalies
 }

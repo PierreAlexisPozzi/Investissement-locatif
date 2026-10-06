@@ -1,6 +1,6 @@
 # Cas de test officiels relevés
 
-Exemples chiffrés publiés par l'administration, relevés le 06/10/2026 lors de la vérification des paramètres. Ils compléteront les valeurs de référence du §13 du cahier des charges dans les tests des étapes 2 et 3. Ceux de la surtaxe sur les plus-values sont déjà couverts par `tests/params/coherence.test.ts`.
+Exemples chiffrés publiés par l'administration, relevés le 06/10/2026 lors de la vérification des paramètres. Ils complètent les valeurs de référence du §13 du cahier des charges. Ceux de l'impôt, de la décote, du déficit foncier, du plafond de loyer, de la plus-value et de la surtaxe sont couverts depuis l'étape 2 par `tests/engine/` ; ceux de la créance de taxe foncière et de l'amortissement des biens loués le seront à l'étape 3.
 
 ## Impôt sur le revenu (service-public F1419, vérifiée le 15/04/2026)
 
