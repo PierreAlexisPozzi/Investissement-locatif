@@ -1,0 +1,107 @@
+{
+  "meta": {
+    "date": "2026-10-06",
+    "principe": "Valeurs par défaut prudentes, modifiables par l'utilisateur (cahier des charges §3, principe 5, et §5.5). Ce ne sont pas des règles fiscales : elles n'ont pas de source officielle."
+  },
+
+  "marche": {
+    "revalorisation_loyers": {
+      "valeur": 0.015,
+      "unite": "taux annuel",
+      "origine": "Cahier des charges §5.5",
+      "commentaire": "Au-delà, la contre-expertise signale une hypothèse optimiste (§12)."
+    },
+    "revalorisation_charges": {
+      "valeur": 0.02,
+      "unite": "taux annuel",
+      "origine": "Cahier des charges §5.5",
+      "commentaire": "Charges de copropriété, assurances, taxe foncière, frais de gestion fixes."
+    },
+    "vacance_mois_par_an": {
+      "valeur": 0.5,
+      "unite": "mois par an",
+      "origine": "Cahier des charges §5.5",
+      "commentaire": "Loyers encaissés = loyer mensuel × (12 − vacance)."
+    },
+    "entretien_part_loyers": {
+      "valeur": 0.05,
+      "unite": "part des loyers encaissés",
+      "origine": "Cahier des charges §5.5",
+      "commentaire": "Provision pour entretien, déductible au réel."
+    },
+    "frais_cession": {
+      "valeur": 0.05,
+      "unite": "part du prix de vente",
+      "origine": "Cahier des charges §5.5",
+      "commentaire": "Diagnostics, mainlevée, honoraires d'agence le cas échéant."
+    },
+    "scenarios_prix": {
+      "valeur": {
+        "pessimiste": { "decote_neuf": 0.25, "revalorisation_annuelle": 0.01 },
+        "central": { "decote_neuf": 0.15, "revalorisation_annuelle": 0.01 },
+        "optimiste": { "decote_neuf": 0.05, "revalorisation_annuelle": 0.01 }
+      },
+      "unite": "part du prix TTC à 20 % ; taux annuel",
+      "origine": "Cahier des charges §5.5",
+      "commentaire": "Prix de revente = prix TTC à 20 % × (1 − décote du neuf) × (1 + revalorisation)^années, quel que soit le taux de TVA payé à l'achat. Le cahier des charges ne fixe qu'un taux de revalorisation par défaut (1 %), repris pour les trois scénarios."
+    },
+    "inflation": {
+      "valeur": 0.015,
+      "unite": "taux annuel",
+      "origine": "Choix de l'outil (non fixé par le cahier des charges)",
+      "commentaire": "Aligné sur la revalorisation des loyers par défaut. Sert à l'indexation du barème et à l'évolution des revenus."
+    },
+    "indexation_bareme_ir": {
+      "valeur": "egale_inflation",
+      "unite": "règle",
+      "origine": "Cahier des charges §6.1",
+      "commentaire": "Barème, plafonds et décote indexés chaque année du taux d'inflation saisi."
+    },
+    "evolution_revenus": {
+      "valeur": "egale_inflation",
+      "unite": "règle",
+      "origine": "Choix de l'outil (non fixé par le cahier des charges)",
+      "commentaire": "Revenus du foyer indexés sur l'inflation : la tranche marginale reste stable, sauf changement de tranche déclaré (§5.1)."
+    }
+  },
+
+  "placement_reference": {
+    "rendement_net_frais": {
+      "valeur": 0.04,
+      "unite": "taux annuel, net de frais, avant fiscalité",
+      "origine": "Cahier des charges §5.5",
+      "commentaire": "Coût d'opportunité des sommes investies dans l'immobilier (scénario S6)."
+    },
+    "enveloppe": {
+      "valeur": "pea",
+      "unite": "enveloppe fiscale",
+      "origine": "Choix de l'outil (le cahier des charges laisse le choix PEA, assurance-vie ou compte-titres)",
+      "commentaire": "PEA par défaut : fiscalité la plus favorable au placement, donc comparaison la plus exigeante pour l'immobilier (prudence). Vérifier que les plafonds de versement suffisent."
+    }
+  },
+
+  "bien": {
+    "annees_exoneration_taxe_fonciere": {
+      "valeur": 0,
+      "unite": "années d'exonération totale",
+      "origine": "Cahier des charges §6.5 et §8.3",
+      "commentaire": "Exonération des constructions neuves selon la délibération de la commune ; réduit d'autant la durée de la créance LLI."
+    }
+  },
+
+  "financement": {
+    "ira_appliquees": {
+      "valeur": true,
+      "unite": "booléen",
+      "origine": "Choix prudent de l'outil (§8.6)",
+      "commentaire": "Indemnités de remboursement anticipé appliquées au plafond légal en cas de revente avant le terme du prêt, sauf saisie contraire."
+    }
+  },
+
+  "horizons_ans": {
+    "valeur": [9, 12, 16, 20, 25],
+    "unite": "années de détention",
+    "origine": "Cahier des charges §5.6 et §9",
+    "commentaire": "Horizons de calcul des indicateurs."
+  }
+}
