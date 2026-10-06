@@ -7,17 +7,16 @@
  * argument, les hypothèses prudentes et la tolérance des écarts viennent des
  * hypothèses par défaut.
  */
-import type { NiveauLoyer, ParametresFiscaux } from '../params'
+import type { ParametresFiscaux } from '../params'
 import { hypothesesDefaut } from '../params'
 import { hypothesesParDefaut, type Dossier } from './dossier'
-import { formaterEuros, formaterNombre, formaterTaux } from './format'
-import { calculerImpot } from './impot-revenu'
-import { indicateursScenario, type Indicateurs } from './indicateurs'
-import { plafondLoyer, plafondLoyerIntermediaire } from './loyer-plafond'
+import { formaterEuros, formaterNombre, formaterTaux, formaterTauxCalcule } from './format'
+import { indicateursScenario, tmiDesFoyers, type Indicateurs } from './indicateurs'
 import {
   caracteristiquesScenario,
   engagementsScenario,
   LIBELLES_SCENARIOS,
+  loyerDeBaseScenario,
   simulerScenario,
   type IdScenario,
   type OptionsSimulation,
@@ -199,25 +198,29 @@ function resultat(d: Dossier, r: ResultatScenario, horizon: number, p: Parametre
   return r.simulation === null || indicateurs === null ? null : { indicateurs, sortie: r.simulation.sortie }
 }
 
-/** Recalcul aux hypothèses du vendeur ; le prix de revente annoncé est repris exactement. */
-function recalculVendeur(dv: Dossier, v: SimulationVendeur, p: ParametresFiscaux): ResultatScenario {
-  const options: OptionsSimulation = { horizon: v.horizon }
-  const libre = simulerScenario(dv, v.scenario, options, p)
-  const prixCalcule = libre.simulation?.sortie.prix_revente ?? 0
-  if (v.prix_revente === undefined || !(prixCalcule > 0)) return libre
-  return simulerScenario(dv, v.scenario, { ...options, facteur_prix_revente: v.prix_revente / prixCalcule }, p)
+interface RecalculVendeur {
+  readonly resultat: ResultatScenario
+  /** Prix de revente sans décote du neuf, revalorisé au taux du vendeur : prix TTC à taux normal × (1 + taux)^durée. */
+  readonly prix_sans_decote: number | null
 }
 
-function plafondDuScenario(d: Dossier, niveau: NiveauLoyer, p: ParametresFiscaux): number | null {
-  if (niveau === 'intermediaire') return plafondLoyerIntermediaire(d.bien.zone, d.bien.surface, p).loyer_plafond_mensuel
-  const m2 = d.bien.plafonds_m2_loc_avantages?.[niveau]
-  return m2 === undefined ? null : plafondLoyer(m2, d.bien.surface, p).loyer_plafond_mensuel
+/** Recalcul aux hypothèses du vendeur ; le prix de revente annoncé est repris exactement. */
+function recalculVendeur(dv: Dossier, v: SimulationVendeur, p: ParametresFiscaux): RecalculVendeur {
+  const options: OptionsSimulation = { horizon: v.horizon }
+  const libre = simulerScenario(dv, v.scenario, options, p)
+  const sansDecote = libre.simulation?.sortie.prix_revente ?? null
+  if (v.prix_revente === undefined || sansDecote === null || !(sansDecote > 0)) return { resultat: libre, prix_sans_decote: sansDecote }
+  return {
+    resultat: simulerScenario(dv, v.scenario, { ...options, facteur_prix_revente: v.prix_revente / sansDecote }, p),
+    prix_sans_decote: sansDecote,
+  }
 }
 
 function hypothesesOptimistes(
   d: Dossier,
   v: SimulationVendeur,
   vendeur: ResultatContreExpertise | null,
+  prixSansDecote: number | null,
   p: ParametresFiscaux,
 ): HypotheseOptimiste[] {
   const tolerance = hypothesesDefaut.contre_expertise.tolerance_ecart.valeur
@@ -237,11 +240,12 @@ function hypothesesOptimistes(
       `Loyers revalorisés de ${formaterTaux(v.revalorisation_loyers)} par an, au-delà de ${formaterTaux(prudentes.revalorisation_loyers)}`,
     )
   }
-  const prixRevente = v.prix_revente ?? vendeur?.sortie.prix_revente
-  if (d.bien.etat !== 'ancien' && prixRevente !== undefined && prixRevente >= v.prix) {
+  // Sans décote : prix annoncé au niveau du prix d'achat TTC à taux normal simplement revalorisé.
+  const prixRevente = v.prix_revente ?? prixSansDecote
+  if (d.bien.etat !== 'ancien' && prixRevente !== null && prixSansDecote !== null && prixRevente >= prixSansDecote * (1 - tolerance)) {
     ajouter(
       'revente_sans_decote',
-      `Revente à ${formaterEuros(prixRevente)}, au prix d’achat (${formaterEuros(v.prix)}) ou au-dessus, sans décote du neuf ; hypothèse prudente : décote de ${formaterTaux(prudentes.prix.decote_neuf)} du prix TTC à taux normal`,
+      `Revente à ${formaterEuros(prixRevente)} (prix d’achat : ${formaterEuros(v.prix)}), sans décote du neuf ; hypothèse prudente : décote de ${formaterTaux(prudentes.prix.decote_neuf)} du prix TTC à taux normal`,
     )
   }
   const absentes = [
@@ -249,7 +253,8 @@ function hypothesesOptimistes(
     ...((v.entretien_part_loyers ?? 0) > 0 ? [] : ['entretien']),
   ]
   if (absentes.length > 0) ajouter('charges_absentes', `Absents de la simulation : ${absentes.join(' et ')}`)
-  if (!((v.taxe_fonciere ?? 0) > 0)) {
+  // Pour le LLI, la créance de taxe foncière compense la taxe : son absence n'embellit pas la simulation.
+  if (!engagementsScenario(v.scenario).lli && !((v.taxe_fonciere ?? 0) > 0)) {
     ajouter('taxe_fonciere_absente', `Taxe foncière absente ; le dossier l’estime à ${formaterEuros(d.bien.taxe_fonciere)} par an`)
   }
   if (caracteristiques.detention !== 'nom_propre' && !((v.frais_sci_annuels ?? 0) > 0)) {
@@ -267,8 +272,7 @@ function hypothesesOptimistes(
       `Impôt de plus-value sur les amortissements réintégrés absent : ${formaterEuros(reintegration)} dans le recalcul`,
     )
   }
-  const niveau = caracteristiques.niveau_loyer
-  const plafond = niveau === null ? null : plafondDuScenario(d, niveau, p)
+  const plafond = loyerDeBaseScenario(d, v.scenario, p).plafond
   if (plafond !== null && v.loyer_mensuel > plafond * (1 + tolerance)) {
     ajouter(
       'loyer_au_dela_du_plafond',
@@ -289,8 +293,7 @@ function hypothesesOptimistes(
     )
   }
   if (v.tmi_supposee !== undefined) {
-    const communes = d.foyers.situation === 'marie_pacse'
-    const actuelles = d.foyers.foyers.map((f) => calculerImpot(f.revenu_imposable, { parts: f.parts, imposition_commune: communes }, p).tmi)
+    const actuelles = tmiDesFoyers(d, p)
     const superieure = actuelles.every((t) => v.tmi_supposee !== undefined && v.tmi_supposee > t)
     ajouter(
       'tmi_constante',
@@ -328,18 +331,16 @@ function ecarts(v: SimulationVendeur, vendeur: ResultatContreExpertise | null): 
   })
 }
 
-function formaterTri(t: number | null): string {
-  return t === null ? 'non calculable' : formaterTaux(t)
-}
-
 /** Contre-expertise complète (§12) de la simulation d'un vendeur pour le bien du dossier. */
 export function contreExpertiser(d: Dossier, v: SimulationVendeur, p: ParametresFiscaux): ContreExpertise {
   const dv = dossierVendeur(d, v, p)
-  const r = recalculVendeur(dv, v, p)
+  const recalcul = recalculVendeur(dv, v, p)
+  const r = recalcul.resultat
   const vendeur = resultat(dv, r, v.horizon, p)
   const dp = dossierPrudent(d, dv, v)
-  const prudent = resultat(dp, simulerScenario(dp, v.scenario, { horizon: v.horizon }, p), v.horizon, p)
-  const optimistes = hypothesesOptimistes(d, v, vendeur, p)
+  const rejeu = simulerScenario(dp, v.scenario, { horizon: v.horizon }, p)
+  const prudent = resultat(dp, rejeu, v.horizon, p)
+  const optimistes = hypothesesOptimistes(d, v, vendeur, recalcul.prix_sans_decote, p)
   const liste = ecarts(v, vendeur)
 
   const effortVendeur = vendeur?.indicateurs.effort_mensuel_moyen ?? null
@@ -348,10 +349,13 @@ export function contreExpertiser(d: Dossier, v: SimulationVendeur, p: Parametres
   const triPrudent = prudent?.indicateurs.tri ?? null
   const significatifs = liste.filter((e) => e.significatif).length
 
+  const nom = `${v.scenario} (${LIBELLES_SCENARIOS[v.scenario]})`
   const synthese =
-    vendeur === null || prudent === null || effortVendeur === null || effortPrudent === null
-      ? `${v.scenario} (${LIBELLES_SCENARIOS[v.scenario]}) n’est pas éligible pour ce bien : ${r.eligibilite.motifs.join(' ; ')}`
-      : `Avec des hypothèses prudentes, l’effort d’épargne passe de ${formaterEuros(effortVendeur)} à ${formaterEuros(effortPrudent)} par mois et le TRI après impôt de ${formaterTri(triVendeur)} à ${formaterTri(triPrudent)} ; ${optimistes.length} hypothèse(s) optimiste(s) relevée(s), ${significatifs} écart(s) de plus de ${formaterTaux(hypothesesDefaut.contre_expertise.tolerance_ecart.valeur)} avec les résultats annoncés.`
+    effortVendeur === null
+      ? `${nom} n’est pas éligible pour ce bien : ${r.eligibilite.motifs.join(' ; ')}`
+      : effortPrudent === null
+        ? `${nom} ne peut pas être rejoué avec les hypothèses prudentes : ${rejeu.eligibilite.motifs.join(' ; ')}`
+        : `Avec des hypothèses prudentes, l’effort d’épargne passe de ${formaterEuros(effortVendeur)} à ${formaterEuros(effortPrudent)} par mois et le TRI après impôt de ${formaterTauxCalcule(triVendeur)} à ${formaterTauxCalcule(triPrudent)} ; ${optimistes.length} hypothèse(s) optimiste(s) relevée(s), ${significatifs} écart(s) de plus de ${formaterTaux(hypothesesDefaut.contre_expertise.tolerance_ecart.valeur)} avec les résultats annoncés.`
 
   return {
     scenario: v.scenario,

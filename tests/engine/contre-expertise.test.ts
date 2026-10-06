@@ -96,9 +96,27 @@ describe('hypothèses optimistes signalées', () => {
   })
 
   it('taxe foncière, charges de copropriété et frais de SCI absents', () => {
-    const sansCharges: SimulationVendeur = { ...simulationPrudente, scenario: 'S2', prix: 275000, charges_copropriete: undefined, taxe_fonciere: 0 }
-    expect(codes(dossierType, sansCharges)).toEqual(expect.arrayContaining(['charges_absentes', 'taxe_fonciere_absente', 'frais_sci_absents']))
-    expect(codes(dossierType, { ...sansCharges, frais_sci_annuels: 1320 })).not.toContain('frais_sci_absents')
+    const sansCharges: SimulationVendeur = { ...simulationPrudente, charges_copropriete: undefined, taxe_fonciere: 0 }
+    expect(codes(dossierType, sansCharges)).toEqual(['charges_absentes', 'taxe_fonciere_absente'])
+    const lli: SimulationVendeur = { ...sansCharges, scenario: 'S2', prix: 275000 }
+    expect(codes(dossierType, lli)).toEqual(expect.arrayContaining(['charges_absentes', 'frais_sci_absents']))
+    expect(codes(dossierType, { ...lli, frais_sci_annuels: 1320 })).not.toContain('frais_sci_absents')
+  })
+
+  it('LLI : une taxe foncière absente n’est pas optimiste, la créance la compense', () => {
+    const lli: SimulationVendeur = { ...simulationPrudente, scenario: 'S2', prix: 275000, taxe_fonciere: undefined, frais_sci_annuels: 1320 }
+    expect(codes(dossierType, lli)).not.toContain('taxe_fonciere_absente')
+  })
+
+  it('revente avec décote du neuf : pas signalée, même au-dessus du prix d’achat au taux réduit', () => {
+    // LLI acheté 275 000 € ; revente annoncée avec la décote prudente de 15 % du prix TTC à taux normal, revalorisé de 1 % par an.
+    const s = simulerScenario(dossierType, 'S2', { horizon: 9 }, p).simulation
+    const duree = s?.calendrier.duree_detention_ans ?? 0
+    const avecDecote = 300000 * 0.85 * 1.01 ** duree
+    const lli: SimulationVendeur = { ...simulationPrudente, scenario: 'S2', prix: 275000, frais_sci_annuels: 1320, prix_revente: avecDecote }
+    expect(avecDecote).toBeGreaterThan(275000)
+    expect(codes(dossierType, lli)).not.toContain('revente_sans_decote')
+    expect(codes(dossierType, { ...lli, prix_revente: 300000 * 1.01 ** duree })).toContain('revente_sans_decote')
   })
 
   it('loyer au plafond seulement si le marché est en dessous ; loyer au-delà du marché pour un loyer libre', () => {
