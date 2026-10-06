@@ -11,14 +11,22 @@
 import type { ParametresFiscaux } from '../params'
 import { hypothesesDefaut } from '../params'
 import { rechercheDichotomique, tauxRendementInterne, valeurActuelleNette, type FluxDate } from './actualisation'
-import { rangMois } from './calendrier'
-import { ANNEES_EFFORT_INITIAL, FACTEUR_PRIX_REVENTE_MAXIMUM, MOIS_PAR_AN, TRI_MAXIMUM, TRI_MINIMUM } from './constantes-numeriques'
-import { ajouterAnnees, comparerDates } from './dates'
-import type { Dossier } from './dossier'
-import { tableauAmortissement } from './emprunt'
-import { finEngagementJeanbrun } from './jeanbrun'
-import { dureeEngagementDenormandie } from './denormandie'
+import { calendrierOperation, rangMois, type Calendrier } from './calendrier'
 import {
+  ANNEES_EFFORT_INITIAL,
+  FACTEUR_PRIX_REVENTE_MAXIMUM,
+  MOIS_PAR_AN,
+  TRI_MAXIMUM,
+  TRI_MINIMUM,
+} from './constantes-numeriques'
+import { ajouterAnnees, comparerDates } from './dates'
+import { dureeEngagementDenormandie } from './denormandie'
+import type { Dossier } from './dossier'
+import { tableauAmortissement, tauxEndettement } from './emprunt'
+import { finEngagementJeanbrun } from './jeanbrun'
+import { prixTtc } from './lli'
+import {
+  engagementsScenario,
   simulerScenario,
   SCENARIOS,
   type IdScenario,
@@ -93,24 +101,22 @@ function anneeDeReference(s: ResultatSimulation) {
 }
 
 /** Date de fin des engagements du scénario : Jeanbrun, LLI ou Denormandie. */
-export function dateSortieSansPenalite(id: IdScenario, s: ResultatSimulation, p: ParametresFiscaux): string | null {
-  const cal = s.calendrier
+export function dateSortieSansPenalite(id: IdScenario, cal: Calendrier, p: ParametresFiscaux): string | null {
+  const engagements = engagementsScenario(id)
   const dates: string[] = []
-  if (id === 'S1' || id === 'S1_social' || id === 'S1_tres_social' || id === 'S2') {
-    dates.push(finEngagementJeanbrun(cal.date_debut_location, p))
-  }
-  if (id === 'S2' || id === 'S3' || id === 'S3_IS') {
+  if (engagements.jeanbrun) dates.push(finEngagementJeanbrun(cal.date_debut_location, p))
+  if (engagements.lli) {
     // Sortie libre à partir de la 16e année suivant la livraison (logement unique).
     dates.push(ajouterAnnees(cal.date_livraison, p.lli.complement_tva.valeur.fin_periode_cession_partielle))
   }
-  const engagements: Partial<Record<IdScenario, readonly ['six_ans' | 'neuf_ans', number]>> = {
-    S5_6: ['six_ans', 0],
-    S5_9: ['neuf_ans', 0],
-    S5_12: ['neuf_ans', 1],
-  }
-  const engagement = engagements[id]
-  if (engagement !== undefined) {
-    dates.push(ajouterAnnees(cal.date_debut_location, dureeEngagementDenormandie(engagement[0], engagement[1], p)))
+  const denormandie = engagements.denormandie
+  if (denormandie !== null) {
+    dates.push(
+      ajouterAnnees(
+        cal.date_debut_location,
+        dureeEngagementDenormandie(denormandie.engagement_initial, denormandie.prorogations, p),
+      ),
+    )
   }
   return dates.reduce<string | null>((plusTardive, date) => (plusTardive === null || comparerDates(date, plusTardive) > 0 ? date : plusTardive), null)
 }
@@ -126,7 +132,7 @@ function tauxEndettementApres(d: Dossier): number {
   const mensualite = premiere === undefined ? 0 : premiere.mensualite + premiere.assurance
   const existants = d.foyers.foyers.reduce((total, foyer) => total + (foyer.mensualites_credits_en_cours ?? 0), 0)
   const revenusMensuels = d.foyers.foyers.reduce((total, foyer) => total + foyer.revenu_imposable, 0) / MOIS_PAR_AN
-  return revenusMensuels > 0 ? (existants + mensualite) / revenusMensuels : Number.POSITIVE_INFINITY
+  return revenusMensuels > 0 ? tauxEndettement(existants + mensualite, revenusMensuels) : Number.POSITIVE_INFINITY
 }
 
 function fluxPlacement(s: ResultatSimulation): FluxDate[] {
@@ -152,8 +158,8 @@ export function indicateursScenario(d: Dossier, r: ResultatScenario, horizon: nu
     reference.impot_revenu_differentiel + reference.prelevements_sociaux + reference.impot_societes - reference.creance_taxe_fonciere
   const tri = tauxRendementInterne(s.flux)
   const triPlacement = tauxRendementInterne(fluxPlacement(s))
-  const sansPenalite = dateSortieSansPenalite(r.id, s, p)
-  const ttcNormal = d.bien.prix_ht * (1 + p.lli.tva_taux_normal.valeur)
+  const sansPenalite = dateSortieSansPenalite(r.id, s.calendrier, p)
+  const ttcNormal = prixTtc(d.bien.prix_ht, p.lli.tva_taux_normal.valeur)
   return {
     id: r.id,
     horizon,
@@ -382,12 +388,12 @@ export function penaliteSortieAnticipee(
   id: IdScenario,
   p: ParametresFiscaux,
 ): { readonly horizon: number; readonly montant: number } | null {
-  const reference = simulerScenario(d, id, { horizon: 1 }, p).simulation
-  if (reference === null) return null
-  const fin = dateSortieSansPenalite(id, reference, p)
+  const b = d.bien
+  const cal = calendrierOperation(b.date_acquisition, b.date_livraison, b.date_debut_location, 1)
+  const fin = dateSortieSansPenalite(id, cal, p)
   if (fin === null) return null
   let horizon = 0
-  while (comparerDates(ajouterAnnees(reference.calendrier.date_debut_location, horizon + 1), fin) < 0) horizon++
+  while (comparerDates(ajouterAnnees(cal.date_debut_location, horizon + 1), fin) < 0) horizon++
   if (horizon < 1) return null
   const s = simulerScenario(d, id, { horizon }, p).simulation
   if (s === null) return null

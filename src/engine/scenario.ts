@@ -137,6 +137,18 @@ const CONFIGURATIONS: Readonly<Record<IdScenario, Configuration>> = {
   S5_12: { ...base, loyer: 'intermediaire', denormandie: { engagement_initial: 'neuf_ans', prorogations: 1 } },
 }
 
+/** Engagements fiscaux d'un scénario : durée de blocage et pénalités de sortie anticipée (§9). */
+export interface EngagementsScenario {
+  readonly jeanbrun: boolean
+  readonly lli: boolean
+  readonly denormandie: { readonly engagement_initial: EngagementInitialDenormandie; readonly prorogations: number } | null
+}
+
+export function engagementsScenario(id: IdScenario): EngagementsScenario {
+  const cfg = CONFIGURATIONS[id]
+  return { jeanbrun: cfg.jeanbrun !== null, lli: cfg.lli, denormandie: cfg.denormandie }
+}
+
 /** Régime d'imposition des loyers : réel, micro (S0, S4), ou réel puis micro à partir de l'année de bascule (S4). */
 export type RegimeFiscal = 'reel' | 'micro' | 'reel_puis_micro'
 
@@ -462,8 +474,7 @@ function donneesAnnuelles(
   const ancien = b.etat === 'ancien'
   const anneeAchevement = lireDate(b.date_livraison).annee
   const loyerBase = loyerMensuelDeBase(d, cfg, p)
-  const capitalInitial = d.financement.emprunt
-  let restant = capitalInitial
+  let restant = d.financement.emprunt
 
   return cal.annees.map((a) => {
     const ecart = a.annee - anneeAcquisition
@@ -758,6 +769,45 @@ function etatsInitiaux(d: Dossier): EtatFoyer[] {
   }))
 }
 
+function echeancesDuDossier(d: Dossier): Echeance[] {
+  const f = d.financement
+  return tableauAmortissement({
+    capital: f.emprunt,
+    taux_annuel: f.taux_annuel,
+    duree_mois: f.duree_mois,
+    taux_assurance_annuel: f.taux_assurance_annuel,
+    differe_mois: f.differe_mois ?? 0,
+    frais_dossier: f.frais_dossier,
+    frais_garantie: f.frais_garantie,
+  })
+}
+
+/** Postes d'une ligne annuelle communs à tous les régimes : loyers, charges, emprunt, créance. */
+function posteCommuns(x: DonneesAnnee) {
+  return {
+    annee: x.cal.annee,
+    mois_detention: x.cal.mois_detention,
+    mois_location: x.cal.mois_location,
+    loyer_mensuel_marche: x.loyer_marche,
+    loyer_mensuel_retenu: x.loyer_retenu,
+    loyers_encaisses: x.loyers,
+    decote_loyer: x.decote,
+    charges: x.charges,
+    charges_total: x.charges_total,
+    interets: x.interets,
+    assurance_emprunteur: x.assurance,
+    capital_rembourse: x.capital_rembourse,
+    capital_restant_du: x.capital_restant_du,
+    creance_taxe_fonciere: x.creance,
+    temps_moyen: x.cal.temps_moyen,
+  }
+}
+
+/** Flux de trésorerie après impôt de l'année, hors revente. */
+function fluxAnnuel(x: DonneesAnnee, impots: number): number {
+  return x.loyers - x.charges_total - x.interets - x.capital_rembourse - x.assurance + x.creance - impots
+}
+
 interface Revente {
   readonly prix: number
   readonly frais: number
@@ -830,21 +880,13 @@ function simulerImpotRevenu(
   regime: RegimeFiscal,
   options: OptionsSimulation,
   p: ParametresFiscaux,
+  anneeBascule: number | null = null,
 ): ResultatSimulation {
   const b = d.bien
   const f = d.financement
   const cal = calendrierOperation(b.date_acquisition, b.date_livraison, b.date_debut_location, options.horizon)
   const prix = prixOperation(d, cfg, p)
-  const echeances = tableauAmortissement({
-    capital: f.emprunt,
-    taux_annuel: f.taux_annuel,
-    duree_mois: f.duree_mois,
-    taux_assurance_annuel: f.taux_assurance_annuel,
-    differe_mois: f.differe_mois ?? 0,
-    frais_dossier: f.frais_dossier,
-    frais_garantie: f.frais_garantie,
-  })
-  const donnees = donneesAnnuelles(d, cfg, cal, echeances, p)
+  const donnees = donneesAnnuelles(d, cfg, cal, echeancesDuDossier(d), p)
   const parametresAnnee = parametresDeLAnnee(d, p)
   const foyers = d.foyers.foyers
   const derniere = cal.annees.at(-1)
@@ -921,7 +963,6 @@ function simulerImpotRevenu(
   const moisPremiereActivite = cal.annees.find((a) => a.rang_location === 1)?.mois_location ?? MOIS_PAR_AN
   let etatLmnp: EtatLmnp = ETAT_INITIAL_LMNP
   let chargesAnterieures = plan?.frais_en_charge ?? 0
-  const anneeBascule = regime === 'reel_puis_micro' ? basculeLmnp(d, cfg, options, p) : null
 
   const travauxDeductiblesS0 =
     cfg.regime === 'foncier' &&
@@ -967,7 +1008,7 @@ function simulerImpotRevenu(
       } else {
         const charges = chargesAnnee + chargesAnterieures
         chargesAnterieures = 0
-        const micro = regime === 'micro' || (anneeBascule !== null && annee >= anneeBascule)
+        const micro = regime === 'micro' || (regime === 'reel_puis_micro' && anneeBascule !== null && annee >= anneeBascule)
         if (micro) {
           // Seuil et abattement minimum s'apprécient foyer par foyer, sur sa quote-part des recettes.
           bicFoyers = foyers.map((foyer) => microBic(annee, x.loyers * foyer.quote_part, p).benefice_imposable)
@@ -1034,24 +1075,8 @@ function simulerImpotRevenu(
       repriseJeanbrun = impots.reprise_jeanbrun
       repriseDenormandie = impots.reprise_denormandie
     }
-    const flux =
-      x.loyers - x.charges_total - x.interets - x.capital_rembourse - x.assurance + x.creance -
-      impots.impot_revenu_differentiel - impots.prelevements_sociaux
-
     return {
-      annee,
-      mois_detention: a.mois_detention,
-      mois_location: a.mois_location,
-      loyer_mensuel_marche: x.loyer_marche,
-      loyer_mensuel_retenu: x.loyer_retenu,
-      loyers_encaisses: x.loyers,
-      decote_loyer: x.decote,
-      charges: x.charges,
-      charges_total: x.charges_total,
-      interets: x.interets,
-      assurance_emprunteur: x.assurance,
-      capital_rembourse: x.capital_rembourse,
-      capital_restant_du: x.capital_restant_du,
+      ...posteCommuns(x),
       amortissement_deduit: amortissementDeduit,
       resultat_fiscal: resultatFiscal,
       deficit_impute_revenu_global: impots.deficit_impute_revenu_global,
@@ -1061,9 +1086,7 @@ function simulerImpotRevenu(
       impot_revenu_differentiel: impots.impot_revenu_differentiel,
       prelevements_sociaux: impots.prelevements_sociaux,
       impot_societes: 0,
-      creance_taxe_fonciere: x.creance,
-      flux_tresorerie: flux,
-      temps_moyen: a.temps_moyen,
+      flux_tresorerie: fluxAnnuel(x, impots.impot_revenu_differentiel + impots.prelevements_sociaux),
     }
   })
 
@@ -1161,16 +1184,7 @@ function simulerSciIs(d: Dossier, cfg: Configuration, options: OptionsSimulation
   const f = d.financement
   const cal = calendrierOperation(b.date_acquisition, b.date_livraison, b.date_debut_location, options.horizon)
   const prix = prixOperation(d, cfg, p)
-  const echeances = tableauAmortissement({
-    capital: f.emprunt,
-    taux_annuel: f.taux_annuel,
-    duree_mois: f.duree_mois,
-    taux_assurance_annuel: f.taux_assurance_annuel,
-    differe_mois: f.differe_mois ?? 0,
-    frais_dossier: f.frais_dossier,
-    frais_garantie: f.frais_garantie,
-  })
-  const donnees = donneesAnnuelles(d, cfg, cal, echeances, p)
+  const donnees = donneesAnnuelles(d, cfg, cal, echeancesDuDossier(d), p)
   const plan = planAmortissementSciIs(prix.acquisition, b.frais_notaire, p)
   const anneeAcquisition = anneeDuRang(cal.rang_acquisition)
   const anneeCession = cal.annees.at(-1)?.annee ?? anneeAcquisition
@@ -1214,21 +1228,8 @@ function simulerSciIs(d: Dossier, cfg: Configuration, options: OptionsSimulation
     )
     deficits = exercice.deficits_reportables
     resultatsNets += exercice.resultat_net
-    const flux = x.loyers - x.charges_total - x.interets - x.capital_rembourse - x.assurance + x.creance - exercice.impot_societes
     return {
-      annee: a.annee,
-      mois_detention: a.mois_detention,
-      mois_location: a.mois_location,
-      loyer_mensuel_marche: x.loyer_marche,
-      loyer_mensuel_retenu: x.loyer_retenu,
-      loyers_encaisses: x.loyers,
-      decote_loyer: x.decote,
-      charges: x.charges,
-      charges_total: x.charges_total,
-      interets: x.interets,
-      assurance_emprunteur: x.assurance,
-      capital_rembourse: x.capital_rembourse,
-      capital_restant_du: x.capital_restant_du,
+      ...posteCommuns(x),
       amortissement_deduit: dotation,
       resultat_fiscal: exercice.resultat_comptable,
       deficit_impute_revenu_global: 0,
@@ -1238,9 +1239,7 @@ function simulerSciIs(d: Dossier, cfg: Configuration, options: OptionsSimulation
       impot_revenu_differentiel: 0,
       prelevements_sociaux: 0,
       impot_societes: exercice.impot_societes,
-      creance_taxe_fonciere: x.creance,
-      flux_tresorerie: flux,
-      temps_moyen: a.temps_moyen,
+      flux_tresorerie: fluxAnnuel(x, exercice.impot_societes),
     }
   })
 
@@ -1279,13 +1278,9 @@ function simulerSciIs(d: Dossier, cfg: Configuration, options: OptionsSimulation
   }
 }
 
-/** Régimes à comparer pour un scénario : le plus favorable est retenu (§8.4). */
-function regimesCandidats(d: Dossier, cfg: Configuration, options: OptionsSimulation, p: ParametresFiscaux): RegimeFiscal[] {
-  if (cfg.regime === 'lmnp') {
-    const candidats: RegimeFiscal[] = ['reel', 'micro']
-    if (basculeLmnp(d, cfg, options, p) !== null) candidats.push('reel_puis_micro')
-    return candidats
-  }
+/** Régimes à comparer pour un scénario ; la bascule LMNP n'est candidate que si elle existe (§8.4). */
+function regimesCandidats(d: Dossier, cfg: Configuration, anneeBascule: number | null): RegimeFiscal[] {
+  if (cfg.regime === 'lmnp') return anneeBascule === null ? ['reel', 'micro'] : ['reel', 'micro', 'reel_puis_micro']
   const sansAvantage = cfg.jeanbrun === null && !cfg.lli && cfg.denormandie === null
   const existantsAuReel = d.foyers.foyers.some((foyer) => foyer.revenus_fonciers_existants?.regime === 'reel')
   return sansAvantage && !existantsAuReel ? ['reel', 'micro'] : ['reel']
@@ -1317,10 +1312,12 @@ export function simulerScenario(
   if (!elig.eligible) return { ...commun, simulation: null }
   if (cfg.regime === 'is') return { ...commun, simulation: simulerSciIs(d, cfg, options, p) }
 
-  const regimes = options.regime === undefined ? regimesCandidats(d, cfg, options, p) : [options.regime]
+  const avecBascule = cfg.regime === 'lmnp' && (options.regime === undefined || options.regime === 'reel_puis_micro')
+  const anneeBascule = avecBascule ? basculeLmnp(d, cfg, options, p) : null
+  const regimes = options.regime === undefined ? regimesCandidats(d, cfg, anneeBascule) : [options.regime]
   const taux = d.hypotheses.rendement_placement
   const simulations = regimes
-    .map((regime) => simulerImpotRevenu(d, cfg, regime, options, p))
+    .map((regime) => simulerImpotRevenu(d, cfg, regime, options, p, anneeBascule))
     .filter((s) => options.regime !== undefined || regimeAdmissible(s, cfg, d, p))
   const meilleure = simulations.reduce<ResultatSimulation | null>(
     (choix, s) => (choix === null || valeurActuelleNette(s.flux, taux) > valeurActuelleNette(choix.flux, taux) ? s : choix),
