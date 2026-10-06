@@ -12,7 +12,7 @@ Application web locale qui simule un investissement locatif sous plusieurs dispo
 | 2 | Moteur : impôt, loyer plafond, emprunt, revenus fonciers, plus-value | livrée |
 | 3 | Moteur : Jeanbrun, LLI/SCI, LMNP, Denormandie, placement de référence | livrée |
 | 4 | Orchestration des scénarios, indicateurs, sensibilités | livrée |
-| 5 | Recommandation et contre-expertise | à venir |
+| 5 | Recommandation et contre-expertise | livrée |
 | 6 | Interface (écrans 1 à 9), exports, persistance | à venir |
 | 7 | Jeu d'essai préchargé, README final | à venir |
 
@@ -37,12 +37,12 @@ Aucun backend, aucun compte, aucun appel réseau à l'exécution.
 src/
   params/          paramètres sourcés et leur validation : seul endroit où figurent taux, plafonds et dates
     fiscal-2026.json         règles fiscales, chacune avec sa source officielle
-    hypotheses-defaut.json   hypothèses de marché par défaut (§5.5)
+    hypotheses-defaut.json   hypothèses de marché, objectifs et barèmes de la recommandation par défaut (§5.5, §5.6, §10)
   engine/          moteur de calcul : fonctions pures sans effet de bord (étapes 2 à 5)
   ui/              interface React, sans aucun calcul fiscal (étape 6)
 tests/
   engine/          tests du moteur : valeurs du cahier des charges, exemples officiels, cas complets
-    fixtures/      jeu d'essai fictif (T2 de 45 m² en zone A) et ses variantes
+    fixtures/      jeu d'essai fictif (T2 de 45 m² en zone A), ses variantes et des simulations de vendeur fictives
   params/          validation et cohérence des paramètres
   garde-fous/      aucune valeur fiscale en dur, HYPOTHESES.md à jour
 scripts/           outils de mise à jour annuelle des paramètres
@@ -71,9 +71,9 @@ Le moteur (`src/engine/`) est fait de fonctions pures : chacune reçoit les para
 | `dossier.ts`, `calendrier.ts` | Données saisies (foyers, bien, financement, exploitation, hypothèses) et calendrier de l'opération par année civile |
 | `scenario.ts` | Éligibilité et simulation année par année des scénarios S0 à S5 (dont S3 bis à l'IS) : loyers, charges, emprunt, impôt différentiel complet de chaque foyer, prélèvements sociaux, créance, flux, revente, choix du régime, placement équivalent |
 | `indicateurs.ts`, `actualisation.ts` | Effort d'épargne, économie d'impôt et reprise, rendements, TRI, VAN, capital net, écarts au S0 et au placement, blocage, pénalité de sortie, endettement, prix de revente d'équilibre, tornado et tableau croisé |
+| `recommandation.ts` | Filtres d'éligibilité et de faisabilité, score sur 100 pondéré par les objectifs, classement, « ne pas investir » quand le placement domine, texte généré par règles (phrase, trois raisons chiffrées, risques, seuils de bascule sur le prix de revente, les revenus et l'horizon), alertes du §10.5 |
+| `contre-expertise.ts` | Recalcul de la simulation du vendeur avec ses hypothèses, écarts de plus de 5 % avec ses résultats, hypothèses optimistes relevées, rejeu avec les hypothèses prudentes |
 | `deficits.ts`, `arrondis.ts`, `commun.ts`, `dates.ts`, `format.ts` | Stocks de déficits par millésime, arrondis, éligibilité motivée, quotes-parts, dates ISO, mise en forme des motifs |
-
-La recommandation et la contre-expertise arrivent à l'étape 5.
 
 ## Paramètres fiscaux
 
