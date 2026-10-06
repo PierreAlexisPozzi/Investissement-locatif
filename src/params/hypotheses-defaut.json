@@ -98,6 +98,21 @@
     }
   },
 
+  "sensibilites": {
+    "valeur": {
+      "variation_prix_revente": 0.1,
+      "variation_loyer": 0.1,
+      "vacance_mois": { "basse": 0, "haute": 2 },
+      "variation_taux_emprunt": 0.01,
+      "variation_revenus": 0.2,
+      "grille_decote_neuf": [0.05, 0.1, 0.15, 0.2, 0.25],
+      "grille_revalorisation_prix": [0, 0.005, 0.01, 0.015, 0.02]
+    },
+    "unite": "écarts relatifs ou absolus ; mois de vacance ; taux décimaux",
+    "origine": "Choix de l'outil (§9 : amplitudes du tornado et du tableau croisé non fixées par le cahier des charges)",
+    "commentaire": "Chaque variable du tornado est déplacée vers le bas puis vers le haut, toutes choses égales par ailleurs : prix de revente et loyer de ±10 %, vacance de 0 à 2 mois par an, taux d'emprunt de ±1 point, revenus du foyer de ±20 % (variation de la tranche marginale)."
+  },
+
   "horizons_ans": {
     "valeur": [9, 12, 16, 20, 25],
     "unite": "années de détention",

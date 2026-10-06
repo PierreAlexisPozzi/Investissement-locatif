@@ -124,6 +124,8 @@ Valeurs du §5.5 reprises telles quelles, sauf mention « choix de l'outil » (v
 | Années d'exonération de taxe foncière | 0 | §6.5, §8.3 |
 | Indemnités de remboursement anticipé | appliquées au plafond légal | Choix prudent de l'outil |
 | Horizons de calcul | 9, 12, 16, 20, 25 ans | §5.6 |
+| Sensibilités (tornado) | prix de revente et loyer ±10 %, vacance de 0 à 2 mois, taux d'emprunt ±1 point, revenus ±20 % | Choix de l'outil (§9 n'en fixe pas l'amplitude) |
+| Tableau croisé | décote du neuf de 5 % à 25 %, revalorisation de 0 % à 2 %/an | Choix de l'outil |
 
 Les hypothèses de modélisation LMNP (part du terrain, durées d'amortissement) sont dans `fiscal-2026.json` avec le statut `a_confirmer`, comme le prévoit le §6.7.
 
