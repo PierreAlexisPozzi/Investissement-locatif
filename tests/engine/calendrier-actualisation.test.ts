@@ -30,6 +30,13 @@ describe('calendrier d’une opération en VEFA', () => {
     expect(c.date_livraison).toBe('2028-06-01')
   })
 
+  it('revente un 1er janvier : l’année de cession figure au calendrier avec zéro mois', () => {
+    const janvier = calendrierOperation('2028-01-15', '2028-01-15', '2029-01-01', 9)
+    expect(janvier.date_cession).toBe('2038-01-01')
+    expect(janvier.annees.at(-1)).toMatchObject({ annee: 2038, mois_detention: 0, mois_location: 0 })
+    expect(janvier.annees.at(-2)).toMatchObject({ annee: 2037, mois_detention: 12 })
+  })
+
   it('refuse un horizon qui n’est pas un nombre entier d’années', () => {
     expect(() => calendrierOperation('2026-11-15', '2028-06-30', '2028-09-01', 0)).toThrow(RangeError)
     expect(() => calendrierOperation('2026-11-15', '2028-06-30', '2028-09-01', 1.5)).toThrow(RangeError)

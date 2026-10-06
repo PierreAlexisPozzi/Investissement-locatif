@@ -226,6 +226,22 @@ describe('micro-foncier entre concubins', () => {
   })
 })
 
+describe('corrections de la revue de l’étape 4', () => {
+  it('revente un 1er janvier : l’année de cession figure au calendrier, sans mois de détention', () => {
+    const janvier: Dossier = {
+      ...dossierType,
+      bien: { ...dossierType.bien, date_livraison: '2028-11-30', date_debut_location: '2029-01-01' },
+    }
+    const s = simuler(janvier, 'S1', 9)
+    expect(s.calendrier.date_cession).toBe('2038-01-01')
+    expect(s.annees.at(-1)).toMatchObject({ annee: 2038, mois_detention: 0 })
+    // La location a duré jusqu'au 31/12/2037 : seules les imputations de 2035 à 2037 sont remises en cause.
+    const alerte = s.alertes.find((a) => a.includes('remises en cause')) ?? ''
+    expect(alerte).toContain('2035, 2036, 2037')
+    expect(alerte).not.toContain('2034')
+  })
+})
+
 describe('placement de référence équivalent (S6)', () => {
   it('reçoit l’apport puis les efforts d’épargne du scénario, sur la même durée', () => {
     const s = simuler(dossierType, 'S0', 16)

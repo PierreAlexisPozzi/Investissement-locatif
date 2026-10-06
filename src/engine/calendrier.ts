@@ -70,7 +70,9 @@ export function calendrierOperation(
 
   const annees: AnneeCalendrier[] = []
   const premiereAnnee = Math.floor(rangAcquisition / MOIS_PAR_AN)
-  const derniereAnnee = Math.floor((rangCession - 1) / MOIS_PAR_AN)
+  // L'année de la cession figure au calendrier même si elle commence le jour de la cession (1er janvier) :
+  // la reprise des avantages et l'impôt de la cession s'y rattachent.
+  const derniereAnnee = Math.floor(rangCession / MOIS_PAR_AN)
   const anneeLocation = Math.floor(rangLocation / MOIS_PAR_AN)
   for (let annee = premiereAnnee; annee <= derniereAnnee; annee++) {
     const debut = Math.max(rangAcquisition, annee * MOIS_PAR_AN)

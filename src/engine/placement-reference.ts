@@ -135,6 +135,8 @@ export function simulerPlacement(e: EntreePlacement, p: ParametresFiscaux): Resu
   const annees: AnneePlacement[] = []
   e.versements_annuels.forEach((versementAnnuel, i) => {
     const moisDeLAnnee = e.mois_par_annee?.[i] ?? MOIS_PAR_AN
+    // Année sans mois de placement (cession un 1er janvier) : le flux est versé ou retiré en une fois.
+    if (moisDeLAnnee === 0) verser(versementAnnuel)
     for (let mois = 0; mois < moisDeLAnnee; mois++) {
       principale.capital *= 1 + tauxMensuel
       compteTitres.capital *= 1 + tauxMensuel
