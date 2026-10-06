@@ -1,0 +1,991 @@
+{
+  "meta": {
+    "version": "2026-10-06",
+    "date_arret": "2026-10-06",
+    "annee_revenus": 2025,
+    "annee_imposition": 2026,
+    "textes_pris_en_compte": "Loi n° 2026-103 du 19/02/2026 de finances pour 2026 (art. 47 Jeanbrun, art. 98 LLI) ; loi n° 2025-1403 du 30/12/2025 de financement de la sécurité sociale pour 2026 (taux de prélèvements sociaux de 18,6 %).",
+    "textes_non_pris_en_compte": "Projet de loi de finances pour 2027 ; projet de loi visant la relance et la décentralisation du logement (adopté par le Sénat le 08/07/2026, en cours à l'Assemblée nationale), qui prévoit de « renforcer le statut du bailleur privé ».",
+    "convention_taux": "Les taux sont des décimaux : 0.11 signifie 11 %.",
+    "convention_statuts": "verifie : lu sur une source officielle à la date indiquée ; texte_non_consulte : règle rapportée de la loi mais non lue directement ; a_confirmer : à faire valider par un notaire, un expert-comptable ou par rescrit (y compris les hypothèses de modélisation non fixées par les textes)."
+  },
+
+  "impot_revenu": {
+    "bareme": {
+      "valeur": [
+        { "jusqua": 11600, "taux": 0 },
+        { "jusqua": 29579, "taux": 0.11 },
+        { "jusqua": 84577, "taux": 0.3 },
+        { "jusqua": 181917, "taux": 0.41 },
+        { "jusqua": null, "taux": 0.45 }
+      ],
+      "unite": "€ de revenu imposable par part ; taux décimal",
+      "source": "CGI art. 197 ; service-public F1419 (vérifiée le 15/04/2026) ; brochure pratique IR 2026",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F1419",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Barème 2026 des revenus 2025. Impôt par part = somme des taux × (min(quotient, borne haute) − borne basse). Exemple officiel F1419 : couple marié sans enfant, 90 000 € → 13 207,98 €."
+    },
+    "plafond_quotient_familial_demi_part": {
+      "valeur": 1807,
+      "unite": "€ par demi-part supplémentaire",
+      "source": "CGI art. 197, I-2 ; service-public F1419 et F2705 ; brochure pratique IR 2026 (aide-mémoire)",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F2705",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Par quart de part (résidence alternée) : la moitié. Les plafonds spécifiques (parent isolé, invalidité, veuvage) ne sont pas modélisés. Exemple officiel F1419 : couple + 1 enfant, 90 000 € → 11 400,98 €."
+    },
+    "parts_quotient_familial": {
+      "valeur": {
+        "personne_seule": 1,
+        "couple_marie_pacse": 2,
+        "enfant_rang_1_et_2": 0.5,
+        "enfant_rang_3_et_plus": 1
+      },
+      "unite": "parts",
+      "source": "CGI art. 194 ; service-public F2705 (vérifiée le 15/04/2026)",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F2705",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Sert à proposer un nombre de parts par défaut ; l'utilisateur saisit le nombre de parts (§5.1). Majorations particulières (invalidité, ancien combattant, parent isolé) non modélisées."
+    },
+    "decote": {
+      "valeur": {
+        "personne_seule": { "forfait": 897, "seuil_impot_brut": 1982 },
+        "couple": { "forfait": 1483, "seuil_impot_brut": 3277 },
+        "taux": 0.4525
+      },
+      "unite": "€ ; taux décimal",
+      "source": "CGI art. 197, I-4-a ; brochure pratique IR 2026, chapitre « Calcul de l'impôt », p. 371",
+      "url_officielle": "https://www.impots.gouv.fr/www2/fichiers/documentation/brochure/ir_2026/pdf_som/21-calcul_impot_369a382.pdf",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Décote = forfait − 45,25 % × impôt brut (après plafonnement du quotient familial), si l'impôt brut est inférieur au seuil. Exemple de la brochure : couple, impôt 2 140 € → décote 515 €, impôt 1 625 €."
+    },
+    "abattement_frais_professionnels": {
+      "valeur": { "taux": 0.1, "minimum": 509, "maximum": 14555 },
+      "unite": "taux décimal ; € par membre du foyer",
+      "source": "CGI art. 83, 3° ; brochure pratique IR 2026 (aide-mémoire, revenus 2025) ; service-public F1989 (vérifiée le 15/04/2026)",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F1989",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Déduction forfaitaire sur les salaires de 2025, calculée pour chaque membre du foyer. Les frais réels ne sont pas modélisés."
+    },
+    "seuil_mise_en_recouvrement": {
+      "valeur": 61,
+      "unite": "€",
+      "source": "CGI art. 1657 ; brochure pratique IR 2026, p. 371",
+      "url_officielle": "https://www.impots.gouv.fr/www2/fichiers/documentation/brochure/ir_2026/pdf_som/21-calcul_impot_369a382.pdf",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Une cotisation inférieure à 61 € n'est pas mise en recouvrement."
+    },
+    "arrondi": {
+      "valeur": "euro_le_plus_proche",
+      "unite": "règle",
+      "source": "CGI art. 193 et 1657-1 ; brochure pratique IR 2026, p. 371",
+      "url_officielle": "https://www.impots.gouv.fr/www2/fichiers/documentation/brochure/ir_2026/pdf_som/21-calcul_impot_369a382.pdf",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Base d'imposition et impôt arrondis à l'euro le plus proche, 0,50 € compté pour 1 €. Le moteur calcule sans arrondi intermédiaire et n'arrondit qu'en fin de calcul."
+    },
+    "plafonnement_global_niches": {
+      "valeur": 10000,
+      "unite": "€ par an et par foyer fiscal",
+      "source": "CGI art. 200-0 A ; service-public F31179 (vérifiée le 01/01/2026)",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F31179",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Imposition 2026 des revenus 2025. Y entrent notamment l'emploi à domicile, la garde de jeunes enfants et les réductions pour investissement locatif (Denormandie). L'amortissement Jeanbrun n'y entre pas. Le plafond majoré de 18 000 € (outre-mer, Sofica) n'est pas modélisé."
+    }
+  },
+
+  "prelevements_sociaux": {
+    "revenus_fonciers": {
+      "valeur": { "total": 0.172, "csg": 0.092, "crds": 0.005, "prelevement_solidarite": 0.075 },
+      "unite": "taux décimal",
+      "source": "CGI art. 1600-0 C, 1600-0 G et 235 ter ; impots.gouv.fr (page modifiée le 17/07/2026) ; service-public F2329 (vérifiée le 30/06/2026)",
+      "url_officielle": "https://www.impots.gouv.fr/particulier/questions/je-donne-un-bien-en-location-dois-je-payer-des-prelevements-sociaux",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Location nue : 17,2 % sur le revenu foncier net positif."
+    },
+    "location_meublee_non_professionnelle": {
+      "valeur": { "total": 0.186, "csg": 0.106, "crds": 0.005, "prelevement_solidarite": 0.075 },
+      "unite": "taux décimal",
+      "source": "CGI art. 1600-0 C ; loi n° 2025-1403 du 30/12/2025 (LFSS 2026) ; impots.gouv.fr (page modifiée le 17/07/2026) ; service-public F2329",
+      "url_officielle": "https://www.impots.gouv.fr/particulier/questions/je-donne-un-bien-en-location-dois-je-payer-des-prelevements-sociaux",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Location meublée non professionnelle : 18,6 % sur le bénéfice imposable."
+    },
+    "plus_values_immobilieres": {
+      "valeur": { "total": 0.172, "csg": 0.092, "crds": 0.005, "prelevement_solidarite": 0.075 },
+      "unite": "taux décimal",
+      "source": "CSS art. L. 136-7 ; service-public F10864 (vérifiée le 15/04/2026) et F2329 (vérifiée le 30/06/2026)",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F10864",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "17,2 %, y compris pour un bien loué en meublé non professionnel."
+    },
+    "csg_deductible": {
+      "valeur": 0.068,
+      "unite": "taux décimal du revenu soumis aux prélèvements",
+      "source": "CGI art. 154 quinquies ; impots.gouv.fr (page modifiée le 17/07/2026) ; brochure pratique IR 2026 (aide-mémoire)",
+      "url_officielle": "https://www.impots.gouv.fr/particulier/questions/je-donne-un-bien-en-location-dois-je-payer-des-prelevements-sociaux",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "CSG déductible du revenu global de l'année de son paiement (N+1), pour les revenus soumis au barème. Option du moteur (§6.2), désactivée par défaut."
+    },
+    "placements": {
+      "valeur": { "cas_general": 0.186, "assurance_vie": 0.172 },
+      "unite": "taux décimal",
+      "source": "Loi n° 2025-1403 du 30/12/2025 (LFSS 2026) ; service-public F2329 (vérifiée le 30/06/2026)",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F2329",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Revenus de placement perçus à partir de 2026 : 18,6 % dans le cas général (dont gains de PEA et de compte-titres), 17,2 % pour l'assurance-vie."
+    }
+  },
+
+  "placement_reference": {
+    "pfu_taux_ir": {
+      "valeur": 0.128,
+      "unite": "taux décimal",
+      "source": "CGI art. 200 A ; service-public F21618 (vérifiée le 15/04/2026)",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F21618",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Compte-titres : prélèvement forfaitaire unique de 31,4 % = 12,8 % d'impôt sur le revenu + 18,6 % de prélèvements sociaux. L'option pour le barème n'est pas modélisée."
+    },
+    "pea": {
+      "valeur": { "duree_exoneration_ir_ans": 5, "plafond_versements": 150000 },
+      "unite": "années ; € par titulaire",
+      "source": "CGI art. 157, 5° bis ; CMF art. L. 221-30 ; service-public F2385 (vérifiée le 22/05/2026)",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F2385",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Après 5 ans, les gains sont exonérés d'impôt sur le revenu ; les prélèvements sociaux restent dus au taux du cas général."
+    },
+    "assurance_vie": {
+      "valeur": {
+        "duree_avantage_ans": 8,
+        "abattement_personne_seule": 4600,
+        "abattement_couple": 9200,
+        "taux_ir_primes_jusqua_seuil": 0.075,
+        "taux_ir_primes_au_dela": 0.128,
+        "seuil_primes": 150000,
+        "taux_ir_avant_8_ans": 0.128
+      },
+      "unite": "années ; € ; taux décimal",
+      "source": "CGI art. 125-0 A ; service-public F22414 (vérifiée le 15/04/2026)",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F22414",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Contrat de plus de 8 ans : abattement annuel sur les gains rachetés, puis 7,5 % (primes jusqu'à 150 000 €, tous contrats confondus) ou 12,8 % au-delà. Prélèvements sociaux : 17,2 %."
+    }
+  },
+
+  "loyers_plafonds": {
+    "intermediaire_m2": {
+      "valeur": { "A_bis": 19.71, "A": 14.64, "B1": 11.8, "B2": 10.26, "C": 10.26 },
+      "unite": "€/m²/mois, hors charges",
+      "source": "CGI art. 199 novovicies, III ; CGI ann. III art. 2 terdecies D ; BOI-BAREME-000017 du 10/03/2026, §150 ; service-public F39735 et F35011",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/10130-PGP.html/identifiant=BOI-BAREME-000017-20260310",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Baux conclus ou renouvelés en 2026, métropole. Valeurs communes au Jeanbrun intermédiaire, au LLI et au Denormandie. Le préfet de région peut réduire ces plafonds localement : à vérifier pour la commune. Plafonds social et très social : ceux de Loc'Avantages, fixés par commune (arrêté du 06/01/2026), saisis par l'utilisateur."
+    },
+    "coefficient_surface": {
+      "valeur": { "constante": 0.7, "numerateur": 19, "maximum": 1.2, "decimales": 2 },
+      "unite": "coefficient = constante + numerateur / S",
+      "source": "CGI ann. III art. 2 terdecies D ; BOI-IR-RICI-360-20-30 du 10/03/2026, §120",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/8501-PGP.html/identifiant=BOI-IR-RICI-360-20-30-20260310",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Coefficient arrondi à la deuxième décimale la plus proche et plafonné à 1,2 ; S est la surface prise en compte (voir surface_prise_en_compte). Exemples : 45 m² → 1,12 ; 30 m² → 1,20 ; 65 m² → 0,99."
+    },
+    "arrondi_plafond_m2": {
+      "valeur": { "decimales": 2 },
+      "unite": "nombre de décimales (centimes)",
+      "source": "BOI-IR-RICI-360-20-30 du 10/03/2026, §130 (note du tableau)",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/8501-PGP.html/identifiant=BOI-IR-RICI-360-20-30-20260310",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Le plafond au m² après coefficient est arrondi au centime avant d'être multiplié par la surface. Zone A, 45 m² : 14,64 × 1,12 = 16,3968 → 16,40 €/m² → 738,00 €/mois. Le cahier des charges (§13) attend 737,86 €, valeur obtenue sans cet arrondi intermédiaire."
+    },
+    "surface_prise_en_compte": {
+      "valeur": { "part_annexes": 0.5, "plafond_annexes_m2": 8 },
+      "unite": "fraction ; m²",
+      "source": "BOI-IR-RICI-230-20-20 du 10/05/2019, §320 à 360 (renvoi du BOI-IR-RICI-360-20-30, §90)",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/4904-PGP.html/identifiant=BOI-IR-RICI-230-20-20-20190510",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Surface habitable + moitié de la surface des annexes réservées à l'occupant (caves, balcons, loggias, terrasses en étage dans la limite de 9 m²), cette moitié étant plafonnée à 8 m². Parkings et garages exclus. Texte de doctrine des dispositifs Scellier/Pinel, appliqué ici au plafond intermédiaire."
+    },
+    "ressources_locataires_intermediaire": {
+      "valeur": {
+        "personne_seule": { "A_bis": 44344, "A": 44344, "B1": 36144, "B2": 32530, "C": 32530 },
+        "couple": { "A_bis": 66276, "A": 66276, "B1": 48268, "B2": 43439, "C": 43439 },
+        "une_personne_a_charge": { "A_bis": 86878, "A": 79666, "B1": 58043, "B2": 52239, "C": 52239 },
+        "deux_personnes_a_charge": { "A_bis": 103727, "A": 95427, "B1": 70073, "B2": 63066, "C": 63066 },
+        "trois_personnes_a_charge": { "A_bis": 123415, "A": 112968, "B1": 82432, "B2": 74189, "C": 74189 },
+        "quatre_personnes_a_charge": { "A_bis": 138874, "A": 127122, "B1": 92900, "B2": 83611, "C": 83611 },
+        "majoration_par_personne_supplementaire": { "A_bis": 15471, "A": 14164, "B1": 10364, "B2": 9325, "C": 9325 }
+      },
+      "unite": "€ de revenu fiscal de référence N-2 du locataire",
+      "source": "BOI-BAREME-000017 du 10/03/2026, §270 ; service-public F39735 (vérifiée le 21/07/2026)",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/10130-PGP.html/identifiant=BOI-BAREME-000017-20260310",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Baux conclus en 2026, métropole. Affichage informatif uniquement."
+    }
+  },
+
+  "jeanbrun": {
+    "periode_acquisition": {
+      "valeur": { "debut": "2026-02-21", "fin": "2028-12-31" },
+      "unite": "dates de signature de l'acte authentique",
+      "source": "CGI art. 31, I-1°, i, dernier alinéa (loi n° 2026-103, art. 47) ; service-public F39735 (vérifiée le 21/07/2026)",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F39735",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Pour un logement que le contribuable fait construire : date de dépôt de la demande de permis de construire."
+    },
+    "immeuble_collectif_obligatoire": {
+      "valeur": true,
+      "unite": "booléen",
+      "source": "CGI art. 31, I-1°, i (CCH art. L. 111-1, 6°) ; service-public F39735",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F39735",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Logement neuf ou en VEFA dans un bâtiment d'habitation collectif : une maison individuelle n'est pas éligible. Aucune condition de zonage."
+    },
+    "beneficiaires": {
+      "valeur": { "personnes_physiques": true, "societes_non_soumises_is": true, "droits_demembres": false },
+      "unite": "booléens",
+      "source": "CGI art. 31, I-1°, i, 10e et 11e alinéas (texte adopté T.A. n° 227 du 02/02/2026, art. 47, non censuré par la décision n° 2026-901 DC) ; service-public F39735",
+      "url_officielle": "https://www.assemblee-nationale.fr/dyn/17/textes/l17t0227_texte-adopte-seance",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Revenus imposés dans la catégorie des revenus fonciers ; sociétés non soumises à l'IS admises ; logements ou parts démembrés exclus (sauf conjoint survivant). Texte lu sur le site de l'Assemblée nationale, Légifrance n'étant pas consultable automatiquement."
+    },
+    "conservation_parts_societe": {
+      "valeur": true,
+      "unite": "booléen",
+      "source": "CGI art. 31, I-1°, i, 10e alinéa (texte adopté T.A. n° 227, art. 47)",
+      "url_officielle": "https://www.assemblee-nationale.fr/dyn/17/textes/l17t0227_texte-adopte-seance",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Chaque associé s'engage à conserver la totalité de ses parts jusqu'au terme de la période de location. Si le logement est loué à un associé, à un membre de son foyer ou à un parent ou allié jusqu'au 2e degré, cet associé perd la déduction."
+    },
+    "duree_engagement_ans": {
+      "valeur": 9,
+      "unite": "années",
+      "source": "CGI art. 31, I-1°, i, 3e alinéa ; service-public F39735",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F39735",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Location nue à usage de résidence principale, de manière effective et continue, à une personne hors du foyer fiscal et hors parents ou alliés jusqu'au 2e degré."
+    },
+    "delai_mise_en_location_mois": {
+      "valeur": 12,
+      "unite": "mois",
+      "source": "CGI art. 31, I-1°, i, 3e alinéa ; service-public F39735",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F39735",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Délai courant à compter de l'achèvement de l'immeuble, ou de l'acquisition si elle est postérieure."
+    },
+    "part_foncier_forfaitaire": {
+      "valeur": 0.2,
+      "unite": "fraction du prix d'acquisition net de frais",
+      "source": "CGI art. 31, I-1°, i, 4e et 7e alinéas ; service-public F39735",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F39735",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Base amortissable = prix net de frais diminué du foncier forfaitaire, soit 80 % du prix ; le cumul des amortissements ne peut excéder cette base (limite écrite dans le texte adopté et dans F39735)."
+    },
+    "taux_amortissement": {
+      "valeur": { "intermediaire": 0.035, "social": 0.045, "tres_social": 0.055 },
+      "unite": "taux décimal annuel de la base amortissable",
+      "source": "CGI art. 31, I-1°, i, 5e alinéa ; service-public F39735",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F39735",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "3,5 % majoré d'un point (social) ou de deux points (très social). Exemple : 275 000 € → 7 700 €/an en intermédiaire."
+    },
+    "plafond_annuel": {
+      "valeur": { "intermediaire": 8000, "social": 10000, "tres_social": 12000 },
+      "unite": "€ par an et par foyer fiscal, pour la somme des amortissements Jeanbrun",
+      "source": "CGI art. 31, I-1°, i, 8e alinéa ; service-public F39735",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F39735",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "8 000 € majorés de 2 000 € ou 4 000 € seulement si 50 % au moins des revenus bruts des logements amortis relèvent de la location sociale ou très sociale (voir seuil_majoration_plafond). En intermédiaire, le plafond est atteint dès 285 714 € de prix."
+    },
+    "seuil_majoration_plafond": {
+      "valeur": 0.5,
+      "unite": "part des revenus bruts des logements amortis",
+      "source": "CGI art. 31, I-1°, i, 8e alinéa ; service-public F39735",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F39735",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Condition d'accès aux plafonds de 10 000 € et 12 000 €."
+    },
+    "point_de_depart": {
+      "valeur": "premier_jour_du_mois_achevement_ou_acquisition",
+      "unite": "règle",
+      "source": "CGI art. 31, I-1°, i, 6e alinéa (texte adopté T.A. n° 227, art. 47)",
+      "url_officielle": "https://www.assemblee-nationale.fr/dyn/17/textes/l17t0227_texte-adopte-seance",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Premier jour du mois d'achèvement de l'immeuble, ou de son acquisition si elle est postérieure."
+    },
+    "prorata_premiere_annee": {
+      "valeur": "mensuel",
+      "unite": "règle",
+      "source": "Déduit du point de départ (CGI art. 31, I-1°, i, 6e alinéa) ; aucune source officielle lue ne détaille le calcul de la première annuité",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F39735",
+      "date_verification": "2026-10-06",
+      "statut": "a_confirmer",
+      "commentaire": "Première annuité = annuité pleine × nombre de mois restant dans l'année (mois de départ inclus) / 12."
+    },
+    "plafond_proratise_premiere_annee": {
+      "valeur": true,
+      "unite": "booléen",
+      "source": "Choix de modélisation ; le texte fixe un plafond « par an » sans préciser la première année",
+      "url_officielle": "https://www.assemblee-nationale.fr/dyn/17/textes/l17t0227_texte-adopte-seance",
+      "date_verification": "2026-10-06",
+      "statut": "a_confirmer",
+      "commentaire": "Choix prudent : le plafond annuel est proratisé comme l'annuité la première année. Lecture littérale possible : plafond plein dès la première année. N'a d'effet qu'au-delà de 285 714 € de prix en intermédiaire."
+    },
+    "amortissement_apres_engagement": {
+      "valeur": true,
+      "unite": "booléen",
+      "source": "Service-public F39735 (vérifiée le 21/07/2026)",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F39735",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "L'amortissement se poursuit au-delà des 9 ans tant que le logement produit des revenus fonciers dans les conditions du dispositif, dans la limite de la base amortissable."
+    },
+    "option_irrevocable": {
+      "valeur": true,
+      "unite": "booléen",
+      "source": "CGI art. 31, I-1°, i, 9e alinéa ; service-public F39735",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F39735",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Option exercée dans la déclaration des revenus de l'année d'achèvement, ou d'acquisition si elle est postérieure ; irrévocable pour le logement."
+    },
+    "micro_foncier_exclu": {
+      "valeur": true,
+      "unite": "booléen",
+      "source": "CGI art. 32, 2-c (modifié par la loi n° 2026-103, art. 47) ; service-public F39735",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F39735",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "L'option pour l'amortissement exclut le régime micro-foncier."
+    },
+    "hors_plafonnement_niches": {
+      "valeur": true,
+      "unite": "booléen",
+      "source": "Service-public F39735 (vérifiée le 21/07/2026)",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F39735",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "L'avantage n'est pas pris en compte pour le plafonnement global des niches."
+    },
+    "non_cumul": {
+      "valeur": { "denormandie": true, "girardin_social_199_undecies_C": true },
+      "unite": "booléens (true = cumul interdit sur un même logement)",
+      "source": "CGI art. 31, I-1°, i, 13e alinéa (texte adopté T.A. n° 227, art. 47) ; service-public F39735",
+      "url_officielle": "https://www.assemblee-nationale.fr/dyn/17/textes/l17t0227_texte-adopte-seance",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Dans le neuf (i), le texte n'exclut que l'article 199 undecies C ; le non-cumul avec le Denormandie est indiqué par F39735 (et par le j pour l'ancien). Le taux réduit de TVA du LLI n'est pas mentionné : voir cumul_jeanbrun_lli."
+    },
+    "rupture_engagement": {
+      "valeur": {
+        "reintegration_amortissements": true,
+        "systeme_du_quotient": true,
+        "exceptions": ["invalidite_2e_ou_3e_categorie", "licenciement", "deces"]
+      },
+      "unite": "règle",
+      "source": "CGI art. 31, I-1°, i, 12e alinéa (texte adopté T.A. n° 227, art. 47) ; service-public F39735",
+      "url_officielle": "https://www.assemblee-nationale.fr/dyn/17/textes/l17t0227_texte-adopte-seance",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Les amortissements déduits majorent le revenu foncier net de l'année de rupture. Imposition par quotient : la majoration est divisée par le nombre d'années civiles d'amortissement, ajoutée au revenu global, et la cotisation supplémentaire est multipliée par ce même nombre. Pas de majoration en cas d'invalidité (2e ou 3e catégorie), de licenciement ou de décès."
+    },
+    "pv_minoration_prix_acquisition": {
+      "valeur": true,
+      "unite": "booléen",
+      "source": "CGI art. 150 VB, III (modifié par la loi n° 2026-103, art. 47) ; service-public F39735",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F39735",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "À la revente, le prix d'acquisition est minoré des amortissements déduits."
+    },
+    "concubins_plafond_par_foyer": {
+      "valeur": "quote_part_par_foyer",
+      "unite": "règle",
+      "source": "CGI art. 31, I-1°, i, 8e alinéa (« par foyer fiscal ») ; BOI-RFPI-BASE-30-20, §150 pour la limite de déficit",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/4142-PGP.html/identifiant=BOI-RFPI-BASE-30-20-20250916",
+      "date_verification": "2026-10-06",
+      "statut": "a_confirmer",
+      "commentaire": "Couple de concubins (deux foyers) : chaque foyer amortit sa quote-part dans la limite de son propre plafond annuel. Application à confirmer."
+    }
+  },
+
+  "deficit_foncier": {
+    "plafond_imputation_revenu_global": {
+      "valeur": 10700,
+      "unite": "€ par an et par déclaration",
+      "source": "CGI art. 156, I-3° ; BOI-RFPI-BASE-30-20 du 16/09/2025, §160 ; service-public F1991 (vérifiée le 15/04/2026) et F39735",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/4142-PGP.html/identifiant=BOI-RFPI-BASE-30-20-20250916",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Seule la fraction du déficit ne provenant pas des intérêts d'emprunt est imputable sur le revenu global. Le plafond porté à 21 400 € pour certains travaux de rénovation énergétique (jusqu'au 31/12/2027) n'est pas modélisé."
+    },
+    "report_revenu_global_ans": {
+      "valeur": 6,
+      "unite": "années",
+      "source": "CGI art. 156, I ; BOI-RFPI-BASE-30-20, §160 ; service-public F1991",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F1991",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Si le revenu global ne suffit pas à absorber la part imputable, l'excédent devient un déficit global reportable sur les revenus globaux des 6 années suivantes."
+    },
+    "report_revenus_fonciers_ans": {
+      "valeur": 10,
+      "unite": "années",
+      "source": "CGI art. 156, I-3° ; BOI-RFPI-BASE-30-20, §100 et §160 ; service-public F1991",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F1991",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Fraction au-delà de 10 700 € et fraction due aux intérêts : imputables sur les revenus fonciers des 10 années suivantes uniquement."
+    },
+    "frais_emprunt_assimiles_interets": {
+      "valeur": true,
+      "unite": "booléen",
+      "source": "BOI-RFPI-BASE-30-20 du 16/09/2025, §110",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/4142-PGP.html/identifiant=BOI-RFPI-BASE-30-20-20250916",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Les frais accessoires à l'emprunt (frais de dossier, assurance emprunteur, frais de garantie) suivent le régime des intérêts : ils sont imputés en priorité sur les loyers et ne s'imputent jamais sur le revenu global."
+    },
+    "limite_sans_prorata_temporis": {
+      "valeur": true,
+      "unite": "booléen",
+      "source": "BOI-RFPI-BASE-30-20 du 16/09/2025, §140",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/4142-PGP.html/identifiant=BOI-RFPI-BASE-30-20-20250916",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "La limite annuelle n'est pas proratisée en cas d'acquisition ou de location en cours d'année."
+    },
+    "limite_appreciee_par_associe": {
+      "valeur": true,
+      "unite": "booléen",
+      "source": "BOI-RFPI-BASE-30-20 du 16/09/2025, §150",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/4142-PGP.html/identifiant=BOI-RFPI-BASE-30-20-20250916",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "La limite est globale par foyer ; pour une société, elle s'apprécie sur la déclaration de chaque associé, pas sur celle de la société."
+    },
+    "maintien_location_annees": {
+      "valeur": 3,
+      "unite": "années civiles suivant l'année d'imputation",
+      "source": "CGI art. 156, I-3° ; BOI-RFPI-BASE-30-20, §340 à 365 ; service-public F1991",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F1991",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Location maintenue jusqu'au 31/12 de la 3e année suivant l'imputation sur le revenu global ; les associés conservent leurs parts autant. Pas de remise en cause en cas de licenciement, d'invalidité, de décès ou d'expropriation."
+    }
+  },
+
+  "micro_foncier": {
+    "seuil_recettes": {
+      "valeur": 15000,
+      "unite": "€ de revenus fonciers bruts annuels",
+      "source": "CGI art. 32 ; service-public F1991 (vérifiée le 15/04/2026) ; brochure pratique IR 2026 (aide-mémoire)",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F1991",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Régime applicable de plein droit sous le seuil ; exclu en cas d'option Jeanbrun."
+    },
+    "abattement": {
+      "valeur": 0.3,
+      "unite": "taux décimal",
+      "source": "CGI art. 32 ; service-public F1991",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F1991",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Abattement forfaitaire représentatif des charges ; aucune charge réelle déductible."
+    },
+    "option_reel_irrevocable_ans": {
+      "valeur": 3,
+      "unite": "années",
+      "source": "CGI art. 32 ; service-public F1991",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F1991",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "L'option pour le régime réel sous le seuil est irrévocable pendant 3 ans."
+    }
+  },
+
+  "lmnp": {
+    "micro_bic": {
+      "valeur": {
+        "seuil_recettes_revenus_2025": 77700,
+        "seuil_recettes_revenus_2026": 83600,
+        "abattement": 0.5,
+        "abattement_minimum": 305
+      },
+      "unite": "€ de recettes annuelles ; taux décimal ; €",
+      "source": "CGI art. 50-0 ; service-public F32744 (vérifiée le 15/04/2026) ; brochure pratique IR 2026 (aide-mémoire)",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F32744",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Location meublée de longue durée. Le régime réel est accessible sur option sous le seuil."
+    },
+    "seuil_non_professionnel_recettes": {
+      "valeur": 23000,
+      "unite": "€ de recettes annuelles du foyer",
+      "source": "CGI art. 155, IV ; service-public F32744",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F32744",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Non professionnel si les recettes sont inférieures à 23 000 € ou inférieures aux autres revenus d'activité du foyer."
+    },
+    "amortissement_limite_au_resultat": {
+      "valeur": true,
+      "unite": "booléen",
+      "source": "CGI art. 39 C, II ; BOI-BIC-AMT-20-40-10-20 du 12/09/2012, §80 à 100",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/4527-PGP.html/identifiant=BOI-BIC-AMT-20-40-10-20-20120912",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Amortissement déductible limité aux loyers diminués des autres charges ; la fraction écartée est déductible des exercices suivants sous la même limite, sans limite de durée. La limite s'apprécie sur l'ensemble des biens loués (§100)."
+    },
+    "deficit_report_ans": {
+      "valeur": 10,
+      "unite": "années",
+      "source": "CGI art. 156, I-1° ter ; service-public F32744",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F32744",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Déficit imputable uniquement sur les revenus de location meublée non professionnelle de la même année et des 10 années suivantes."
+    },
+    "reintegration_amortissements_pv": {
+      "valeur": { "cessions_a_compter_du": "2025-02-15" },
+      "unite": "date",
+      "source": "CGI art. 150 VB ; service-public F10864 (vérifiée le 15/04/2026)",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F10864",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Les amortissements déduits minorent le prix d'acquisition pour le calcul de la plus-value. L'exception des résidences gérées (étudiants, seniors, Ehpad) n'est pas détaillée par F10864 et ne concerne pas le LMNP non géré modélisé ici."
+    },
+    "immatriculation_delai_jours": {
+      "valeur": 15,
+      "unite": "jours suivant le début de la location",
+      "source": "Service-public F32744 (vérifiée le 15/04/2026)",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F32744",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Déclaration de début d'activité (numéro SIRET) sur le guichet des formalités des entreprises. La CFE peut être due selon la commune : son montant est saisi par l'utilisateur."
+    },
+    "modelisation": {
+      "valeur": { "part_terrain": 0.15, "duree_bati_ans": 30, "duree_mobilier_ans": 7, "frais_acquisition": "charge_annee_1" },
+      "unite": "fraction ; années ; règle",
+      "source": "Hypothèses de modélisation non fixées par les textes ; principes de l'amortissement par composants (BOI-BIC-AMT-20-40-10-20)",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/4527-PGP.html/identifiant=BOI-BIC-AMT-20-40-10-20-20120912",
+      "date_verification": "2026-10-06",
+      "statut": "a_confirmer",
+      "commentaire": "À valider avec un expert-comptable. Frais d'acquisition passés en charge l'année 1 (« charge_annee_1 ») ou amortis avec le bâti (« amortis »)."
+    }
+  },
+
+  "lli": {
+    "tva_taux_reduit": {
+      "valeur": 0.1,
+      "unite": "taux décimal",
+      "source": "CGI art. 279-0 bis A ; BOI-TVA-IMM-30 du 08/07/2026, §1",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/9713-PGP.html/identifiant=BOI-TVA-IMM-30-20260708",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Prix TTC = prix HT × 1,10."
+    },
+    "tva_taux_normal": {
+      "valeur": 0.2,
+      "unite": "taux décimal",
+      "source": "CGI art. 278",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/9713-PGP.html/identifiant=BOI-TVA-IMM-30-20260708",
+      "date_verification": null,
+      "statut": "texte_non_consulte",
+      "commentaire": "Le cahier des charges (§6.5) le donne comme vérifié, mais le BOI-TVA-IMM-30 renvoie au « taux normal » sans en citer la valeur, et l'article 278 du CGI n'a pas pu être lu sur Légifrance le 06/10/2026."
+    },
+    "acquereur_personne_morale": {
+      "valeur": true,
+      "unite": "booléen",
+      "source": "CGI art. 279-0 bis A, I-2° ; BOI-TVA-IMM-30 du 08/07/2026, §60",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/9713-PGP.html/identifiant=BOI-TVA-IMM-30-20260708",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Toute entité dotée de la personnalité juridique autre qu'une personne physique, SCI familiale comprise. Pas d'achat en nom propre."
+    },
+    "zones_eligibles": {
+      "valeur": ["A_bis", "A", "B1"],
+      "unite": "zones",
+      "source": "CGI art. 279-0 bis A, I-3° ; BOI-TVA-IMM-30 du 08/07/2026, §70 ; BOI-IS-RICI-40-10-10, §50",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/9713-PGP.html/identifiant=BOI-TVA-IMM-30-20260708",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Appréciée à la date de la demande de permis de construire. Voir aussi perimetres_assimiles."
+    },
+    "perimetres_assimiles": {
+      "valeur": ["convention_ort", "contrat_ppa", "grande_operation_urbanisme", "contrat_redynamisation_site_defense", "commune_reindustrialisation_pinm"],
+      "unite": "périmètres",
+      "source": "CGI art. 279-0 bis A, I-3° ; BOI-TVA-IMM-30 du 08/07/2026, §70",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/9713-PGP.html/identifiant=BOI-TVA-IMM-30-20260708",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Hors zones A bis, A et B1, le LLI reste possible notamment dans une commune ayant conclu une convention d'opération de revitalisation de territoire (ORT) ou un contrat de projet partenarial d'aménagement (PPA). Une zone B2 ou C n'est donc pas un motif d'inéligibilité suffisant."
+    },
+    "mixite_sociale_seuil": {
+      "valeur": 0.25,
+      "unite": "part de logements locatifs sociaux (strictement supérieure)",
+      "source": "CGI art. 279-0 bis A, I-4° (modifié par la loi n° 2026-103, art. 98) ; BOI-TVA-IMM-30 du 08/07/2026, §90 à 110",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/9713-PGP.html/identifiant=BOI-TVA-IMM-30-20260708",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Commune comptant plus de 25 % de logements sociaux ou quartier prioritaire, ou ensemble immobilier où les logements sociaux représentent plus de 25 % des logements sociaux et intermédiaires."
+    },
+    "duree_conditions_ans": {
+      "valeur": 20,
+      "unite": "années suivant la livraison",
+      "source": "CGI art. 284, II bis ; BOI-TVA-IMM-30 du 08/07/2026, §220 et 230",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/9713-PGP.html/identifiant=BOI-TVA-IMM-30-20260708",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Le délai court à compter du fait générateur, c'est-à-dire la livraison (l'achèvement en VEFA), et non la signature."
+    },
+    "complement_tva": {
+      "valeur": {
+        "fin_periode_toujours_du": 10,
+        "fin_periode_cession_partielle": 15,
+        "part_max_logements_cedes": 0.5,
+        "fin_periode_cession_libre": 20
+      },
+      "unite": "années suivant la livraison ; fraction des logements",
+      "source": "CGI art. 284, II bis (modifié par la loi n° 2026-103, art. 98, rétroactif au 01/01/2021) ; BOI-TVA-IMM-30 du 08/07/2026, §220 et 230",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/9713-PGP.html/identifiant=BOI-TVA-IMM-30-20260708",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Années 1 à 10 : complément dû, cession comprise. Années 11 à 15 : pas de complément si la sortie résulte de la cession de 50 % au plus des logements (impossible avec un logement unique). Années 16 à 20 : pas de complément en cas de cession. Au-delà : libre. Montant = écart entre taux normal et taux réduit appliqué au prix HT, sans dégressivité prévue."
+    },
+    "cession_parts_sans_complement": {
+      "valeur": true,
+      "unite": "booléen",
+      "source": "BOI-TVA-IMM-30 du 08/07/2026, §235",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/9713-PGP.html/identifiant=BOI-TVA-IMM-30-20260708",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Pas de complément lors de la cession des parts de la société à un cessionnaire qui poursuit la location dans les conditions du LLI. Sortie non modélisée (marché des parts étroit) mais signalée dans les questions à poser."
+    },
+    "creance_taxe_fonciere": {
+      "valeur": {
+        "duree_ans": 20,
+        "achevement_a_compter_du": "2024-01-01",
+        "teom_exclue": true,
+        "taxes_additionnelles_incluses": true,
+        "reduite_des_annees_exoneration_totale": true,
+        "remboursement_immediat_societe_non_is": true,
+        "acquise_a_la_societe": true
+      },
+      "unite": "années ; date ; booléens",
+      "source": "CGI art. 220 Z septies ; BOI-IS-RICI-40-10-10 (§10), -20 (§1 à 60) et -30 (§10, 30, 120) du 12/06/2024",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/13950-PGP.html/identifiant=BOI-IS-RICI-40-10-20-20240612",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Créance égale à la taxe foncière mise en recouvrement (taxes additionnelles et frais de gestion compris, TEOM exclue), pendant 20 ans à compter de la première mise en recouvrement, durée réduite des années d'exonération totale (exemple officiel : 2 ans d'exonération → 18 ans). Société non soumise à l'IS : remboursement immédiat sur demande par la messagerie sécurisée ; la créance reste à la société. Elle cesse à compter de l'exercice suivant la remise en cause."
+    },
+    "tf_deductible_si_creance": {
+      "valeur": false,
+      "unite": "booléen",
+      "source": "CGI art. 220 Z septies, I, dernier alinéa ; BOI-IS-RICI-40-10-20, §30 (vise le bénéfice imposable des personnes morales)",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/13950-PGP.html/identifiant=BOI-IS-RICI-40-10-20-20240612",
+      "date_verification": "2026-10-06",
+      "statut": "a_confirmer",
+      "commentaire": "Application aux revenus fonciers des associés d'une SCI à l'IR non tranchée par les sources lues. Défaut prudent : taxe foncière non déductible lorsqu'elle donne lieu à créance."
+    }
+  },
+
+  "cumul_jeanbrun_lli": {
+    "statut_cumul": {
+      "valeur": "non_exclu_par_les_textes_lus",
+      "unite": "règle",
+      "source": "CGI art. 31, I-1°, i (texte adopté T.A. n° 227, art. 47) ; BOI-TVA-IMM-30 du 08/07/2026",
+      "url_officielle": "https://www.assemblee-nationale.fr/dyn/17/textes/l17t0227_texte-adopte-seance",
+      "date_verification": "2026-10-06",
+      "statut": "a_confirmer",
+      "commentaire": "Aucune source officielle lue ne mentionne le cumul, ni pour l'autoriser ni pour l'interdire : l'article 31, I-1°, i n'exclut que l'article 199 undecies C, et le BOI-TVA-IMM-30 est muet sur l'article 31. Absence d'exclusion ne vaut pas confirmation : demander une confirmation écrite (notaire ou rescrit). Avertissement affiché sur le scénario S2."
+    }
+  },
+
+  "societe_is": {
+    "impot_societes": {
+      "valeur": { "taux_reduit": 0.15, "plafond_benefice_taux_reduit": 42500, "taux_normal": 0.25 },
+      "unite": "taux décimal ; € de bénéfice",
+      "source": "CGI art. 219 ; entreprendre.service-public F23575 (vérifiée le 17/02/2026)",
+      "url_officielle": "https://entreprendre.service-public.gouv.fr/vosdroits/F23575",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Taux réduit si chiffre d'affaires ≤ 10 M€ et capital entièrement libéré, détenu à 75 % au moins par des personnes physiques. Utilisé par la variante indicative S3 bis (SCI à l'IS) ; la distribution est imposée au PFU (placement_reference)."
+    }
+  },
+
+  "denormandie": {
+    "periode": {
+      "valeur": { "debut": "2019-03-28", "fin": "2027-12-31" },
+      "unite": "dates",
+      "source": "CGI art. 199 novovicies ; service-public F35011 (vérifiée le 11/03/2026)",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F35011",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Opérations réalisées jusqu'au 31/12/2027."
+    },
+    "taux_engagement_initial": {
+      "valeur": { "six_ans": 0.12, "neuf_ans": 0.18 },
+      "unite": "taux décimal du prix de revient retenu",
+      "source": "CGI art. 199 novovicies, VI ; BOI-IR-RICI-365-30 du 28/03/2024, §140 ; service-public F35011",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/11940-PGP.html/identifiant=BOI-IR-RICI-365-30-20240328",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Réduction répartie par sixièmes ou par neuvièmes, soit 2 %/an. Exemple : 240 000 €, 50 m², 9 ans → 43 200 €, soit 4 800 €/an."
+    },
+    "complement_prorogation": {
+      "valeur": { "initial_six_ans": [0.06, 0.03], "initial_neuf_ans": [0.03], "duree_periode_ans": 3 },
+      "unite": "taux décimal par période triennale ; années",
+      "source": "CGI art. 199 novovicies, VII bis ; BOI-IR-RICI-365-30, §270 ; BOI-IR-RICI-360-60 du 22/08/2024",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/11940-PGP.html/identifiant=BOI-IR-RICI-365-30-20240328",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Chaque complément s'impute par tiers sur l'année de prorogation et les deux suivantes : 2 %/an (6 %) puis 1 %/an (3 %). Total à 12 ans : 21 %."
+    },
+    "plafond_base_annuel": {
+      "valeur": 300000,
+      "unite": "€ par contribuable et par an (Pinel et Denormandie confondus)",
+      "source": "CGI art. 199 novovicies, V ; BOI-IR-RICI-365-30, §60 ; service-public F35011",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/11940-PGP.html/identifiant=BOI-IR-RICI-365-30-20240328",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Base = prix d'acquisition + frais (notaire, droits, commissions) + travaux d'amélioration facturés."
+    },
+    "plafond_m2": {
+      "valeur": 5500,
+      "unite": "€ de prix de revient par m² de surface habitable",
+      "source": "CGI ann. III art. 46 AZA octies B ; BOI-IR-RICI-365-30, §100 ; service-public F35011",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/11940-PGP.html/identifiant=BOI-IR-RICI-365-30-20240328",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Métropole et outre-mer."
+    },
+    "logements_max_par_an": {
+      "valeur": 2,
+      "unite": "logements par contribuable et par an",
+      "source": "CGI art. 199 novovicies ; BOI-IR-RICI-365-30, §180",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/11940-PGP.html/identifiant=BOI-IR-RICI-365-30-20240328",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Pinel et Denormandie confondus, apprécié à la date du fait générateur."
+    },
+    "part_travaux_min": {
+      "valeur": 0.25,
+      "unite": "part du coût total de l'opération",
+      "source": "CGI art. 199 novovicies ; service-public F35011 (vérifiée le 11/03/2026)",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F35011",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Travaux d'amélioration (performance énergétique +20 %, ou deux types de travaux, ou création de surface) facturés par une entreprise."
+    },
+    "delai_achevement_travaux_annees": {
+      "valeur": 2,
+      "unite": "années suivant l'acquisition (31/12)",
+      "source": "Service-public F35011 (vérifiée le 11/03/2026)",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F35011",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Travaux achevés au plus tard le 31/12 de la 2e année suivant l'acquisition."
+    },
+    "premiere_annee_imputation": {
+      "valeur": "annee_achevement_travaux",
+      "unite": "règle",
+      "source": "BOI-IR-RICI-365-30 du 28/03/2024, §150",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/11940-PGP.html/identifiant=BOI-IR-RICI-365-30-20240328",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Logement acquis en vue de travaux : la réduction s'impute pour la première fois au titre de l'année d'achèvement des travaux."
+    },
+    "excedent_perdu": {
+      "valeur": true,
+      "unite": "booléen",
+      "source": "BOI-IR-RICI-365-30, §160 ; BOI-IR-RICI-360-30-10, §290",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/11940-PGP.html/identifiant=BOI-IR-RICI-365-30-20240328",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "La fraction annuelle qui excède l'impôt dû est perdue : ni report, ni remboursement."
+    },
+    "imputation_sur_impot_progressif": {
+      "valeur": true,
+      "unite": "booléen",
+      "source": "CGI art. 197, I-5 ; BOI-IR-RICI-360-30-10 du 22/08/2024, §300",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/8505-PGP.html/identifiant=BOI-IR-RICI-360-30-10-20240822",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "S'impute sur l'impôt progressif après plafonnement du quotient familial et décote, jamais sur les impositions à taux proportionnel (plus-value immobilière notamment)."
+    },
+    "dans_plafonnement_niches": {
+      "valeur": true,
+      "unite": "booléen",
+      "source": "CGI art. 200-0 A ; service-public F35011 et F31179",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F31179",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Réduction utilisée = min(réduction, impôt dû, plafond global − autres niches)."
+    },
+    "travaux_base_non_deductibles": {
+      "valeur": true,
+      "unite": "booléen",
+      "source": "CGI art. 199 novovicies, I-F ; BOI-IR-RICI-365-30, §200",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/11940-PGP.html/identifiant=BOI-IR-RICI-365-30-20240328",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Les travaux retenus dans la base de la réduction ne sont pas déductibles des revenus fonciers."
+    }
+  },
+
+  "plus_value_immobiliere": {
+    "taux_ir": {
+      "valeur": 0.19,
+      "unite": "taux décimal",
+      "source": "CGI art. 200 B ; service-public F10864 (vérifiée le 15/04/2026)",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F10864",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Prélèvements sociaux : voir prelevements_sociaux.plus_values_immobilieres."
+    },
+    "abattement_ir": {
+      "valeur": { "annees_sans_abattement": 5, "taux_annuel_6e_a_21e": 0.06, "taux_22e": 0.04, "exoneration_apres": 22 },
+      "unite": "années de détention ; taux décimal",
+      "source": "CGI art. 150 VC ; service-public F10864",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F10864",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "9 ans → 24 % ; 16 ans → 66 % ; 22 ans → 100 %."
+    },
+    "abattement_ps": {
+      "valeur": {
+        "annees_sans_abattement": 5,
+        "taux_annuel_6e_a_21e": 0.0165,
+        "taux_22e": 0.016,
+        "taux_annuel_23e_a_30e": 0.09,
+        "exoneration_apres": 30
+      },
+      "unite": "années de détention ; taux décimal",
+      "source": "CGI art. 150 VC ; service-public F10864",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F10864",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "9 ans → 6,6 % ; 16 ans → 18,15 % ; 22 ans → 28 % ; 25 ans → 55 % ; 30 ans → 100 %."
+    },
+    "forfait_frais_acquisition": {
+      "valeur": 0.075,
+      "unite": "taux décimal du prix d'achat",
+      "source": "CGI art. 150 VB, II-4° ; service-public F10864",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F10864",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Frais réels justifiés ou forfait de 7,5 %."
+    },
+    "forfait_travaux": {
+      "valeur": { "taux": 0.15, "detention_superieure_a_ans": 5 },
+      "unite": "taux décimal du prix d'achat ; années",
+      "source": "CGI art. 150 VB, II-4° ; service-public F10864",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F10864",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Travaux réels justifiés, ou forfait de 15 % si le bien est détenu depuis plus de 5 ans."
+    },
+    "forfait_travaux_bien_neuf_amorti": {
+      "valeur": false,
+      "unite": "booléen",
+      "source": "Usage du forfait travaux pour un bien neuf amorti (Jeanbrun, LMNP) non précisé par les sources lues",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F10864",
+      "date_verification": "2026-10-06",
+      "statut": "a_confirmer",
+      "commentaire": "Désactivé par défaut (prudence)."
+    },
+    "surtaxe_plus_values_elevees": {
+      "valeur": {
+        "seuil": 50000,
+        "tranches": [
+          { "de": 50000, "a": 60000, "taux": 0.02, "lissage_borne": 60000, "lissage_coefficient": 0.05 },
+          { "de": 60000, "a": 100000, "taux": 0.02, "lissage_borne": null, "lissage_coefficient": 0 },
+          { "de": 100000, "a": 110000, "taux": 0.03, "lissage_borne": 110000, "lissage_coefficient": 0.1 },
+          { "de": 110000, "a": 150000, "taux": 0.03, "lissage_borne": null, "lissage_coefficient": 0 },
+          { "de": 150000, "a": 160000, "taux": 0.04, "lissage_borne": 160000, "lissage_coefficient": 0.15 },
+          { "de": 160000, "a": 200000, "taux": 0.04, "lissage_borne": null, "lissage_coefficient": 0 },
+          { "de": 200000, "a": 210000, "taux": 0.05, "lissage_borne": 210000, "lissage_coefficient": 0.2 },
+          { "de": 210000, "a": 250000, "taux": 0.05, "lissage_borne": null, "lissage_coefficient": 0 },
+          { "de": 250000, "a": 260000, "taux": 0.06, "lissage_borne": 260000, "lissage_coefficient": 0.25 },
+          { "de": 260000, "a": null, "taux": 0.06, "lissage_borne": null, "lissage_coefficient": 0 }
+        ]
+      },
+      "unite": "€ de plus-value imposable ; taux décimal",
+      "source": "CGI art. 1609 nonies G ; BOI-RFPI-TPVIE-20 du 18/07/2023, §20 et 70",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/8597-PGP.html/identifiant=BOI-RFPI-TPVIE-20-20230718",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Tranche « de » exclue, « a » incluse. Taxe = taux × PV − (borne de lissage − PV) × coefficient. Assiette : plus-value imposable après l'abattement pour durée de détention applicable à l'impôt sur le revenu. Exemples officiels : 103 400 € → 2 442 € ; couple marié 2 × 61 000 € → 2 440 €."
+    },
+    "surtaxe_appreciation_seuil": {
+      "valeur": { "epoux": "quote_part", "partenaires_pacs": "quote_part", "concubins": "quote_part", "sci_ir": "societe" },
+      "unite": "règle",
+      "source": "BOI-RFPI-TPVIE-20 du 18/07/2023, §30 à 60 et exemple 3 du §75",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/8597-PGP.html/identifiant=BOI-RFPI-TPVIE-20-20230718",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Seuil de 50 000 € apprécié sur la quote-part de chaque époux, partenaire ou concubin. Pour une SCI à l'IR, il s'apprécie au niveau de la société (sur la seule quote-part des associés à l'IR non exonérés), et non associé par associé comme l'indique le cahier des charges (§6.9 et §8.6). Exemple officiel : SCI, 52 500 € → 675 €."
+    }
+  },
+
+  "financement": {
+    "taux_endettement_max": {
+      "valeur": 0.35,
+      "unite": "mensualités de crédits et assurances / revenus mensuels",
+      "source": "Décision du Haut Conseil de stabilité financière du 29/09/2021 ; service-public F16123 (vérifiée le 05/04/2024)",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F16123",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Seuil d'alerte (§5.1). La fiche service-public n'a pas été revue depuis le 05/04/2024."
+    },
+    "duree_max_pret_ans": {
+      "valeur": 25,
+      "unite": "années",
+      "source": "Décision du Haut Conseil de stabilité financière du 29/09/2021 ; service-public F16123",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F16123",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Durée « en général » maximale ; utilisée comme alerte, pas comme interdiction."
+    },
+    "indemnites_remboursement_anticipe_plafond": {
+      "valeur": { "mois_interets": 6, "part_capital_restant_du": 0.03 },
+      "unite": "mois d'intérêts au taux moyen du prêt ; fraction du capital restant dû",
+      "source": "Code de la consommation, art. L. 313-47 à L. 313-49 et R. 313-25 ; service-public F1669 (vérifiée le 16/09/2026)",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F1669",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "IRA plafonnées au plus faible des deux montants. Non dues si la vente fait suite à un changement de lieu de travail, une cessation forcée d'activité ou un décès. Le contrat peut prévoir moins."
+    }
+  }
+}
