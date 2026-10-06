@@ -1,0 +1,22 @@
+# Dépendances et productions
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.vite/
+
+# Secrets et configuration locale
+.env*
+
+# Données personnelles : jamais dans le dépôt
+dossiers/
+exports/
+*.dossier.json
+
+# Documents de tiers (plaquettes du vendeur)
+docs/plaquettes/
+
+# Journaux et fichiers système
+*.log
+.DS_Store
+Thumbs.db
