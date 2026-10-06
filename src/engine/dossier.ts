@@ -72,6 +72,11 @@ export interface Bien {
   readonly travaux?: number
   /** Travaux d'amélioration déductibles des revenus fonciers en location nue classique (S0). */
   readonly travaux_deductibles?: boolean
+  /**
+   * Denormandie : travaux retenus dans la plus-value même sans reprise de la réduction (tolérance du BOFiP
+   * non tranchée) ; à défaut, le paramètre `plus_value_immobiliere.travaux_denormandie_retenus`.
+   */
+  readonly travaux_denormandie_dans_plus_value?: boolean
   /** Signature de l'acte (contrat de VEFA compris). */
   readonly date_acquisition: string
   /** Achèvement de l'immeuble (VEFA), ou des travaux pour un logement ancien. */

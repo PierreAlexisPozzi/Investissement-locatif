@@ -1106,7 +1106,8 @@ function simulerImpotRevenu(
     (plan?.frais_en_charge ?? 0) > 0 &&
     p.plus_value_immobiliere.frais_acquisition_deduits_en_charge.valeur === 'exclus'
   // Travaux de la base Denormandie : exclus de la plus-value, sauf reprise de la réduction (BOI-RFPI-PVI-20-10-20-20, §240).
-  const travauxDenormandieRetenus = ruptureDenormandie || p.plus_value_immobiliere.travaux_denormandie_retenus.valeur
+  const travauxDenormandieRetenus =
+    ruptureDenormandie || (b.travaux_denormandie_dans_plus_value ?? p.plus_value_immobiliere.travaux_denormandie_retenus.valeur)
   const travauxPlusValue =
     b.etat === 'ancien' && (denormandie === null || travauxDenormandieRetenus) && travauxDeductiblesS0 === 0 ? prix.travaux : 0
   const entreePlusValue = {

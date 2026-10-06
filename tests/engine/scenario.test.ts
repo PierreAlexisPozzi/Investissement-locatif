@@ -256,6 +256,23 @@ describe('Denormandie (S5, logement ancien avec travaux)', () => {
       'plus_value_immobiliere.travaux_denormandie_retenus',
     )
   })
+
+  it('le choix du dossier prime sur le paramètre, dans les deux sens', () => {
+    const avecChoix = (choix: boolean): Dossier => ({
+      ...dossierAncien,
+      bien: { ...dossierAncien.bien, travaux_denormandie_dans_plus_value: choix },
+    })
+    expect(simuler(avecChoix(true), 'S5_9', 9).sortie.plus_value?.travaux_retenus).toBe(60000)
+    const retenus: ParametresFiscaux = {
+      ...p,
+      plus_value_immobiliere: {
+        ...p.plus_value_immobiliere,
+        travaux_denormandie_retenus: { ...p.plus_value_immobiliere.travaux_denormandie_retenus, valeur: true },
+      },
+    }
+    const exclus = simulerScenario(avecChoix(false), 'S5_9', { horizon: 9 }, retenus).simulation
+    expect(exclus?.sortie.plus_value?.travaux_forfaitaires).toBe(true)
+  })
 })
 
 describe('micro-foncier entre concubins', () => {
