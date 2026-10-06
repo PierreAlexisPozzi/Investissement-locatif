@@ -15,7 +15,8 @@
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
     "test:watch": "vitest",
-    "params:rapport": "node scripts/rapport-parametres.mjs"
+    "params:rapport": "node scripts/rapport-parametres.mjs",
+    "params:liens": "node scripts/verifier-liens.mjs"
   },
   "dependencies": {
     "react": "^19.3.0",
