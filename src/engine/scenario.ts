@@ -1217,6 +1217,7 @@ function simulerSciIs(d: Dossier, cfg: Configuration, options: OptionsSimulation
   let deficits = 0
   let amortissementsCumules = 0
   let resultatsNets = 0
+  let impotPlusValue = 0
   const annees: LigneAnnuelle[] = donnees.map((x) => {
     const a = x.cal
     const dotation = Math.min(
@@ -1237,17 +1238,18 @@ function simulerSciIs(d: Dossier, cfg: Configuration, options: OptionsSimulation
       a.annee === anneeCession
         ? plusValueCessionSciIs(v.prix, v.frais, plan.terrain + plan.bati, amortissementsCumules)
         : 0
-    const exercice = exerciceSciIs(
-      {
-        annee: a.annee,
-        loyers: x.loyers,
-        charges,
-        amortissements: dotation,
-        plus_value_cession: plusValue,
-        deficits_anterieurs: deficits,
-      },
-      p,
-    )
+    const entree = {
+      annee: a.annee,
+      loyers: x.loyers,
+      charges,
+      amortissements: dotation,
+      plus_value_cession: plusValue,
+      deficits_anterieurs: deficits,
+    }
+    const exercice = exerciceSciIs(entree, p)
+    // IS dû à cause de la plus-value : isolé dans la sortie, comme l'impôt de plus-value des particuliers.
+    const impotCourant = plusValue === 0 ? exercice.impot_societes : exerciceSciIs({ ...entree, plus_value_cession: 0 }, p).impot_societes
+    impotPlusValue += exercice.impot_societes - impotCourant
     deficits = exercice.deficits_reportables
     resultatsNets += exercice.resultat_net
     return {
@@ -1260,14 +1262,14 @@ function simulerSciIs(d: Dossier, cfg: Configuration, options: OptionsSimulation
       reduction_impot_perdue: 0,
       impot_revenu_differentiel: 0,
       prelevements_sociaux: 0,
-      impot_societes: exercice.impot_societes,
-      flux_tresorerie: fluxAnnuel(x, exercice.impot_societes),
+      impot_societes: impotCourant,
+      flux_tresorerie: fluxAnnuel(x, impotCourant),
     }
   })
 
   const distribution = fiscaliteDistribution(Math.max(0, resultatsNets), p)
   const impotDistribution = distribution.impot_revenu + distribution.prelevements_sociaux
-  const produitNet = v.prix - v.frais - v.capital_restant_du - v.indemnites - complement - impotDistribution
+  const produitNet = v.prix - v.frais - v.capital_restant_du - v.indemnites - impotPlusValue - complement - impotDistribution
   const placement = placementEquivalent(d, prix.apport, annees, p)
   return {
     regime: 'is',
@@ -1285,7 +1287,7 @@ function simulerSciIs(d: Dossier, cfg: Configuration, options: OptionsSimulation
       capital_restant_du: v.capital_restant_du,
       indemnites_remboursement_anticipe: v.indemnites,
       plus_value: null,
-      impot_plus_value: 0,
+      impot_plus_value: impotPlusValue,
       impot_plus_value_reintegration: 0,
       complement_tva: complement,
       reprise_jeanbrun: 0,

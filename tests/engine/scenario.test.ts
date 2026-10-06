@@ -172,6 +172,31 @@ describe('LLI (S2, S3)', () => {
     expect(s.regime).toBe('is')
     expect(s.annees.every((a) => a.impot_revenu_differentiel === 0)).toBe(true)
   })
+
+  it('variante à l’IS : l’impôt dû à cause de la plus-value est isolé dans la sortie', () => {
+    // Prix de revente doublé : la plus-value excède les déficits reportés, l'IS de la cession est dû.
+    const s = simulerScenario(dossierType, 'S3_IS', { horizon: 16, facteur_prix_revente: 2 }, p).simulation
+    if (s === null) throw new Error('S3_IS inéligible')
+    const o = s.sortie
+    expect(o.impot_plus_value).toBeGreaterThan(0)
+    expect(s.annees.at(-1)?.impot_societes).toBe(0)
+    expect(o.produit_net).toBeCloseTo(
+      o.prix_revente - o.frais_cession - o.capital_restant_du - o.indemnites_remboursement_anticipe - o.impot_plus_value -
+        o.complement_tva - o.impot_distribution,
+      CENTIMES,
+    )
+    const enrichissement = somme(s.flux.map((f) => f.montant))
+    const postes =
+      -s.cout_total +
+      somme(s.annees.map((a) => a.flux_tresorerie + a.capital_rembourse)) +
+      o.prix_revente -
+      o.frais_cession -
+      o.indemnites_remboursement_anticipe -
+      o.impot_plus_value -
+      o.complement_tva -
+      o.impot_distribution
+    expect(enrichissement).toBeCloseTo(postes, CENTIMES)
+  })
 })
 
 describe('LMNP (S4) et location nue (S0) : choix du régime', () => {
