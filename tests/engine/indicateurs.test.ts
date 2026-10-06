@@ -120,6 +120,7 @@ describe('sensibilités (§9)', () => {
 
   it('tableau croisé : le TRI baisse avec la décote du neuf et monte avec la revalorisation', () => {
     const g = tableauCroise(dossierType, 'S1', 16, p)
+    if (g === null) throw new Error('S1 inéligible')
     expect(g.tri).toHaveLength(g.decotes.length)
     for (let i = 0; i < g.decotes.length; i++) {
       const ligne = g.tri[i] ?? []

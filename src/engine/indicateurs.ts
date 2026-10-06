@@ -12,7 +12,7 @@ import type { ParametresFiscaux } from '../params'
 import { hypothesesDefaut } from '../params'
 import { rechercheDichotomique, tauxRendementInterne, valeurActuelleNette, type FluxDate } from './actualisation'
 import { rangMois } from './calendrier'
-import { ANNEES_EFFORT_INITIAL, FACTEUR_PRIX_REVENTE_MAXIMUM, MOIS_PAR_AN, TRI_MINIMUM } from './constantes-numeriques'
+import { ANNEES_EFFORT_INITIAL, FACTEUR_PRIX_REVENTE_MAXIMUM, MOIS_PAR_AN, TRI_MAXIMUM, TRI_MINIMUM } from './constantes-numeriques'
 import { ajouterAnnees, comparerDates } from './dates'
 import type { Dossier } from './dossier'
 import { tableauAmortissement } from './emprunt'
@@ -219,10 +219,18 @@ export function comparerAuxHorizons(d: Dossier, p: ParametresFiscaux): Comparais
   return hypothesesDefaut.horizons_ans.valeur.map((horizon) => comparerScenarios(d, horizon, p))
 }
 
-/** TRI du scénario, ou la borne basse de recherche s'il n'existe pas (flux tous négatifs). */
-function triOuMinimum(d: Dossier, id: IdScenario, options: OptionsSimulation, p: ParametresFiscaux): number {
+/** TRI du scénario, borné : maximal si tous les flux sont positifs, minimal s'ils sont tous négatifs (recherche monotone). */
+function triBorne(d: Dossier, id: IdScenario, options: OptionsSimulation, p: ParametresFiscaux): number {
   const s = simulerScenario(d, id, options, p).simulation
-  return s === null ? TRI_MINIMUM : (tauxRendementInterne(s.flux) ?? TRI_MINIMUM)
+  if (s === null) return TRI_MINIMUM
+  const tri = tauxRendementInterne(s.flux)
+  if (tri !== null) return tri
+  return s.flux.every((f) => f.montant >= 0) ? TRI_MAXIMUM : TRI_MINIMUM
+}
+
+/** Options qui conservent le régime retenu dans le cas central : seule la variable étudiée change. */
+function optionsAuRegimeCentral(s: ResultatSimulation, horizon: number, autres: Partial<OptionsSimulation> = {}): OptionsSimulation {
+  return s.regime === 'is' ? { horizon, ...autres } : { horizon, regime: s.regime, ...autres }
 }
 
 export interface PrixEquilibre {
@@ -240,9 +248,12 @@ export function prixReventeEquilibre(d: Dossier, id: IdScenario, horizon: number
   const prixCentral = s.sortie.prix_revente
   if (triPlacement === null) return { prix: null, prix_central: prixCentral, tri_placement: null }
   // Le régime retenu au prix central est conservé pour que seule la revente varie.
-  const options = (facteur: number): OptionsSimulation =>
-    s.regime === 'is' ? { horizon, facteur_prix_revente: facteur } : { horizon, regime: s.regime, facteur_prix_revente: facteur }
-  const facteur = rechercheDichotomique((x) => triOuMinimum(d, id, options(x), p), triPlacement, 0, FACTEUR_PRIX_REVENTE_MAXIMUM)
+  const facteur = rechercheDichotomique(
+    (x) => triBorne(d, id, optionsAuRegimeCentral(s, horizon, { facteur_prix_revente: x }), p),
+    triPlacement,
+    0,
+    FACTEUR_PRIX_REVENTE_MAXIMUM,
+  )
   return { prix: facteur === null ? null : facteur * prixCentral, prix_central: prixCentral, tri_placement: triPlacement }
 }
 
@@ -291,7 +302,7 @@ export function tornado(d: Dossier, id: IdScenario, horizon: number, p: Parametr
   if (centrale === null) return null
   const sens = hypothesesDefaut.sensibilites.valeur
   const tri = (dossier: Dossier, options: Partial<OptionsSimulation> = {}): number | null => {
-    const s = simulerScenario(dossier, id, { horizon, ...options }, p).simulation
+    const s = simulerScenario(dossier, id, optionsAuRegimeCentral(centrale, horizon, options), p).simulation
     return s === null ? null : tauxRendementInterne(s.flux)
   }
   const branche = (
@@ -346,7 +357,9 @@ export interface TableauCroise {
 }
 
 /** Tableau croisé (§9) : TRI selon la décote du neuf et la revalorisation annuelle du prix. */
-export function tableauCroise(d: Dossier, id: IdScenario, horizon: number, p: ParametresFiscaux): TableauCroise {
+export function tableauCroise(d: Dossier, id: IdScenario, horizon: number, p: ParametresFiscaux): TableauCroise | null {
+  const centrale = simulerScenario(d, id, { horizon }, p).simulation
+  if (centrale === null) return null
   const sens = hypothesesDefaut.sensibilites.valeur
   const decotes = sens.grille_decote_neuf
   const revalorisations = sens.grille_revalorisation_prix
@@ -356,7 +369,7 @@ export function tableauCroise(d: Dossier, id: IdScenario, horizon: number, p: Pa
         ...d,
         hypotheses: { ...d.hypotheses, prix: { decote_neuf: decote, revalorisation_annuelle: revalorisation } },
       }
-      const s = simulerScenario(dossier, id, { horizon }, p).simulation
+      const s = simulerScenario(dossier, id, optionsAuRegimeCentral(centrale, horizon), p).simulation
       return s === null ? null : tauxRendementInterne(s.flux)
     }),
   )
