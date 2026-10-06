@@ -11,7 +11,7 @@ Application web locale qui simule un investissement locatif sous plusieurs dispo
 | 1 | Squelette, paramètres fiscaux sourcés, `HYPOTHESES.md`, intégration continue | livrée |
 | 2 | Moteur : impôt, loyer plafond, emprunt, revenus fonciers, plus-value | livrée |
 | 3 | Moteur : Jeanbrun, LLI/SCI, LMNP, Denormandie, placement de référence | livrée |
-| 4 | Orchestration des scénarios, indicateurs, sensibilités | à venir |
+| 4 | Orchestration des scénarios, indicateurs, sensibilités | livrée |
 | 5 | Recommandation et contre-expertise | à venir |
 | 6 | Interface (écrans 1 à 9), exports, persistance | à venir |
 | 7 | Jeu d'essai préchargé, README final | à venir |
@@ -41,7 +41,8 @@ src/
   engine/          moteur de calcul : fonctions pures sans effet de bord (étapes 2 à 5)
   ui/              interface React, sans aucun calcul fiscal (étape 6)
 tests/
-  engine/          tests du moteur : valeurs du cahier des charges et exemples officiels
+  engine/          tests du moteur : valeurs du cahier des charges, exemples officiels, cas complets
+    fixtures/      jeu d'essai fictif (T2 de 45 m² en zone A) et ses variantes
   params/          validation et cohérence des paramètres
   garde-fous/      aucune valeur fiscale en dur, HYPOTHESES.md à jour
 scripts/           outils de mise à jour annuelle des paramètres
@@ -67,9 +68,12 @@ Le moteur (`src/engine/`) est fait de fonctions pures : chacune reçoit les para
 | `lmnp.ts` | Micro-BIC, régime réel, amortissement par composants limité au résultat et différé, déficits sur 10 ans, statut, réintégration à la revente |
 | `denormandie.ts` | Éligibilité, base plafonnée, réduction étalée et prorogations, imputation sous le plafond des niches, part perdue |
 | `placement-reference.ts` | Mêmes décaissements placés au rendement paramétré, fiscalité de sortie du PEA, de l'assurance-vie ou du compte-titres |
+| `dossier.ts`, `calendrier.ts` | Données saisies (foyers, bien, financement, exploitation, hypothèses) et calendrier de l'opération par année civile |
+| `scenario.ts` | Éligibilité et simulation année par année des scénarios S0 à S5 (dont S3 bis à l'IS) : loyers, charges, emprunt, impôt différentiel complet de chaque foyer, prélèvements sociaux, créance, flux, revente, choix du régime, placement équivalent |
+| `indicateurs.ts`, `actualisation.ts` | Effort d'épargne, économie d'impôt et reprise, rendements, TRI, VAN, capital net, écarts au S0 et au placement, blocage, pénalité de sortie, endettement, prix de revente d'équilibre, tornado et tableau croisé |
 | `deficits.ts`, `arrondis.ts`, `commun.ts`, `dates.ts`, `format.ts` | Stocks de déficits par millésime, arrondis, éligibilité motivée, quotes-parts, dates ISO, mise en forme des motifs |
 
-L'orchestration des scénarios, les indicateurs, la recommandation et la contre-expertise arrivent aux étapes 4 et 5.
+La recommandation et la contre-expertise arrivent à l'étape 5.
 
 ## Paramètres fiscaux
 
