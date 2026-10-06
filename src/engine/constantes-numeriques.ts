@@ -15,3 +15,6 @@ export const BASE_DECIMALE = 10
  * binaire : 1,005 × 100 vaut 100,4999… en virgule flottante.
  */
 export const TOLERANCE_ARRONDI = 1e-9
+
+/** Écart toléré quand on compare des sommes de fractions saisies (0,1 + 0,2 + 0,7 ≈ 1). */
+export const TOLERANCE_COMPARAISON = 1e-9
