@@ -110,7 +110,10 @@ Les hypothèses de modélisation LMNP (part du terrain, durées d'amortissement)
 
 ## 6. Simplifications et hors périmètre
 
-- **Impôt sur le revenu** : nombre de parts saisi par l'utilisateur ; demi-parts particulières (parent isolé, invalidité, ancien combattant) et frais réels non modélisés ; plafond de niches majoré à 18 000 € (outre-mer, Sofica) non modélisé ; outre-mer hors périmètre.
+- **Impôt sur le revenu** : nombre de parts saisi par l'utilisateur ; demi-parts particulières (parent isolé, invalidité, ancien combattant) et frais réels non modélisés ; plafond de niches majoré à 18 000 € (outre-mer, Sofica) non modélisé ; outre-mer hors périmètre. Le taux marginal affiché est celui de la tranche du dernier euro imposé (quotient de base si le quotient familial est plafonné) : il sert aux alertes, jamais au calcul de l'impôt, toujours recalculé en entier avec et sans l'opération.
+- **Seuil de mise en recouvrement** (61 €) : comparé à l'impôt avant arrondi, ce qui reproduit le seuil de la brochure IR 2026 pour une personne seule (tableau 7 : 17 596 €).
+- **Indexation future du barème** : bornes, plafond du quotient familial, décote et bornes de la déduction de 10 % revalorisés du coefficient d'inflation et arrondis à l'euro ; taux, seuil de recouvrement et plafond des niches inchangés.
+- **Revenu global** : le déficit foncier imputable de l'année s'impute avant les déficits globaux antérieurs ; les charges déductibles (CSG déductible) ne créent jamais de déficit.
 - **CEHR, CDHR, IFI, démembrement de propriété** : hors périmètre. Le Jeanbrun exclut de toute façon les droits démembrés.
 - **CSG déductible** : option du moteur, désactivée par défaut.
 - **Déficit foncier majoré à 21 400 €** (travaux de rénovation énergétique payés jusqu'au 31/12/2027) : non modélisé, aucun scénario ne comporte de tels travaux déductibles.
@@ -118,7 +121,10 @@ Les hypothèses de modélisation LMNP (part du terrain, durées d'amortissement)
 - **Plafonds de loyer social et très social** : fixés par commune (Loc'Avantages, arrêté du 06/01/2026), saisis par l'utilisateur. Une réduction locale des plafonds intermédiaires par le préfet de région reste à vérifier pour la commune.
 - **SCI à l'IS (S3 bis)** : variante indicative (IS 15 % puis 25 %, amortissement comptable, plus-value professionnelle simplifiée, distribution au PFU).
 - **Sortie du LLI par cession des parts de la SCI** à un repreneur qui poursuit la location (pas de complément de TVA, BOI-TVA-IMM-30, §235) : non modélisée, marché étroit ; signalée dans les questions à poser.
-- **Intérêts intercalaires de VEFA** : traités par un différé simple ; le détail des appels de fonds n'est pas modélisé.
+- **Intérêts intercalaires de VEFA** : traités par un différé partiel (intérêts et assurance seuls) calculé sur tout le capital dès la signature, ce qui est prudent ; le détail des appels de fonds n'est pas modélisé.
+- **Emprunt** : taux mensuel égal au taux annuel divisé par 12 (taux proportionnel, usage bancaire) ; échéances arrondies au centime, la dernière soldant le capital ; assurance constante calculée sur le capital initial ; frais de dossier et de garantie payés à la mise en place. Sur ces conventions, la mensualité du §13 (1 238,19 €) et les intérêts de la première année (8 399,96 €) sont retrouvés.
+- **Autres revenus fonciers du foyer au réel** : ajoutés aux recettes, sans charges financières propres ; la limite de 10 700 € d'un associé de SCI s'applique à sa quote-part, que l'appelant fournit.
+- **Plus-value** : frais d'acquisition et travaux retenus au plus favorable entre montant réel et forfait ; moins-value non imputable ; années de détention révolues fournies par l'appelant (point de départ en VEFA à confirmer à l'étape 4).
 - **Prélèvement forfaitaire unique** : l'option pour le barème n'est pas modélisée.
 - **LMNP** : CFE saisie par l'utilisateur (montant fixé par la commune) ; résidences gérées et meublés de tourisme hors périmètre.
 - **Arrondis** : calcul sans arrondi intermédiaire, arrondi à l'euro en fin de calcul de l'impôt (sauf plafond de loyer au m², arrondi au centime comme le prévoit le BOFiP).
