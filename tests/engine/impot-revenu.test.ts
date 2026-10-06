@@ -120,6 +120,50 @@ describe('réductions d’impôt et plafonnement global des niches', () => {
     expect(impot.reductions_perdues).toBe(2800)
     expect(impot.impot_net).toBe(13208 - 2000)
   })
+
+  it('impute les réductions hors plafond après les autres, dans la limite de l’impôt restant', () => {
+    const impot = calculerImpot(90000, couple(), p, {
+      reductions_plafonnees: 4800,
+      avantages_niches_deja_utilises: 8000,
+      reductions_non_plafonnees: 20000,
+    })
+    expect(impot.reductions_imputees).toBeCloseTo(13207.98, CENTIMES)
+    expect(impot.reductions_perdues).toBeCloseTo(4800 + 20000 - 13207.98, CENTIMES)
+    expect(impot.impot_du).toBe(0)
+  })
+})
+
+describe('système du quotient (revenu exceptionnel, CGI art. 163-0 A)', () => {
+  const PRECISION = 6
+  const couple = { parts: 2, imposition_commune: true }
+
+  it('la décote s’applique à l’impôt total, supplément du quotient compris (brochure IR 2026, p. 370)', () => {
+    const d = calculerImpot(40000, couple, p, { revenu_exceptionnel: { montant: 4000, coefficient: 2 } })
+    // Revenu ordinaire : 1 848 € ; avec la moitié du revenu exceptionnel : 2 068 € ; supplément 2 × 220 €.
+    expect(d.supplement_quotient).toBeCloseTo(440, PRECISION)
+    expect(d.impot_brut).toBeCloseTo(2288, PRECISION)
+    expect(d.decote).toBeCloseTo(447.68, PRECISION)
+    expect(d.impot_net).toBe(1840)
+  })
+
+  it('le quotient atténue la progressivité quand le revenu exceptionnel franchit une tranche', () => {
+    const ordinaire = calculerImpot(160000, couple, p)
+    const auQuotient = calculerImpot(160000, couple, p, { revenu_exceptionnel: { montant: 40000, coefficient: 4 } })
+    const sansQuotient = calculerImpot(200000, couple, p)
+    expect(auQuotient.supplement_quotient).toBeCloseTo(12372.24, PRECISION)
+    expect(sansQuotient.impot_brut - ordinaire.impot_brut).toBeCloseTo(15393.06, PRECISION)
+    expect(auQuotient.tmi).toBe(ordinaire.tmi)
+  })
+
+  it('sans revenu exceptionnel, aucun supplément', () => {
+    expect(calculerImpot(90000, couple, p).supplement_quotient).toBe(0)
+  })
+
+  it('refuse un coefficient inférieur à 1', () => {
+    expect(() => calculerImpot(90000, couple, p, { revenu_exceptionnel: { montant: 1000, coefficient: 0.5 } })).toThrow(
+      RangeError,
+    )
+  })
 })
 
 describe('salaires : déduction forfaitaire de 10 %', () => {

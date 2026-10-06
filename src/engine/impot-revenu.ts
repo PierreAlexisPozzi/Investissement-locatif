@@ -18,11 +18,22 @@ export interface Foyer {
   readonly imposition_commune: boolean
 }
 
+/** Revenu imposé selon le système du quotient (CGI art. 163-0 A). */
+export interface RevenuExceptionnel {
+  readonly montant: number
+  /** Le montant est divisé par ce coefficient, ajouté au revenu ordinaire, et l'impôt supplémentaire multiplié d'autant. */
+  readonly coefficient: number
+}
+
 export interface OptionsImpot {
-  /** Réductions d'impôt soumises au plafonnement global des niches (Denormandie, étape 3). */
+  /** Réductions d'impôt soumises au plafonnement global des niches (Denormandie). */
   readonly reductions_plafonnees?: number
   /** Avantages déjà retenus dans le plafonnement global (emploi à domicile, garde d'enfants…). */
   readonly avantages_niches_deja_utilises?: number
+  /** Réductions d'impôt hors du plafonnement global, imputées après les réductions plafonnées. */
+  readonly reductions_non_plafonnees?: number
+  /** Revenu exceptionnel taxé au quotient : amortissements Jeanbrun réintégrés en cas de rupture d'engagement. */
+  readonly revenu_exceptionnel?: RevenuExceptionnel
 }
 
 export interface DetailImpot {
@@ -37,7 +48,9 @@ export interface DetailImpot {
   readonly avantage_quotient_familial: number
   readonly plafond_avantage_quotient_familial: number
   readonly quotient_familial_plafonne: boolean
-  /** Impôt après plafonnement du quotient familial, avant décote. */
+  /** Impôt supplémentaire dû au revenu exceptionnel (système du quotient), compris dans l'impôt brut. */
+  readonly supplement_quotient: number
+  /** Impôt après plafonnement du quotient familial, supplément du quotient compris, avant décote. */
   readonly impot_brut: number
   readonly decote: number
   readonly impot_apres_decote: number
@@ -97,16 +110,32 @@ export function calculerImpot(
     throw new RangeError(`Le foyer doit compter au moins ${base} part(s) : ${foyer.parts} saisie(s)`)
   }
 
-  const revenu = Math.max(0, arrondirEuro(revenuImposable))
-  const impotBareme = impotParPart(revenu / foyer.parts, bareme) * foyer.parts
-  const impotPartsDeBase = impotParPart(revenu / base, bareme) * base
-
   // Plafonnement : l'avantage dû aux demi-parts au-delà des parts de base est limité.
-  const avantage = impotPartsDeBase - impotBareme
   const demiPartsSupplementaires = (foyer.parts - base) * 2
   const plafondAvantage = demiPartsSupplementaires * ir.plafond_quotient_familial_demi_part.valeur
-  const plafonne = avantage > plafondAvantage
-  const impotBrut = plafonne ? impotPartsDeBase - plafondAvantage : impotBareme
+  const baremePlafonne = (revenuGlobal: number) => {
+    const avecParts = impotParPart(revenuGlobal / foyer.parts, bareme) * foyer.parts
+    const partsDeBaseSeules = impotParPart(revenuGlobal / base, bareme) * base
+    const avantage = partsDeBaseSeules - avecParts
+    const plafonne = avantage > plafondAvantage
+    const impot = plafonne ? partsDeBaseSeules - plafondAvantage : avecParts
+    return { avecParts, partsDeBaseSeules, avantage, plafonne, impot }
+  }
+
+  const revenu = Math.max(0, arrondirEuro(revenuImposable))
+  const ordinaire = baremePlafonne(revenu)
+
+  // Système du quotient : la décote s'applique ensuite à l'impôt total (brochure pratique IR 2026, p. 370).
+  const exceptionnel = options.revenu_exceptionnel
+  let supplement = 0
+  if (exceptionnel !== undefined && exceptionnel.montant > 0) {
+    if (!(exceptionnel.coefficient >= 1)) {
+      throw new RangeError(`Le coefficient du quotient doit valoir au moins 1 : ${String(exceptionnel.coefficient)}`)
+    }
+    const quotient = arrondirEuro(exceptionnel.montant / exceptionnel.coefficient)
+    supplement = exceptionnel.coefficient * (baremePlafonne(revenu + quotient).impot - ordinaire.impot)
+  }
+  const impotBrut = ordinaire.impot + supplement
 
   const decote = calculerDecote(impotBrut, foyer.imposition_commune, p)
   const impotApresDecote = impotBrut - decote
@@ -116,7 +145,10 @@ export function calculerImpot(
     0,
     ir.plafonnement_global_niches.valeur - (options.avantages_niches_deja_utilises ?? 0),
   )
-  const reductionsImputees = Math.min(reductions, plafondNichesDisponible, impotApresDecote)
+  const plafonneesImputees = Math.min(reductions, plafondNichesDisponible, impotApresDecote)
+  const nonPlafonnees = options.reductions_non_plafonnees ?? 0
+  const nonPlafonneesImputees = Math.min(nonPlafonnees, impotApresDecote - plafonneesImputees)
+  const reductionsImputees = plafonneesImputees + nonPlafonneesImputees
   const impotNetAvantArrondi = impotApresDecote - reductionsImputees
   const impotNet = arrondirEuro(impotNetAvantArrondi)
   // Comparaison avant arrondi : reproduit le seuil de la brochure IR 2026 (tableau 7, personne seule : 17 596 €).
@@ -126,21 +158,22 @@ export function calculerImpot(
     revenu_imposable: revenu,
     parts: foyer.parts,
     parts_de_base: base,
-    impot_bareme: impotBareme,
-    impot_parts_de_base: impotPartsDeBase,
-    avantage_quotient_familial: avantage,
+    impot_bareme: ordinaire.avecParts,
+    impot_parts_de_base: ordinaire.partsDeBaseSeules,
+    avantage_quotient_familial: ordinaire.avantage,
     plafond_avantage_quotient_familial: plafondAvantage,
-    quotient_familial_plafonne: plafonne,
+    quotient_familial_plafonne: ordinaire.plafonne,
+    supplement_quotient: supplement,
     impot_brut: impotBrut,
     decote,
     impot_apres_decote: impotApresDecote,
     reductions_imputees: reductionsImputees,
-    reductions_perdues: reductions - reductionsImputees,
+    reductions_perdues: reductions + nonPlafonnees - reductionsImputees,
     impot_net_avant_arrondi: impotNetAvantArrondi,
     impot_net: impotNet,
     mis_en_recouvrement: misEnRecouvrement,
     impot_du: misEnRecouvrement ? impotNet : 0,
-    tmi: tauxMarginal(revenu / (plafonne ? base : foyer.parts), bareme),
+    tmi: tauxMarginal(revenu / (ordinaire.plafonne ? base : foyer.parts), bareme),
   }
 }
 

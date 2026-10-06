@@ -363,7 +363,12 @@
       "url_officielle": "https://www.assemblee-nationale.fr/dyn/17/textes/l17t0227_texte-adopte-seance",
       "date_verification": "2026-10-06",
       "statut": "a_confirmer",
-      "commentaire": "Choix prudent : le plafond annuel est proratisé comme l'annuité la première année. Lecture littérale possible : plafond plein dès la première année. N'a d'effet qu'au-delà de 285 714 € de prix en intermédiaire."
+      "commentaire": "Hypothèse choisie (arbitrage du 06/10/2026). Choix prudent : le plafond annuel est proratisé comme l'annuité la première année. Lecture littérale possible : plafond plein dès la première année. N'a d'effet qu'au-delà de 285 714 € de prix en intermédiaire, et seulement la première année.",
+      "arbitrage": {
+        "date": "2026-10-06",
+        "choix": "Proratiser le plafond annuel la première année, comme l'annuité (lecture prudente).",
+        "alternative_ecartee": "Plafond plein dès la première année (lecture littérale du plafond « par an »), qui augmenterait la première déduction au-delà de 285 714 € de prix en intermédiaire."
+      }
     },
     "amortissement_apres_engagement": {
       "valeur": true,
@@ -514,6 +519,18 @@
     }
   },
 
+  "revenus_fonciers_reel": {
+    "frais_gestion_forfaitaires_par_local": {
+      "valeur": 20,
+      "unite": "€ par local et par an",
+      "source": "CGI art. 31, I-1°, e ; BOI-RFPI-BASE-20-10 du 06/07/2016, §210 à 240",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/5804-PGP.html/identifiant=BOI-RFPI-BASE-20-10-20160706",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Forfait réputé couvrir les frais de gestion non déductibles pour leur montant réel (correspondance, déplacements, téléphone, matériel de bureau…), sans déduction possible au-delà. Un local s'entend du logement et de ses dépendances louées au même locataire. Les honoraires versés à des tiers (gérance, comptabilité) se déduisent pour leur montant réel."
+    }
+  },
+
   "micro_foncier": {
     "seuil_recettes": {
       "valeur": 15000,
@@ -607,11 +624,16 @@
     "modelisation": {
       "valeur": { "part_terrain": 0.15, "duree_bati_ans": 30, "duree_mobilier_ans": 7, "frais_acquisition": "charge_annee_1" },
       "unite": "fraction ; années ; règle",
-      "source": "Hypothèses de modélisation non fixées par les textes ; principes de l'amortissement par composants (BOI-BIC-AMT-20-40-10-20)",
+      "source": "Hypothèses de modélisation non fixées par les textes ; principes de l'amortissement par composants (BOI-BIC-AMT-20-40-10-20) ; option pour les frais d'acquisition : CGI ann. III art. 38 quinquies, BOI-BIC-CHG-20-20-10 du 09/01/2019, §140 à 170",
       "url_officielle": "https://bofip.impots.gouv.fr/bofip/4527-PGP.html/identifiant=BOI-BIC-AMT-20-40-10-20-20120912",
       "date_verification": "2026-10-06",
       "statut": "a_confirmer",
-      "commentaire": "À valider avec un expert-comptable. Frais d'acquisition passés en charge l'année 1 (« charge_annee_1 ») ou amortis avec le bâti (« amortis »)."
+      "commentaire": "À valider avec un expert-comptable. Frais d'acquisition : hypothèse choisie (arbitrage du 06/10/2026), passés en charge l'année 1 (« charge_annee_1 ») ; l'autre option, frais incorporés au prix de revient et amortis hors part du terrain (« amortis »), sera calculée en sensibilité. L'option est irrévocable et vaut pour toutes les immobilisations (BOI-BIC-CHG-20-20-10, §170). Le déficit créé par les frais ne se reporte que 10 ans et ne s'impute qu'après l'amortissement de l'année (§8.4 du cahier des charges ; ordre non précisé par le BOFiP) : il peut se périmer.",
+      "arbitrage": {
+        "date": "2026-10-06",
+        "choix": "Passer les frais d'acquisition en charge l'année 1 ; l'autre option est calculée en sensibilité.",
+        "alternative_ecartee": "Incorporer les frais au prix de revient et les amortir avec le bâti : déduction étalée et reportable sans limite de durée, mais réintégrée dans la plus-value à la revente."
+      }
     }
   },
 
@@ -659,7 +681,12 @@
       "url_officielle": "https://bofip.impots.gouv.fr/bofip/9713-PGP.html/identifiant=BOI-TVA-IMM-30-20260708",
       "date_verification": "2026-10-06",
       "statut": "verifie",
-      "commentaire": "Hors zones A bis, A et B1, le LLI reste possible notamment dans une commune ayant conclu une convention d'opération de revitalisation de territoire (ORT) ou un contrat de projet partenarial d'aménagement (PPA). Une zone B2 ou C n'est donc pas un motif d'inéligibilité suffisant."
+      "commentaire": "Hypothèse choisie (arbitrage du 06/10/2026) : la règle du BOFiP prime sur l'exemple du cahier des charges (§7, « zone B2 non éligible »). Hors zones A bis, A et B1, le LLI reste possible dans une commune ayant conclu une convention d'opération de revitalisation de territoire (ORT) ou un contrat de projet partenarial d'aménagement (PPA), ou dans les autres périmètres listés. L'appartenance est déclarée par l'utilisateur ; « Action Cœur de Ville », qui sert au Denormandie, ne figure pas dans la liste.",
+      "arbitrage": {
+        "date": "2026-10-06",
+        "choix": "Suivre le BOFiP : hors zones A bis, A et B1, le LLI est éligible si l'utilisateur déclare la commune dans un périmètre assimilé (convention ORT, contrat de PPA…).",
+        "alternative_ecartee": "Zone B2 ou C toujours inéligible (exemple du cahier des charges, §7)."
+      }
     },
     "mixite_sociale_seuil": {
       "valeur": 0.25,
@@ -772,6 +799,15 @@
       "date_verification": "2026-10-06",
       "statut": "verifie",
       "commentaire": "Réduction répartie par sixièmes ou par neuvièmes, soit 2 %/an. Exemple : 240 000 €, 50 m², 9 ans → 43 200 €, soit 4 800 €/an."
+    },
+    "duree_engagement_initial_ans": {
+      "valeur": { "six_ans": 6, "neuf_ans": 9 },
+      "unite": "années de location",
+      "source": "CGI art. 199 novovicies ; service-public F35011 (vérifiée le 11/03/2026) ; BOI-IR-RICI-365-30 du 28/03/2024, §140",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F35011",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Engagement initial de location de 6 ou 9 ans, prorogeable jusqu'à 12 ans (voir complement_prorogation). Durée de répartition de la réduction initiale."
     },
     "complement_prorogation": {
       "valeur": { "initial_six_ans": [0.06, 0.03], "initial_neuf_ans": [0.03], "duree_periode_ans": 3 },

@@ -1,6 +1,6 @@
 # Cas de test officiels relevés
 
-Exemples chiffrés publiés par l'administration, relevés le 06/10/2026 lors de la vérification des paramètres. Ils complètent les valeurs de référence du §13 du cahier des charges. Ceux de l'impôt, de la décote, du déficit foncier, du plafond de loyer, de la plus-value et de la surtaxe sont couverts depuis l'étape 2 par `tests/engine/` ; ceux de la créance de taxe foncière et de l'amortissement des biens loués le seront à l'étape 3.
+Exemples chiffrés publiés par l'administration, relevés le 06/10/2026 lors de la vérification des paramètres. Ils complètent les valeurs de référence du §13 du cahier des charges. Ceux de l'impôt, de la décote, du déficit foncier, du plafond de loyer, de la plus-value et de la surtaxe sont couverts depuis l'étape 2 par `tests/engine/`, ceux de la créance de taxe foncière et de l'amortissement des biens loués depuis l'étape 3.
 
 ## Impôt sur le revenu (service-public F1419, vérifiée le 15/04/2026)
 
@@ -54,4 +54,4 @@ Logement achevé au 01/01/2023, deux années d'exonération de taxe foncière : 
 
 ## Amortissement des biens loués (BOI-BIC-AMT-20-40-10-20, §90)
 
-Exemple officiel (véhicule) : dotation 3 600 €, dont 540 € écartés par la limite propre aux véhicules de tourisme ; loyers 2 500 €, autres charges 1 000 € ; amortissement déductible 1 500 €, reportable 1 560 €. Pour un logement, non soumis à la limite des véhicules : déductible 1 500 €, reportable 2 100 € (test du cahier des charges, à libeller « adapté de l'exemple officiel »).
+Exemple officiel (véhicule) : dotation 3 600 €, dont 540 € écartés par la limite propre aux véhicules de tourisme ; loyers 2 500 €, autres charges 1 000 € ; amortissement déductible 1 500 €, reportable 1 560 €. Pour un logement, non soumis à la limite des véhicules : déductible 1 500 €, reportable 2 100 € (test du cahier des charges, libellé « adapté de l'exemple officiel »).
