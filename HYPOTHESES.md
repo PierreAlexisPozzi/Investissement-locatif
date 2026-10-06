@@ -49,7 +49,7 @@ Seuls les sites de l'État admis par le cahier des charges font foi. Chaque page
 
 ## 2. Paramètres dont le statut n'est pas `verifie`
 
-Décompte : 105 paramètres, dont 93 vérifiés, 11 à confirmer et 1 dont le texte n'a pas été consulté. Liste régénérable avec `npm run params:rapport`.
+Décompte : 106 paramètres, dont 93 vérifiés, 12 à confirmer et 1 dont le texte n'a pas été consulté. Liste régénérable avec `npm run params:rapport`.
 
 <!-- debut:parametres-non-verifies -->
 | Paramètre | Statut | Valeur retenue | Ce qui reste à établir | À qui le demander |
@@ -64,6 +64,7 @@ Décompte : 105 paramètres, dont 93 vérifiés, 11 à confirmer et 1 dont le te
 | `cumul_jeanbrun_lli.statut_cumul` | a_confirmer | non exclu par les textes lus | Aucune source ne traite le cumul ; l'article 31 n'exclut que l'article 199 undecies C. Absence d'exclusion ne vaut pas autorisation. | Notaire ou rescrit (écrit) |
 | `plus_value_immobiliere.forfait_travaux_bien_neuf_amorti` | a_confirmer | non appliqué (prudent) | Forfait travaux de 15 % sur un bien neuf amorti (Jeanbrun, LMNP). | Notaire |
 | `plus_value_immobiliere.frais_acquisition_deduits_en_charge` | a_confirmer | forfait ou frais réels conservés (arbitré) | Prise en compte dans la plus-value de frais d'acquisition déjà passés en charge en LMNP. | Notaire |
+| `plus_value_immobiliere.travaux_denormandie_retenus` | a_confirmer | exclus, sauf reprise de la réduction (prudent) | La tolérance du BOFiP pour les travaux compris dans la base d'une réduction (Scellier, Censi-Bouvard) vaut-elle pour le Denormandie ? | Notaire |
 | `sci_ir.frais_constitution_deductibles` | a_confirmer | non déduits (arbitré, prudent) | Déduction des frais de constitution d'une SCI des revenus fonciers. | Expert-comptable |
 | `sci_ir.frais_bancaires_couverts_par_forfait` | a_confirmer | oui | Frais bancaires de la SCI couverts par le forfait de frais de gestion. | Expert-comptable |
 <!-- fin:parametres-non-verifies -->
@@ -87,6 +88,7 @@ Les sources lues le 06/10/2026 contredisent ou précisent le cahier des charges 
 13. **Détention d'un logement acquis en VEFA (§8.6)** : pour la plus-value, elle court à compter de la conclusion du contrat, pas de la livraison (BOI-RFPI-PVI-20-20, §40), par périodes de douze mois jusqu'à la cession (§20).
 14. **Sortie anticipée du Denormandie (§9)** : la cession pendant l'engagement majore l'impôt de l'année du montant total des réductions obtenues (BOI-IR-RICI-360-40, §50, applicable au Denormandie selon BOI-IR-RICI-365-30, §230). Le cahier des charges ne la chiffrait pas.
 15. **Location meublée en indivision (§8.4)** : les indivisions, soumises au régime fiscal des sociétés de personnes, sont exclues du micro-BIC sauf exception (BOI-BIC-DECLA-10-10-20, §80 ; FAQ « Régime des locations meublées » de la DGFiP). Un logement meublé détenu par des concubins relève donc du régime réel, alors que le cahier des charges compare micro-BIC et réel sans réserve. Paramètre `lmnp.micro_bic_exclu_indivision`. Un foyer unique (personne seule, couple marié ou pacsé) est traité comme un exploitant unique ; pour un couple pacsé propriétaire en indivision, la dérogation du §80, qui vise les époux, reste à confirmer.
+16. **Travaux Denormandie et plus-value (§8.6)** : les dépenses incluses dans la base d'une réduction d'impôt sont exclues de la majoration pour travaux, sauf si la réduction est reprise, en cas de rupture de l'engagement notamment (BOI-RFPI-PVI-20-10-20-20, §240). Une tolérance les admet si elles précèdent la première location, pour les dispositifs ouverts à la fois au neuf et à l'ancien avec travaux (§265), mais le BOFiP, de 2013, ne cite pas le Pinel ni le Denormandie. L'outil exclut ces travaux (prudent) et les retient en cas de reprise. Paramètre `plus_value_immobiliere.travaux_denormandie_retenus`.
 
 ## 4. Arbitrages retenus : hypothèses choisies
 

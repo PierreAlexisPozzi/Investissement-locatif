@@ -331,6 +331,7 @@ export interface ParametresFiscaux {
     readonly forfait_travaux: Parametre<{ readonly taux: number; readonly detention_superieure_a_ans: number }>
     readonly forfait_travaux_bien_neuf_amorti: Parametre<boolean>
     readonly frais_acquisition_deduits_en_charge: Parametre<(typeof TRAITEMENTS_FRAIS_DEDUITS_PV)[number]>
+    readonly travaux_denormandie_retenus: Parametre<boolean>
     readonly depart_detention_vefa: Parametre<(typeof DEPARTS_DETENTION_VEFA)[number]>
     readonly surtaxe_plus_values_elevees: Parametre<{
       readonly seuil: number

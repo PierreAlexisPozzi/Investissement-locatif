@@ -1048,6 +1048,15 @@
         "alternative_ecartee": "Ne retenir aucun frais d'acquisition dans la plus-value (option prudente), ce qui alourdirait l'impôt de plus-value."
       }
     },
+    "travaux_denormandie_retenus": {
+      "valeur": false,
+      "unite": "booléen",
+      "source": "Lecture de l'outil : BOI-RFPI-PVI-20-10-20-20 du 20/12/2013, §240 et §265",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/265-PGP.html/identifiant=BOI-RFPI-PVI-20-10-20-20-20131220",
+      "date_verification": "2026-10-06",
+      "statut": "a_confirmer",
+      "commentaire": "Travaux compris dans la base de la réduction Denormandie. Le §240 exclut de la plus-value les dépenses incluses dans la base d'une réduction d'impôt, sauf si l'avantage est repris (rupture de l'engagement) : ils sont alors retenus, quelle que soit la valeur de ce paramètre. Le §265 admet de les retenir s'ils précèdent la première location, pour les dispositifs ouverts à la fois au neuf et à l'ancien avec travaux, mais ne cite que le Scellier, le Censi-Bouvard et le Demessine (BOFiP de 2013, antérieur au Pinel et au Denormandie). Exclusion retenue par prudence ; à confirmer par un notaire."
+    },
     "depart_detention_vefa": {
       "valeur": "date_conclusion_contrat",
       "unite": "règle",

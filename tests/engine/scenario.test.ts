@@ -211,6 +211,26 @@ describe('Denormandie (S5, logement ancien avec travaux)', () => {
     const s = simuler(dossierAncien, 'S5_9', 9)
     expect(s.sortie.plus_value?.travaux_forfaitaires).toBe(true)
   })
+
+  it('revente avant le terme : la réduction reprise, les travaux entrent dans la plus-value', () => {
+    const s = simuler(dossierAncien, 'S5_9', 5)
+    expect(s.sortie.plus_value?.travaux_retenus).toBe(60000)
+  })
+
+  it('lecture alternative du BOFiP : travaux retenus dans la plus-value sans reprise', () => {
+    const retenus: ParametresFiscaux = {
+      ...p,
+      plus_value_immobiliere: {
+        ...p.plus_value_immobiliere,
+        travaux_denormandie_retenus: { ...p.plus_value_immobiliere.travaux_denormandie_retenus, valeur: true },
+      },
+    }
+    const s = simulerScenario(dossierAncien, 'S5_9', { horizon: 9 }, retenus).simulation
+    expect(s?.sortie.plus_value?.travaux_retenus).toBe(60000)
+    expect(simulerScenario(dossierAncien, 'S5_9', { horizon: 9 }, p).parametres_a_confirmer).toContain(
+      'plus_value_immobiliere.travaux_denormandie_retenus',
+    )
+  })
 })
 
 describe('micro-foncier entre concubins', () => {

@@ -343,9 +343,9 @@ const PARAMETRES_SENSIBLES: Readonly<Record<IdScenario, readonly string[]>> = {
     'plus_value_immobiliere.frais_acquisition_deduits_en_charge',
     'plus_value_immobiliere.forfait_travaux_bien_neuf_amorti',
   ],
-  S5_6: [],
-  S5_9: [],
-  S5_12: [],
+  S5_6: ['plus_value_immobiliere.travaux_denormandie_retenus'],
+  S5_9: ['plus_value_immobiliere.travaux_denormandie_retenus'],
+  S5_12: ['plus_value_immobiliere.travaux_denormandie_retenus'],
 }
 
 /** Paramètres non vérifiés utilisés par le scénario pour ce dossier. */
@@ -1105,7 +1105,10 @@ function simulerImpotRevenu(
     regime !== 'micro' &&
     (plan?.frais_en_charge ?? 0) > 0 &&
     p.plus_value_immobiliere.frais_acquisition_deduits_en_charge.valeur === 'exclus'
-  const travauxPlusValue = b.etat === 'ancien' && denormandie === null && travauxDeductiblesS0 === 0 ? prix.travaux : 0
+  // Travaux de la base Denormandie : exclus de la plus-value, sauf reprise de la réduction (BOI-RFPI-PVI-20-10-20-20, §240).
+  const travauxDenormandieRetenus = ruptureDenormandie || p.plus_value_immobiliere.travaux_denormandie_retenus.valeur
+  const travauxPlusValue =
+    b.etat === 'ancien' && (denormandie === null || travauxDenormandieRetenus) && travauxDeductiblesS0 === 0 ? prix.travaux : 0
   const entreePlusValue = {
     prix_cession: v.prix,
     frais_cession: v.frais,
