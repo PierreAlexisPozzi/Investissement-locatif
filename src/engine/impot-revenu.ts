@@ -30,6 +30,8 @@ export interface OptionsImpot {
   readonly reductions_plafonnees?: number
   /** Avantages déjà retenus dans le plafonnement global (emploi à domicile, garde d'enfants…). */
   readonly avantages_niches_deja_utilises?: number
+  /** Réductions d'impôt hors du plafonnement global, imputées après les réductions plafonnées. */
+  readonly reductions_non_plafonnees?: number
   /** Revenu exceptionnel taxé au quotient : amortissements Jeanbrun réintégrés en cas de rupture d'engagement. */
   readonly revenu_exceptionnel?: RevenuExceptionnel
 }
@@ -143,7 +145,10 @@ export function calculerImpot(
     0,
     ir.plafonnement_global_niches.valeur - (options.avantages_niches_deja_utilises ?? 0),
   )
-  const reductionsImputees = Math.min(reductions, plafondNichesDisponible, impotApresDecote)
+  const plafonneesImputees = Math.min(reductions, plafondNichesDisponible, impotApresDecote)
+  const nonPlafonnees = options.reductions_non_plafonnees ?? 0
+  const nonPlafonneesImputees = Math.min(nonPlafonnees, impotApresDecote - plafonneesImputees)
+  const reductionsImputees = plafonneesImputees + nonPlafonneesImputees
   const impotNetAvantArrondi = impotApresDecote - reductionsImputees
   const impotNet = arrondirEuro(impotNetAvantArrondi)
   // Comparaison avant arrondi : reproduit le seuil de la brochure IR 2026 (tableau 7, personne seule : 17 596 €).
@@ -163,7 +168,7 @@ export function calculerImpot(
     decote,
     impot_apres_decote: impotApresDecote,
     reductions_imputees: reductionsImputees,
-    reductions_perdues: reductions - reductionsImputees,
+    reductions_perdues: reductions + nonPlafonnees - reductionsImputees,
     impot_net_avant_arrondi: impotNetAvantArrondi,
     impot_net: impotNet,
     mis_en_recouvrement: misEnRecouvrement,

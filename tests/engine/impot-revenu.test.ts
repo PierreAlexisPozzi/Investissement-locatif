@@ -120,6 +120,17 @@ describe('réductions d’impôt et plafonnement global des niches', () => {
     expect(impot.reductions_perdues).toBe(2800)
     expect(impot.impot_net).toBe(13208 - 2000)
   })
+
+  it('impute les réductions hors plafond après les autres, dans la limite de l’impôt restant', () => {
+    const impot = calculerImpot(90000, couple(), p, {
+      reductions_plafonnees: 4800,
+      avantages_niches_deja_utilises: 8000,
+      reductions_non_plafonnees: 20000,
+    })
+    expect(impot.reductions_imputees).toBeCloseTo(13207.98, CENTIMES)
+    expect(impot.reductions_perdues).toBeCloseTo(4800 + 20000 - 13207.98, CENTIMES)
+    expect(impot.impot_du).toBe(0)
+  })
 })
 
 describe('système du quotient (revenu exceptionnel, CGI art. 163-0 A)', () => {
