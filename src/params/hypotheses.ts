@@ -58,6 +58,30 @@ export interface HypothesesDefaut {
     readonly grille_revalorisation_prix: readonly number[]
   }>
   readonly horizons_ans: Hypothese<readonly number[]>
+  readonly objectifs: {
+    readonly ponderations: Hypothese<PonderationsObjectifs>
+    readonly horizon_ans: Hypothese<number>
+  }
+  readonly recommandation: {
+    /** Notes par identifiant de scénario ; leur exhaustivité est contrôlée par le moteur de recommandation. */
+    readonly souplesse: Hypothese<Readonly<Record<string, number>>>
+    readonly simplicite: Hypothese<Readonly<Record<string, number>>>
+    readonly transmission: Hypothese<Readonly<Record<string, number>>>
+    readonly alertes: Hypothese<{ readonly ecart_prix_neuf_ancien: number }>
+  }
+  readonly contre_expertise: {
+    readonly tolerance_ecart: Hypothese<number>
+  }
+}
+
+/** Curseurs de pondération des objectifs (§5.6), total 100. */
+export interface PonderationsObjectifs {
+  readonly economie_impot: number
+  readonly effort_epargne: number
+  readonly tri: number
+  readonly souplesse: number
+  readonly simplicite: number
+  readonly transmission: number
 }
 
 function verifierHypotheses(d: Elargi<HypothesesDefaut>): HypothesesDefaut {

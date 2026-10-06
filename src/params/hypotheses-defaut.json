@@ -118,5 +118,63 @@
     "unite": "années de détention",
     "origine": "Cahier des charges §5.6 et §9",
     "commentaire": "Horizons de calcul des indicateurs."
+  },
+
+  "objectifs": {
+    "ponderations": {
+      "valeur": {
+        "economie_impot": 10,
+        "effort_epargne": 20,
+        "tri": 35,
+        "souplesse": 15,
+        "simplicite": 10,
+        "transmission": 10
+      },
+      "unite": "points, total 100",
+      "origine": "Choix de l'outil (§5.6 : curseurs sans valeur par défaut)",
+      "commentaire": "Réduire l'impôt maintenant, minimiser l'effort d'épargne mensuel, maximiser le capital net à terme (TRI), garder de la souplesse, simplicité de gestion, préparer une transmission. Le TRI pèse le plus : c'est lui que l'on compare au placement de référence. Curseurs modifiables dans l'écran Recommandation."
+    },
+    "horizon_ans": {
+      "valeur": 16,
+      "unite": "années de location avant la revente",
+      "origine": "Choix de l'outil (§5.6 : horizon envisagé parmi 9, 12, 16, 20 et 25 ans)",
+      "commentaire": "Horizon médian des horizons de calcul, au-delà de la période de complément de TVA du LLI (15 ans après la livraison)."
+    }
+  },
+
+  "recommandation": {
+    "souplesse": {
+      "valeur": { "S0": 80, "S1": 45, "S1_social": 45, "S1_tres_social": 45, "S2": 15, "S3": 15, "S3_IS": 15, "S4": 90, "S5_6": 60, "S5_9": 45, "S5_12": 35 },
+      "unite": "note sur 100 par scénario",
+      "origine": "Cahier des charges §10.3, sauf Jeanbrun social et très social, LLI à l'IS et Denormandie 9 ans (choix de l'outil)",
+      "commentaire": "Possibilité de revendre ou de reprendre le bien. Variantes Jeanbrun : même note que le Jeanbrun intermédiaire ; LLI à l'IS : même note que le LLI ; Denormandie 9 ans : même note que le Jeanbrun, également engagé 9 ans."
+    },
+    "simplicite": {
+      "valeur": { "S0": 90, "S1": 75, "S1_social": 75, "S1_tres_social": 75, "S2": 30, "S3": 30, "S3_IS": 30, "S4": 50, "S4_micro": 70, "S5_6": 50, "S5_9": 50, "S5_12": 50 },
+      "unite": "note sur 100 par scénario",
+      "origine": "Cahier des charges §10.3, sauf LMNP au micro-BIC, variantes Jeanbrun et LLI à l'IS (choix de l'outil)",
+      "commentaire": "Simplicité de gestion. LMNP : 50 au réel (comptabilité, liasse), 70 au micro-BIC (déclaration des seules recettes, immatriculation et CFE maintenues). Le réel puis micro-BIC garde la note du réel."
+    },
+    "transmission": {
+      "valeur": { "S0": 40, "S1": 40, "S1_social": 40, "S1_tres_social": 40, "S2": 80, "S3": 80, "S3_IS": 80, "S4": 40, "S5_6": 40, "S5_9": 40, "S5_12": 40 },
+      "unite": "note sur 100 par scénario",
+      "origine": "Cahier des charges §10.3",
+      "commentaire": "SCI 80, autres 40."
+    },
+    "alertes": {
+      "valeur": { "ecart_prix_neuf_ancien": 0.2 },
+      "unite": "écart relatif",
+      "origine": "Cahier des charges §10.5",
+      "commentaire": "Alerte si le prix au m² du neuf (TTC à 20 %) dépasse de plus de 20 % le prix de l'ancien récent du quartier."
+    }
+  },
+
+  "contre_expertise": {
+    "tolerance_ecart": {
+      "valeur": 0.05,
+      "unite": "écart relatif",
+      "origine": "Cahier des charges §12",
+      "commentaire": "Écart signalé entre un résultat annoncé par le vendeur et le recalcul de l'outil avec ses hypothèses."
+    }
   }
 }

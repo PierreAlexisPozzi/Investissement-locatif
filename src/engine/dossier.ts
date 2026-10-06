@@ -9,7 +9,7 @@
  * - le prix saisi comprend le parking et les annexes acquis avec le logement ;
  * - les dates sont ramenées au premier jour de leur mois par le calendrier.
  */
-import type { EnveloppePlacement, ModeEvolution, ScenarioPrix, Zone } from '../params'
+import type { EnveloppePlacement, ModeEvolution, PonderationsObjectifs, ScenarioPrix, Zone } from '../params'
 import { hypothesesDefaut } from '../params'
 import { verifierQuotesParts, type EtatBien, type TypeLogement } from './commun'
 import { comparerDates, lireDate } from './dates'
@@ -132,12 +132,30 @@ export interface HypothesesSimulation {
   readonly csg_deductible: boolean
 }
 
+/** Notes qualitatives par identifiant de scénario (§10.3), modifiables par l'utilisateur. */
+export interface BaremesQualitatifs {
+  readonly souplesse: Readonly<Record<string, number>>
+  readonly simplicite: Readonly<Record<string, number>>
+  readonly transmission: Readonly<Record<string, number>>
+}
+
+/** Objectifs du foyer (§5.6) : curseurs de pondération, horizon envisagé, barèmes qualitatifs modifiés. */
+export interface Objectifs {
+  readonly ponderations: PonderationsObjectifs
+  /** Horizon de détention envisagé, en années de location avant la revente. */
+  readonly horizon: number
+  /** Notes modifiées ; les autres viennent des hypothèses par défaut. */
+  readonly baremes?: Partial<BaremesQualitatifs>
+}
+
 export interface Dossier {
   readonly foyers: Foyers
   readonly bien: Bien
   readonly financement: Financement
   readonly exploitation: Exploitation
   readonly hypotheses: HypothesesSimulation
+  /** À défaut, les objectifs par défaut (`objectifsParDefaut`). */
+  readonly objectifs?: Objectifs
 }
 
 export type ScenarioMarche = 'pessimiste' | 'central' | 'optimiste'
@@ -161,6 +179,12 @@ export function hypothesesParDefaut(marche: ScenarioMarche = 'central'): Hypothe
     ira_appliquees: h.financement.ira_appliquees.valeur,
     csg_deductible: false,
   }
+}
+
+/** Pondérations et horizon par défaut (§5.6), à ajuster dans l'écran Recommandation. */
+export function objectifsParDefaut(): Objectifs {
+  const o = hypothesesDefaut.objectifs
+  return { ponderations: o.ponderations.valeur, horizon: o.horizon_ans.valeur }
 }
 
 /** Incohérences de saisie qui empêchent la simulation ; liste vide si le dossier est exploitable. */
