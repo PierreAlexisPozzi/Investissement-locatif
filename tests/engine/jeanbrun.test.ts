@@ -110,6 +110,11 @@ describe('limites de l’amortissement', () => {
     expect(t.base_amortissable).toBeCloseTo(128000, PRECISION)
   })
 
+  it('cession en cours d’année : la dernière annuité est proratisée', () => {
+    const t = tableauAmortissementJeanbrun({ ...entree(275000, 2028), fraction_derniere_annee: 0.25 }, p)
+    expect(t.annees[1]?.amortissement).toBeCloseTo(1925, PRECISION)
+  })
+
   it('refuse une quote-part hors de ]0 ; 1]', () => {
     expect(() => tableauAmortissementJeanbrun({ ...entree(320000), quote_part: 0 }, p)).toThrow(RangeError)
     expect(() => tableauAmortissementJeanbrun({ ...entree(320000), quote_part: 1.2 }, p)).toThrow(RangeError)
