@@ -32,6 +32,8 @@ Seuls les sites de l'État admis par le cahier des charges font foi. Chaque page
 | service-public F32744 | vérifiée le 15/04/2026 | Location meublée |
 | BOI-BIC-AMT-20-40-10-20 | 12/09/2012 | Limitation de l'amortissement des biens loués |
 | BOI-BIC-CHG-20-20-10 | 09/01/2019 | Option pour les frais d'acquisition : charge ou coût de l'immobilisation |
+| BOI-BIC-DECLA-10-10-20 | 19/08/2026 | Micro-BIC : exclusion des indivisions |
+| impots.gouv.fr, FAQ « Régime des locations meublées » | version 03/2026 | Location meublée en indivision |
 | service-public F35011 | vérifiée le 11/03/2026 | Denormandie, durées d'engagement |
 | BOI-IR-RICI-365-30, BOI-IR-RICI-360-30-10, BOI-IR-RICI-360-60 | 28/03/2024, 22/08/2024 | Denormandie : base, imputation, prorogation |
 | service-public F10864 | vérifiée le 15/04/2026 | Plus-value immobilière |
@@ -47,7 +49,7 @@ Seuls les sites de l'État admis par le cahier des charges font foi. Chaque page
 
 ## 2. Paramètres dont le statut n'est pas `verifie`
 
-Décompte : 104 paramètres, dont 92 vérifiés, 11 à confirmer et 1 dont le texte n'a pas été consulté. Liste régénérable avec `npm run params:rapport`.
+Décompte : 105 paramètres, dont 93 vérifiés, 11 à confirmer et 1 dont le texte n'a pas été consulté. Liste régénérable avec `npm run params:rapport`.
 
 <!-- debut:parametres-non-verifies -->
 | Paramètre | Statut | Valeur retenue | Ce qui reste à établir | À qui le demander |
@@ -84,6 +86,7 @@ Les sources lues le 06/10/2026 contredisent ou précisent le cahier des charges 
 12. **Réintégration des amortissements LMNP (§6.7, §8.6)** : l'outil réintègre dans la plus-value les seuls amortissements de l'immeuble effectivement déduits ; ceux du mobilier, bien meuble hors du champ de la plus-value immobilière, ne le sont pas. Le cahier des charges parle des « amortissements déduits » sans distinction : lecture à confirmer. *Arbitré : immeuble seul.*
 13. **Détention d'un logement acquis en VEFA (§8.6)** : pour la plus-value, elle court à compter de la conclusion du contrat, pas de la livraison (BOI-RFPI-PVI-20-20, §40), par périodes de douze mois jusqu'à la cession (§20).
 14. **Sortie anticipée du Denormandie (§9)** : la cession pendant l'engagement majore l'impôt de l'année du montant total des réductions obtenues (BOI-IR-RICI-360-40, §50, applicable au Denormandie selon BOI-IR-RICI-365-30, §230). Le cahier des charges ne la chiffrait pas.
+15. **Location meublée en indivision (§8.4)** : les indivisions, soumises au régime fiscal des sociétés de personnes, sont exclues du micro-BIC sauf exception (BOI-BIC-DECLA-10-10-20, §80 ; FAQ « Régime des locations meublées » de la DGFiP). Un logement meublé détenu par des concubins relève donc du régime réel, alors que le cahier des charges compare micro-BIC et réel sans réserve. Paramètre `lmnp.micro_bic_exclu_indivision`. Un foyer unique (personne seule, couple marié ou pacsé) est traité comme un exploitant unique ; pour un couple pacsé propriétaire en indivision, la dérogation du §80, qui vise les époux, reste à confirmer.
 
 ## 4. Arbitrages retenus : hypothèses choisies
 
@@ -159,7 +162,7 @@ Les hypothèses de modélisation LMNP (part du terrain, durées d'amortissement)
 - **Financement à la signature** : prix, frais de notaire, frais de dossier et de garantie, mobilier (LMNP) et frais de constitution (SCI) payés à la signature ; fonds propres = coût total − montant emprunté ; appels de fonds de la VEFA non modélisés (différé sur tout le capital, déjà prudent).
 - **Loyers et charges** : loyers de marché et plafonds saisis aux valeurs de l'année d'acquisition, revalorisés chaque année civile ; vacance appliquée au prorata des mois loués ; taxe foncière due à partir de l'année suivant l'achèvement, au prorata des mois détenus (répartition usuelle entre vendeur et acquéreur), nulle pendant les années d'exonération ; copropriété et assurance à partir de la livraison ; forfait de frais de gestion compté aussi comme dépense (il représente des frais réels).
 - **Impôt des foyers** : revenus indexés sur l'inflation à partir de l'année d'acquisition, barème indexé à partir de l'année des revenus des paramètres (2025) ; autres revenus fonciers constants ; sans l'opération, régime actuel des autres revenus fonciers ; avec l'opération, revenus fonciers réunis au réel (ou au micro-foncier pour la variante S0). Concubins et associés de SCI : chaque foyer déclare sa quote-part, avec sa propre limite de 10 700 € et son propre plafond Jeanbrun. Couple marié en nom propre : quotes-parts de 50 % chacun pour la surtaxe sur les plus-values élevées.
-- **Choix du régime** : location nue classique (S0) au réel ou au micro-foncier, LMNP (S4) au réel, au micro-BIC ou au réel puis au micro-BIC à partir de l'année de bascule ; le régime retenu est celui de la meilleure valeur actuelle nette au rendement du placement. Micro-foncier exclu si les autres revenus fonciers du foyer sont déjà au réel ; seuils appréciés foyer par foyer et chaque année.
+- **Choix du régime** : location nue classique (S0) au réel ou au micro-foncier, LMNP (S4) au réel, au micro-BIC ou au réel puis au micro-BIC à partir de l'année de bascule ; le régime retenu est celui de la meilleure valeur actuelle nette au rendement du placement. Micro-foncier exclu si les autres revenus fonciers du foyer sont déjà au réel ; micro-BIC exclu pour un logement indivis entre plusieurs foyers (`lmnp.micro_bic_exclu_indivision`) ; seuils et abattement minimum appréciés foyer par foyer, sur sa quote-part, et chaque année.
 - **LMNP pendant la construction** : charges antérieures au début de la location (intérêts intercalaires, assurance, frais d'emprunt, frais d'acquisition passés en charge) reportées sur le premier exercice d'activité.
 - **Sortie anticipée** : Jeanbrun, amortissements déduits réintégrés au quotient l'année de la cession et prélèvements sociaux sur leur montant ; ils ne minorent alors plus le prix d'acquisition dans la plus-value (lecture de l'outil, pour éviter une double imposition). Denormandie, impôt de l'année de cession majoré des réductions obtenues, sans réduction cette année-là. LLI, complément de TVA payé à la revente. Remise en cause des déficits imputés sur le revenu global faute de location jusqu'au 31/12 de la 3e année suivante : alerte, non chiffrée.
 - **Revente** : neuf, prix TTC à 20 % diminué de la décote du neuf, revalorisé sur la durée exacte de détention ; ancien, prix et travaux revalorisés sans décote ; indemnités de remboursement anticipé au plafond légal ; plus-value des particuliers, sauf SCI à l'IS.

@@ -242,6 +242,7 @@ export interface ParametresFiscaux {
       readonly abattement: number
       readonly abattement_minimum: number
     }>
+    readonly micro_bic_exclu_indivision: Parametre<boolean>
     readonly seuil_non_professionnel_recettes: Parametre<number>
     readonly amortissement_limite_au_resultat: Parametre<boolean>
     readonly deficit_report_ans: Parametre<number>

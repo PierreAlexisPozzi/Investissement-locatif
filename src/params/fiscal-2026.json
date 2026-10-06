@@ -576,6 +576,15 @@
       "statut": "verifie",
       "commentaire": "Location meublée de longue durée. Le régime réel est accessible sur option sous le seuil."
     },
+    "micro_bic_exclu_indivision": {
+      "valeur": true,
+      "unite": "booléen",
+      "source": "CGI art. 50-0, 2 ; BOI-BIC-DECLA-10-10-20 du 19/08/2026, §80 ; impots.gouv.fr, FAQ « Régime des locations meublées » (version 03/2026)",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/1799-PGP.html/identifiant=BOI-BIC-DECLA-10-10-20-20260819",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Les indivisions, soumises au régime fiscal des sociétés de personnes, ne peuvent pas, sauf exception, bénéficier du micro-BIC ; la FAQ de la DGFiP l'applique aux locations meublées. Un logement meublé indivis entre plusieurs foyers (concubins) relève donc du régime réel. Un foyer unique (personne seule, couple marié ou pacsé) est traité comme un exploitant unique : bien commun des époux, ou dérogation admise pour un bien indivis entre époux dont un seul est immatriculé (§80). Cette dérogation ne vise pas expressément les partenaires de PACS."
+    },
     "seuil_non_professionnel_recettes": {
       "valeur": 23000,
       "unite": "€ de recettes annuelles du foyer",

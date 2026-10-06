@@ -155,7 +155,7 @@ export type RegimeFiscal = 'reel' | 'micro' | 'reel_puis_micro'
 export interface OptionsSimulation {
   /** Années de location avant la revente. */
   readonly horizon: number
-  /** Régime imposé ; à défaut, le plus favorable en valeur actuelle nette (§8.4). */
+  /** Régime imposé, sans contrôle de son admissibilité ; à défaut, le plus favorable admissible en valeur actuelle nette (§8.4). */
   readonly regime?: RegimeFiscal
   /** Coefficient appliqué au prix de revente (prix d'équilibre, sensibilités). */
   readonly facteur_prix_revente?: number
@@ -1147,6 +1147,7 @@ function simulerImpotRevenu(
     )
   }
   if (lmnp) {
+    if (microBicExclu(d, p)) alertes.push('Logement meublé indivis entre plusieurs foyers : micro-BIC exclu, régime réel obligatoire')
     const recettesMax = Math.max(0, ...annees.map((l) => l.loyers_encaisses))
     const autresRevenus = foyers.reduce((total, foyer) => total + (foyer.revenus_activite ?? foyer.revenu_imposable), 0)
     if (statutLoueurMeuble(recettesMax, autresRevenus, p) === 'professionnel') {
@@ -1169,6 +1170,11 @@ function simulerImpotRevenu(
     alertes: [...alertes, ...placement.alertes],
     exercices_lmnp: exercicesLmnp,
   }
+}
+
+/** Les indivisions sont exclues du micro-BIC : un logement meublé indivis entre plusieurs foyers relève du réel. */
+function microBicExclu(d: Dossier, p: ParametresFiscaux): boolean {
+  return p.lmnp.micro_bic_exclu_indivision.valeur && d.foyers.foyers.length > 1
 }
 
 /** Première année où le micro-BIC deviendrait plus favorable que le réel, sur toute la détention. */
@@ -1279,8 +1285,11 @@ function simulerSciIs(d: Dossier, cfg: Configuration, options: OptionsSimulation
 }
 
 /** Régimes à comparer pour un scénario ; la bascule LMNP n'est candidate que si elle existe (§8.4). */
-function regimesCandidats(d: Dossier, cfg: Configuration, anneeBascule: number | null): RegimeFiscal[] {
-  if (cfg.regime === 'lmnp') return anneeBascule === null ? ['reel', 'micro'] : ['reel', 'micro', 'reel_puis_micro']
+function regimesCandidats(d: Dossier, cfg: Configuration, anneeBascule: number | null, p: ParametresFiscaux): RegimeFiscal[] {
+  if (cfg.regime === 'lmnp') {
+    if (microBicExclu(d, p)) return ['reel']
+    return anneeBascule === null ? ['reel', 'micro'] : ['reel', 'micro', 'reel_puis_micro']
+  }
   const sansAvantage = cfg.jeanbrun === null && !cfg.lli && cfg.denormandie === null
   const existantsAuReel = d.foyers.foyers.some((foyer) => foyer.revenus_fonciers_existants?.regime === 'reel')
   return sansAvantage && !existantsAuReel ? ['reel', 'micro'] : ['reel']
@@ -1312,9 +1321,10 @@ export function simulerScenario(
   if (!elig.eligible) return { ...commun, simulation: null }
   if (cfg.regime === 'is') return { ...commun, simulation: simulerSciIs(d, cfg, options, p) }
 
-  const avecBascule = cfg.regime === 'lmnp' && (options.regime === undefined || options.regime === 'reel_puis_micro')
+  const avecBascule =
+    cfg.regime === 'lmnp' && !microBicExclu(d, p) && (options.regime === undefined || options.regime === 'reel_puis_micro')
   const anneeBascule = avecBascule ? basculeLmnp(d, cfg, options, p) : null
-  const regimes = options.regime === undefined ? regimesCandidats(d, cfg, anneeBascule) : [options.regime]
+  const regimes = options.regime === undefined ? regimesCandidats(d, cfg, anneeBascule, p) : [options.regime]
   const taux = d.hypotheses.rendement_placement
   const simulations = regimes
     .map((regime) => simulerImpotRevenu(d, cfg, regime, options, p, anneeBascule))

@@ -8,7 +8,7 @@ import {
 } from '../../src/engine/scenario'
 import { valeurActuelleNette } from '../../src/engine/actualisation'
 import type { Dossier } from '../../src/engine/dossier'
-import { parametresFiscaux2026 as p } from '../../src/params'
+import { parametresFiscaux2026 as p, type ParametresFiscaux } from '../../src/params'
 import { dossierAncien, dossierConcubins, dossierType } from './fixtures/dossier-type'
 
 const PRECISION = 6
@@ -255,11 +255,34 @@ describe('corrections de la revue de l’étape 4', () => {
     expect(premiere?.charges.copropriete).toBeCloseTo((600 * 8) / 12, PRECISION)
   })
 
-  it('micro-BIC entre concubins : l’abattement minimum s’applique à la quote-part de chaque foyer', () => {
+  const sansExclusion: ParametresFiscaux = {
+    ...p,
+    lmnp: { ...p.lmnp, micro_bic_exclu_indivision: { ...p.lmnp.micro_bic_exclu_indivision, valeur: false } },
+  }
+
+  it('LMNP entre concubins : logement indivis entre deux foyers, micro-BIC exclu et régime réel retenu', () => {
+    // Loyer élevé et achat comptant : sans l'exclusion, le passage au micro-BIC l'emporterait sur le réel.
+    const favorableAuMicro = (d: Dossier): Dossier => ({
+      ...d,
+      bien: { ...d.bien, loyer_marche_meuble: 3000 },
+      financement: { ...d.financement, emprunt: 0, frais_dossier: 0, frais_garantie: 0 },
+    })
+    const concubins = favorableAuMicro(dossierConcubins)
+    expect(simulerScenario(concubins, 'S4', { horizon: 16 }, sansExclusion).simulation?.regime).toBe('reel_puis_micro')
+    const s = simuler(concubins, 'S4', 16)
+    expect(s.regime).toBe('reel')
+    expect(s.alertes.some((a) => a.includes('micro-BIC exclu'))).toBe(true)
+    // Un foyer unique (couple marié) garde le choix du régime, sans cette alerte.
+    const marie = simuler(favorableAuMicro(dossierType), 'S4', 16)
+    expect(marie.regime).toBe('reel_puis_micro')
+    expect(marie.alertes.some((a) => a.includes('micro-BIC exclu'))).toBe(false)
+  })
+
+  it('micro-BIC sans l’exclusion de l’indivision : l’abattement minimum s’applique à la quote-part de chaque foyer', () => {
     const petitLoyer: Dossier = { ...dossierConcubins, bien: { ...dossierConcubins.bien, loyer_marche_meuble: 40 } }
-    const s = simuler(petitLoyer, 'S4', 16, 'micro')
+    const s = simulerScenario(petitLoyer, 'S4', { horizon: 16, regime: 'micro' }, sansExclusion).simulation
     // 40 € par mois, soit moins de 305 € de recettes par foyer : bénéfice nul pour chacun.
-    expect(s.annees.filter((a) => a.mois_location === 12).every((a) => a.resultat_fiscal === 0)).toBe(true)
+    expect(s?.annees.filter((a) => a.mois_location === 12).every((a) => a.resultat_fiscal === 0)).toBe(true)
   })
 })
 
