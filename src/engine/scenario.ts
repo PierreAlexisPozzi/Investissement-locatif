@@ -140,10 +140,24 @@ const CONFIGURATIONS: Readonly<Record<IdScenario, Configuration>> = {
 /** Alerte de simulation reprise, chiffres à l'appui, par les alertes de la recommandation (§10.5). */
 export const ALERTE_JEANBRUN_PLAFONNE = 'Jeanbrun : l’annuité dépasse le plafond annuel du foyer, l’amortissement est plafonné'
 
-/** Niveau du plafond de loyer d'un scénario ; null pour un loyer de marché (S0, S4). */
-export function plafondLoyerScenario(id: IdScenario): NiveauLoyer | null {
-  const loyer = CONFIGURATIONS[id].loyer
-  return loyer === 'marche_nu' || loyer === 'marche_meuble' ? null : loyer
+/** Caractéristiques d'un scénario utiles hors de la simulation : recommandation, contre-expertise (§10, §12). */
+export interface CaracteristiquesScenario {
+  readonly detention: ModeDetention
+  readonly meuble: boolean
+  /** Acquisition au taux réduit de TVA du LLI. */
+  readonly tva_reduite: boolean
+  /** Niveau du plafond de loyer ; null pour un loyer de marché (S0, S4). */
+  readonly niveau_loyer: NiveauLoyer | null
+}
+
+export function caracteristiquesScenario(id: IdScenario): CaracteristiquesScenario {
+  const cfg = CONFIGURATIONS[id]
+  return {
+    detention: cfg.detention,
+    meuble: cfg.regime === 'lmnp',
+    tva_reduite: cfg.tva_reduite,
+    niveau_loyer: cfg.loyer === 'marche_nu' || cfg.loyer === 'marche_meuble' ? null : cfg.loyer,
+  }
 }
 
 /** Engagements fiscaux d'un scénario : durée de blocage et pénalités de sortie anticipée (§9). */

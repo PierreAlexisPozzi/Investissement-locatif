@@ -38,9 +38,9 @@ import { prixTtc } from './lli'
 import { plafondLoyerIntermediaire } from './loyer-plafond'
 import {
   ALERTE_JEANBRUN_PLAFONNE,
+  caracteristiquesScenario,
   engagementsScenario,
   LIBELLES_SCENARIOS,
-  plafondLoyerScenario,
   SCENARIOS,
   type IdScenario,
   type ResultatSimulation,
@@ -307,7 +307,7 @@ function evaluerAlertes(d: Dossier, c: Classement, p: ParametresFiscaux): Alerte
   const ids = (filtre: (e: EvaluationScenario) => boolean): IdScenario[] => eligibles.filter(filtre).map((e) => e.id)
 
   // Loyer plafond au-dessus du marché : le plafond ne contraint pas, un loyer annoncé au plafond serait surévalué.
-  const intermediaires = ids((e) => plafondLoyerScenario(e.id) === 'intermediaire')
+  const intermediaires = ids((e) => caracteristiquesScenario(e.id).niveau_loyer === 'intermediaire')
   if (intermediaires.length > 0) {
     const plafond = plafondLoyerIntermediaire(b.zone, b.surface, p).loyer_plafond_mensuel
     if (plafond > b.loyer_marche_nu) {
