@@ -294,6 +294,18 @@ describe('corrections de la revue de l’étape 4', () => {
     }
     expect(simulerScenario(loyerEleve, 'S4', { horizon: 16 }, sansExclusion).simulation?.regime).toBe('reel_puis_micro')
   })
+
+  it('micro-BIC après la bascule : écarté si les recettes dépassent le seuil une année suivante', () => {
+    // 6 000 € par mois, achat comptant : bascule en 2029, recettes au-delà du seuil de 2026 à partir de 2039.
+    const loyerEleve: Dossier = {
+      ...dossierType,
+      bien: { ...dossierType.bien, loyer_marche_meuble: 6000 },
+      financement: { ...dossierType.financement, emprunt: 0, frais_dossier: 0, frais_garantie: 0 },
+    }
+    const s = simuler(loyerEleve, 'S4', 16)
+    expect(Math.max(...s.annees.map((a) => a.loyers_encaisses))).toBeGreaterThan(p.lmnp.micro_bic.valeur.seuil_recettes_revenus_2026)
+    expect(s.regime).toBe('reel')
+  })
 })
 
 describe('placement de référence équivalent (S6)', () => {

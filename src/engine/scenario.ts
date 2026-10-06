@@ -1308,10 +1308,19 @@ function regimesCandidats(d: Dossier, cfg: Configuration, anneeBascule: number |
   return sansAvantage && !existantsAuReel ? ['reel', 'micro'] : ['reel']
 }
 
-/** Le micro-foncier ou le micro-BIC n'est retenu que si chaque foyer en remplit les conditions chaque année. */
-function regimeAdmissible(simulation: ResultatSimulation, cfg: Configuration, d: Dossier, p: ParametresFiscaux): boolean {
-  if (simulation.regime !== 'micro') return true
+/** Le micro-foncier ou le micro-BIC n'est retenu que si chaque foyer en remplit les conditions chaque année où il s'applique. */
+function regimeAdmissible(
+  simulation: ResultatSimulation,
+  cfg: Configuration,
+  d: Dossier,
+  anneeBascule: number | null,
+  p: ParametresFiscaux,
+): boolean {
+  const debutMicro =
+    simulation.regime === 'micro' ? Number.NEGATIVE_INFINITY : simulation.regime === 'reel_puis_micro' ? anneeBascule : null
+  if (debutMicro === null) return true
   return simulation.annees.every((a) =>
+    a.annee < debutMicro ||
     d.foyers.foyers.every((foyer) => {
       const quotePart = a.loyers_encaisses * foyer.quote_part
       return cfg.regime === 'lmnp'
@@ -1341,7 +1350,7 @@ export function simulerScenario(
   const taux = d.hypotheses.rendement_placement
   const simulations = regimes
     .map((regime) => simulerImpotRevenu(d, cfg, regime, options, p, anneeBascule))
-    .filter((s) => options.regime !== undefined || regimeAdmissible(s, cfg, d, p))
+    .filter((s) => options.regime !== undefined || regimeAdmissible(s, cfg, d, anneeBascule, p))
   const meilleure = simulations.reduce<ResultatSimulation | null>(
     (choix, s) => (choix === null || valeurActuelleNette(s.flux, taux) > valeurActuelleNette(choix.flux, taux) ? s : choix),
     null,
