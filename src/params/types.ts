@@ -79,6 +79,13 @@ export interface TrancheSurtaxe {
 
 export type ModeAppreciationSurtaxe = (typeof MODES_APPRECIATION_SURTAXE)[number]
 
+/** Années de détention révolues de `de` à `a` (incluses), chacune abattue de `taux_annuel`. */
+export interface TrancheAbattement {
+  readonly de: number
+  readonly a: number
+  readonly taux_annuel: number
+}
+
 export interface MetaParametres {
   readonly version: string
   readonly date_arret: string
@@ -289,19 +296,8 @@ export interface ParametresFiscaux {
 
   readonly plus_value_immobiliere: {
     readonly taux_ir: Parametre<number>
-    readonly abattement_ir: Parametre<{
-      readonly annees_sans_abattement: number
-      readonly taux_annuel_6e_a_21e: number
-      readonly taux_22e: number
-      readonly exoneration_apres: number
-    }>
-    readonly abattement_ps: Parametre<{
-      readonly annees_sans_abattement: number
-      readonly taux_annuel_6e_a_21e: number
-      readonly taux_22e: number
-      readonly taux_annuel_23e_a_30e: number
-      readonly exoneration_apres: number
-    }>
+    readonly abattement_ir: Parametre<{ readonly tranches: readonly TrancheAbattement[] }>
+    readonly abattement_ps: Parametre<{ readonly tranches: readonly TrancheAbattement[] }>
     readonly forfait_frais_acquisition: Parametre<number>
     readonly forfait_travaux: Parametre<{ readonly taux: number; readonly detention_superieure_a_ans: number }>
     readonly forfait_travaux_bien_neuf_amorti: Parametre<boolean>

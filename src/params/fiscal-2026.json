@@ -875,28 +875,33 @@
       "commentaire": "Prélèvements sociaux : voir prelevements_sociaux.plus_values_immobilieres."
     },
     "abattement_ir": {
-      "valeur": { "annees_sans_abattement": 5, "taux_annuel_6e_a_21e": 0.06, "taux_22e": 0.04, "exoneration_apres": 22 },
-      "unite": "années de détention ; taux décimal",
+      "valeur": {
+        "tranches": [
+          { "de": 6, "a": 21, "taux_annuel": 0.06 },
+          { "de": 22, "a": 22, "taux_annuel": 0.04 }
+        ]
+      },
+      "unite": "années de détention révolues (bornes incluses) ; taux décimal par année",
       "source": "CGI art. 150 VC ; service-public F10864",
       "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F10864",
       "date_verification": "2026-10-06",
       "statut": "verifie",
-      "commentaire": "9 ans → 24 % ; 16 ans → 66 % ; 22 ans → 100 %."
+      "commentaire": "Abattement = somme des taux des années de détention, plafonnée à 100 % : rien jusqu'à 5 ans, exonération à 22 ans. 9 ans → 24 % ; 16 ans → 66 % ; 22 ans → 100 %."
     },
     "abattement_ps": {
       "valeur": {
-        "annees_sans_abattement": 5,
-        "taux_annuel_6e_a_21e": 0.0165,
-        "taux_22e": 0.016,
-        "taux_annuel_23e_a_30e": 0.09,
-        "exoneration_apres": 30
+        "tranches": [
+          { "de": 6, "a": 21, "taux_annuel": 0.0165 },
+          { "de": 22, "a": 22, "taux_annuel": 0.016 },
+          { "de": 23, "a": 30, "taux_annuel": 0.09 }
+        ]
       },
-      "unite": "années de détention ; taux décimal",
+      "unite": "années de détention révolues (bornes incluses) ; taux décimal par année",
       "source": "CGI art. 150 VC ; service-public F10864",
       "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F10864",
       "date_verification": "2026-10-06",
       "statut": "verifie",
-      "commentaire": "9 ans → 6,6 % ; 16 ans → 18,15 % ; 22 ans → 28 % ; 25 ans → 55 % ; 30 ans → 100 %."
+      "commentaire": "Abattement = somme des taux des années de détention, plafonnée à 100 % : rien jusqu'à 5 ans, exonération à 30 ans. 9 ans → 6,6 % ; 16 ans → 18,15 % ; 22 ans → 28 % ; 25 ans → 55 % ; 30 ans → 100 %."
     },
     "forfait_frais_acquisition": {
       "valeur": 0.075,

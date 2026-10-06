@@ -4,7 +4,7 @@
  * ceux des exemples officiels cités en commentaire.
  */
 import { describe, expect, it } from 'vitest'
-import { parametresFiscaux2026 as p, ZONES, type TrancheSurtaxe } from '../../src/params'
+import { parametresFiscaux2026 as p, ZONES, type TrancheAbattement, type TrancheSurtaxe } from '../../src/params'
 
 const PRECISION = 9
 
@@ -97,20 +97,29 @@ describe('LLI', () => {
 })
 
 describe('plus-value immobilière', () => {
-  const ir = p.plus_value_immobiliere.abattement_ir.valeur
-  const ps = p.plus_value_immobiliere.abattement_ps.valeur
-  const anneesPleines = ir.exoneration_apres - 1 - ir.annees_sans_abattement
+  const ir = p.plus_value_immobiliere.abattement_ir.valeur.tranches
+  const ps = p.plus_value_immobiliere.abattement_ps.valeur.tranches
+  const total = (tranches: readonly TrancheAbattement[]) =>
+    tranches.reduce((somme, t) => somme + (t.a - t.de + 1) * t.taux_annuel, 0)
+
+  it.each([
+    ['impôt sur le revenu', ir],
+    ['prélèvements sociaux', ps],
+  ])('%s : les tranches d’abattement sont contiguës et commencent à la 6e année', (_, tranches) => {
+    expect(tranches[0]?.de).toBe(6)
+    tranches.slice(1).forEach((t, i) => {
+      expect(t.de).toBe((tranches[i]?.a ?? Number.NaN) + 1)
+    })
+  })
 
   it('l’abattement pour l’impôt sur le revenu atteint 100 % à la 22e année', () => {
-    expect(anneesPleines * ir.taux_annuel_6e_a_21e + ir.taux_22e).toBeCloseTo(1, PRECISION)
+    expect(ir.at(-1)?.a).toBe(22)
+    expect(total(ir)).toBeCloseTo(1, PRECISION)
   })
 
   it('l’abattement pour les prélèvements sociaux atteint 100 % à la 30e année', () => {
-    const total =
-      anneesPleines * ps.taux_annuel_6e_a_21e +
-      ps.taux_22e +
-      (ps.exoneration_apres - ir.exoneration_apres) * ps.taux_annuel_23e_a_30e
-    expect(total).toBeCloseTo(1, PRECISION)
+    expect(ps.at(-1)?.a).toBe(30)
+    expect(total(ps)).toBeCloseTo(1, PRECISION)
   })
 
   describe('surtaxe sur les plus-values élevées', () => {
