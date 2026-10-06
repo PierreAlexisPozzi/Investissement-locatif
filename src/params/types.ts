@@ -222,6 +222,10 @@ export interface ParametresFiscaux {
     readonly maintien_location_annees: Parametre<number>
   }
 
+  readonly revenus_fonciers_reel: {
+    readonly frais_gestion_forfaitaires_par_local: Parametre<number>
+  }
+
   readonly micro_foncier: {
     readonly seuil_recettes: Parametre<number>
     readonly abattement: Parametre<number>

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  fraisGestionForfaitaires,
   imputationsRemisesEnCause,
   prelevementsSociauxFonciers,
   revenuFoncierMicro,
@@ -120,6 +121,13 @@ describe('micro-foncier', () => {
   it('impute les déficits fonciers antérieurs après abattement', () => {
     const r = revenuFoncierMicro(2028, 10000, p, { deficits_anterieurs: [{ annee: 2027, montant: 2000 }] })
     expect(r.revenu_foncier_imposable).toBe(5000)
+  })
+})
+
+describe('frais de gestion forfaitaires (BOI-RFPI-BASE-20-10, §210 à 240)', () => {
+  it('20 € par local loué, déductibles au réel en plus des honoraires versés à des tiers', () => {
+    expect(fraisGestionForfaitaires(1, p)).toBe(20)
+    expect(fraisGestionForfaitaires(3, p)).toBe(60)
   })
 })
 

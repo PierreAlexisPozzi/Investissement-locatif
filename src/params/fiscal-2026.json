@@ -519,6 +519,18 @@
     }
   },
 
+  "revenus_fonciers_reel": {
+    "frais_gestion_forfaitaires_par_local": {
+      "valeur": 20,
+      "unite": "€ par local et par an",
+      "source": "CGI art. 31, I-1°, e ; BOI-RFPI-BASE-20-10 du 06/07/2016, §210 à 240",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/5804-PGP.html/identifiant=BOI-RFPI-BASE-20-10-20160706",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Forfait réputé couvrir les frais de gestion non déductibles pour leur montant réel (correspondance, déplacements, téléphone, matériel de bureau…), sans déduction possible au-delà. Un local s'entend du logement et de ses dépendances louées au même locataire. Les honoraires versés à des tiers (gérance, comptabilité) se déduisent pour leur montant réel."
+    }
+  },
+
   "micro_foncier": {
     "seuil_recettes": {
       "valeur": 15000,

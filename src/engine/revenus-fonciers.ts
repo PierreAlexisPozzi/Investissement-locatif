@@ -163,6 +163,11 @@ export function revenuFoncierMicro(
   }
 }
 
+/** Frais de gestion forfaitaires du régime réel : un forfait par local loué (logement et dépendances). */
+export function fraisGestionForfaitaires(nombreLocaux: number, p: ParametresFiscaux): number {
+  return Math.max(0, nombreLocaux) * p.revenus_fonciers_reel.frais_gestion_forfaitaires_par_local.valeur
+}
+
 /** Prélèvements sociaux sur le revenu foncier net imposable. */
 export function prelevementsSociauxFonciers(revenuFoncierImposable: number, p: ParametresFiscaux): number {
   return Math.max(0, revenuFoncierImposable) * p.prelevements_sociaux.revenus_fonciers.valeur.total

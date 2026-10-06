@@ -16,7 +16,10 @@ import type { ParametresFiscaux } from '../params'
 import { repartir } from './commun'
 
 export interface FraisSci {
-  /** Statuts, immatriculation, annonce légale : payés l'année 0. */
+  /**
+   * Statuts, immatriculation, annonce légale : payés l'année 0, non déduits des
+   * revenus fonciers. TODO(fiscal) : aucune source lue ne traite leur déduction.
+   */
   readonly constitution: number
   readonly comptabilite_annuelle: number
   readonly frais_bancaires_annuels: number
@@ -25,7 +28,10 @@ export interface FraisSci {
 export interface FraisAnnuelsSci {
   /** Comptabilité : charge déductible des revenus fonciers (§8.2). */
   readonly deductibles_revenus_fonciers: number
-  /** Frais bancaires : non déduits des revenus fonciers, à défaut de règle lue (choix prudent). */
+  /**
+   * Frais bancaires : autres frais de gestion, couverts par le forfait par local
+   * (BOI-RFPI-BASE-20-10, §240) et donc non déduits en plus (lecture de l'outil).
+   */
   readonly non_deductibles_revenus_fonciers: number
   readonly total: number
 }

@@ -42,7 +42,7 @@ Seuls les sites de l'État admis par le cahier des charges font foi. Chaque page
 
 ## 2. Paramètres dont le statut n'est pas `verifie`
 
-Décompte : 97 paramètres, dont 89 vérifiés, 7 à confirmer et 1 dont le texte n'a pas été consulté. Liste régénérable avec `npm run params:rapport`.
+Décompte : 98 paramètres, dont 90 vérifiés, 7 à confirmer et 1 dont le texte n'a pas été consulté. Liste régénérable avec `npm run params:rapport`.
 
 <!-- debut:parametres-non-verifies -->
 | Paramètre | Statut | Valeur retenue | Ce qui reste à établir | À qui le demander |
