@@ -21,6 +21,8 @@ export interface EntreePlacement {
   readonly versement_initial: number
   /** Versements nets de chaque année, de la première à l'horizon ; négatifs pour un retrait. */
   readonly versements_annuels: readonly number[]
+  /** Mois de placement de chaque année (années civiles partielles) ; 12 par défaut. */
+  readonly mois_par_annee?: readonly number[]
   /** Rendement annuel net de frais, avant fiscalité. */
   readonly rendement_annuel: number
   readonly enveloppe: EnveloppePlacement
@@ -132,10 +134,13 @@ export function simulerPlacement(e: EntreePlacement, p: ParametresFiscaux): Resu
   verser(e.versement_initial)
   const annees: AnneePlacement[] = []
   e.versements_annuels.forEach((versementAnnuel, i) => {
-    for (let mois = 0; mois < MOIS_PAR_AN; mois++) {
+    const moisDeLAnnee = e.mois_par_annee?.[i] ?? MOIS_PAR_AN
+    // Année sans mois de placement (cession un 1er janvier) : le flux est versé ou retiré en une fois.
+    if (moisDeLAnnee === 0) verser(versementAnnuel)
+    for (let mois = 0; mois < moisDeLAnnee; mois++) {
       principale.capital *= 1 + tauxMensuel
       compteTitres.capital *= 1 + tauxMensuel
-      verser(versementAnnuel / MOIS_PAR_AN)
+      verser(versementAnnuel / moisDeLAnnee)
     }
     annees.push({
       rang: i + 1,
@@ -145,7 +150,7 @@ export function simulerPlacement(e: EntreePlacement, p: ParametresFiscaux): Resu
     })
   })
 
-  const duree = e.versements_annuels.length
+  const duree = e.versements_annuels.reduce((total, _, i) => total + (e.mois_par_annee?.[i] ?? MOIS_PAR_AN), 0) / MOIS_PAR_AN
   const gainPrincipal = principale.capital - principale.versementsNets
   const gainCompteTitres = compteTitres.capital - compteTitres.versementsNets
   const fiscalitePrincipale =

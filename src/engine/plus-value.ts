@@ -27,6 +27,8 @@ export interface EntreePlusValue {
   readonly prix_acquisition: number
   /** Frais d'acquisition réels ; le forfait est retenu s'il est plus favorable. */
   readonly frais_acquisition_reels?: number
+  /** Frais d'acquisition exclus (déjà passés en charge, selon `frais_acquisition_deduits_en_charge`) : ni réels ni forfait. */
+  readonly frais_acquisition_exclus?: boolean
   /** Travaux réels non déduits par ailleurs ; le forfait est retenu s'il est autorisé et plus favorable. */
   readonly travaux_reels?: number
   /** Forfait travaux admis : désactivé par défaut pour un bien neuf amorti (paramètre à confirmer). */
@@ -99,9 +101,10 @@ export function assiettesSurtaxe(plusValueImposable: number, cedants: Cedants, p
 
 export function calculerPlusValue(e: EntreePlusValue, p: ParametresFiscaux): DetailPlusValue {
   const pvi = p.plus_value_immobiliere
-  const fraisForfait = e.prix_acquisition * pvi.forfait_frais_acquisition.valeur
-  const fraisReels = e.frais_acquisition_reels ?? 0
-  const fraisForfaitaires = fraisForfait >= fraisReels
+  const exclus = e.frais_acquisition_exclus === true
+  const fraisForfait = exclus ? 0 : e.prix_acquisition * pvi.forfait_frais_acquisition.valeur
+  const fraisReels = exclus ? 0 : (e.frais_acquisition_reels ?? 0)
+  const fraisForfaitaires = !exclus && fraisForfait >= fraisReels
   const forfaitTravaux = pvi.forfait_travaux.valeur
   const travauxForfait =
     e.forfait_travaux_autorise && e.annees_detention > forfaitTravaux.detention_superieure_a_ans

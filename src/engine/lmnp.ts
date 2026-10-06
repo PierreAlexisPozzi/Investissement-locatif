@@ -233,15 +233,17 @@ export function prelevementsSociauxLmnp(benefice: number, p: ParametresFiscaux):
 }
 
 /**
- * Amortissements réintégrés dans la plus-value (CGI art. 150 VB) : ceux de
- * l'immeuble effectivement déduits, pour une cession à compter de la date
- * d'entrée en vigueur. Les amortissements du mobilier, hors du champ de la
- * plus-value immobilière, et les amortissements différés, jamais déduits, ne
- * sont pas réintégrés.
+ * Amortissements réintégrés dans la plus-value (CGI art. 150 VB) : ceux
+ * effectivement déduits, pour une cession à compter de la date d'entrée en
+ * vigueur. Par arbitrage du 06/10/2026, ceux du mobilier, bien meuble hors du
+ * champ de la plus-value immobilière, ne le sont pas ; les amortissements
+ * différés, jamais déduits, ne le sont jamais.
  */
 export function amortissementsReintegresLmnp(etat: EtatLmnp, dateCession: string, p: ParametresFiscaux): number {
   const debut = p.lmnp.reintegration_amortissements_pv.valeur.cessions_a_compter_du
-  return comparerDates(dateCession, debut) >= 0 ? etat.amortissements_deduits.immeuble : 0
+  if (comparerDates(dateCession, debut) < 0) return 0
+  const { immeuble, mobilier } = etat.amortissements_deduits
+  return p.lmnp.perimetre_reintegration_pv.valeur === 'immeuble_et_mobilier' ? immeuble + mobilier : immeuble
 }
 
 /**

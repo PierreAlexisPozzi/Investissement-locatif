@@ -30,6 +30,13 @@ describe('capitalisation', () => {
     expect(r.capital_brut).toBeCloseTo((100 * 0.04) / tauxMensuel, PRECISION)
   })
 
+  it('années civiles partielles : la capitalisation suit les mois de placement', () => {
+    const r = simulerPlacement({ ...capitalUnique('pea', 2), mois_par_annee: [6, 12] }, p)
+    expect(r.capital_brut).toBeCloseTo(10000 * 1.04 ** 1.5, PRECISION)
+    // 18 mois de détention : PEA de moins de 5 ans, imposé comme un compte-titres.
+    expect(r.impot_revenu).toBeCloseTo((10000 * 1.04 ** 1.5 - 10000) * 0.128, PRECISION)
+  })
+
   it('un flux négatif est un retrait ; signalé si le capital devient négatif', () => {
     const r = simulerPlacement({ ...capitalUnique('cto', 1), versements_annuels: [-12000] }, p)
     expect(r.versements_nets).toBeCloseTo(-2000, PRECISION)

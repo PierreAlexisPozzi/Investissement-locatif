@@ -48,6 +48,15 @@ export interface HypothesesDefaut {
   readonly financement: {
     readonly ira_appliquees: Hypothese<boolean>
   }
+  readonly sensibilites: Hypothese<{
+    readonly variation_prix_revente: number
+    readonly variation_loyer: number
+    readonly vacance_mois: { readonly basse: number; readonly haute: number }
+    readonly variation_taux_emprunt: number
+    readonly variation_revenus: number
+    readonly grille_decote_neuf: readonly number[]
+    readonly grille_revalorisation_prix: readonly number[]
+  }>
   readonly horizons_ans: Hypothese<readonly number[]>
 }
 

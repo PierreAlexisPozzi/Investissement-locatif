@@ -1,17 +1,20 @@
 import { listerParametres } from './parcours'
 import { estUrlOfficielle } from './sources-officielles'
 import {
+  DEPARTS_DETENTION_VEFA,
   EXCEPTIONS_RUPTURE_JEANBRUN,
   MODES_APPRECIATION_SURTAXE,
   MODES_ARRONDI_IMPOT,
   MODES_PRORATA,
   PERIMETRES_ASSIMILES_LLI,
+  PERIMETRES_REINTEGRATION_LMNP,
   POINTS_DE_DEPART_JEANBRUN,
   PREMIERES_ANNEES_DENORMANDIE,
   REPARTITIONS_PLAFOND_CONCUBINS,
   STATUTS_CUMUL_JEANBRUN_LLI,
   STATUTS_PARAMETRE,
   TRAITEMENTS_FRAIS_ACQUISITION_LMNP,
+  TRAITEMENTS_FRAIS_DEDUITS_PV,
   ZONES,
   type Elargi,
   type ParametresFiscaux,
@@ -97,6 +100,7 @@ function anomaliesEnumerations(d: Elargi<ParametresFiscaux>): string[] {
     d.lmnp.modelisation.valeur.frais_acquisition,
     TRAITEMENTS_FRAIS_ACQUISITION_LMNP,
   )
+  verifier('lmnp.perimetre_reintegration_pv', d.lmnp.perimetre_reintegration_pv.valeur, PERIMETRES_REINTEGRATION_LMNP)
   verifier('lli.zones_eligibles', d.lli.zones_eligibles.valeur, ZONES)
   verifier('lli.perimetres_assimiles', d.lli.perimetres_assimiles.valeur, PERIMETRES_ASSIMILES_LLI)
   verifier('cumul_jeanbrun_lli.statut_cumul', d.cumul_jeanbrun_lli.statut_cumul.valeur, STATUTS_CUMUL_JEANBRUN_LLI)
@@ -109,6 +113,16 @@ function anomaliesEnumerations(d: Elargi<ParametresFiscaux>): string[] {
     'plus_value_immobiliere.surtaxe_appreciation_seuil',
     Object.values(d.plus_value_immobiliere.surtaxe_appreciation_seuil.valeur),
     MODES_APPRECIATION_SURTAXE,
+  )
+  verifier(
+    'plus_value_immobiliere.frais_acquisition_deduits_en_charge',
+    d.plus_value_immobiliere.frais_acquisition_deduits_en_charge.valeur,
+    TRAITEMENTS_FRAIS_DEDUITS_PV,
+  )
+  verifier(
+    'plus_value_immobiliere.depart_detention_vefa',
+    d.plus_value_immobiliere.depart_detention_vefa.valeur,
+    DEPARTS_DETENTION_VEFA,
   )
   const datesAControler = {
     'jeanbrun.periode_acquisition.debut': d.jeanbrun.periode_acquisition.valeur.debut,

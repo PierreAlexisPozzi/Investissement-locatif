@@ -363,7 +363,7 @@
       "url_officielle": "https://www.assemblee-nationale.fr/dyn/17/textes/l17t0227_texte-adopte-seance",
       "date_verification": "2026-10-06",
       "statut": "a_confirmer",
-      "commentaire": "Hypothèse choisie (arbitrage du 06/10/2026). Choix prudent : le plafond annuel est proratisé comme l'annuité la première année. Lecture littérale possible : plafond plein dès la première année. N'a d'effet qu'au-delà de 285 714 € de prix en intermédiaire, et seulement la première année.",
+      "commentaire": "Hypothèse choisie (arbitrage du 06/10/2026). Choix prudent : le plafond annuel est proratisé comme l'annuité la première année. Lecture littérale possible : plafond plein dès la première année. Le même choix s'applique à l'année de la cession lorsqu'elle est partielle. N'a d'effet qu'au-delà de 285 714 € de prix en intermédiaire, et seulement les années partielles.",
       "arbitrage": {
         "date": "2026-10-06",
         "choix": "Proratiser le plafond annuel la première année, comme l'annuité (lecture prudente).",
@@ -576,6 +576,15 @@
       "statut": "verifie",
       "commentaire": "Location meublée de longue durée. Le régime réel est accessible sur option sous le seuil."
     },
+    "micro_bic_exclu_indivision": {
+      "valeur": true,
+      "unite": "booléen",
+      "source": "CGI art. 50-0, 2 ; BOI-BIC-DECLA-10-10-20 du 19/08/2026, §80 ; impots.gouv.fr, FAQ « Régime des locations meublées » (version 03/2026)",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/1799-PGP.html/identifiant=BOI-BIC-DECLA-10-10-20-20260819",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Les indivisions, soumises au régime fiscal des sociétés de personnes, ne peuvent pas, sauf exception, bénéficier du micro-BIC ; la FAQ de la DGFiP l'applique aux locations meublées. Un logement meublé indivis entre plusieurs foyers (concubins) relève donc du régime réel. Un foyer unique (personne seule, couple marié ou pacsé) est traité comme un exploitant unique : bien commun des époux, ou dérogation admise pour un bien indivis entre époux dont un seul est immatriculé (§80). Cette dérogation ne vise pas expressément les partenaires de PACS."
+    },
     "seuil_non_professionnel_recettes": {
       "valeur": 23000,
       "unite": "€ de recettes annuelles du foyer",
@@ -611,6 +620,20 @@
       "date_verification": "2026-10-06",
       "statut": "verifie",
       "commentaire": "Les amortissements déduits minorent le prix d'acquisition pour le calcul de la plus-value. L'exception des résidences gérées (étudiants, seniors, Ehpad) n'est pas détaillée par F10864 et ne concerne pas le LMNP non géré modélisé ici."
+    },
+    "perimetre_reintegration_pv": {
+      "valeur": "immeuble",
+      "unite": "règle",
+      "source": "Lecture de l'outil : CGI art. 150 VB (plus-value immobilière) ; service-public F10864",
+      "url_officielle": "https://www.service-public.gouv.fr/particuliers/vosdroits/F10864",
+      "date_verification": "2026-10-06",
+      "statut": "a_confirmer",
+      "commentaire": "Hypothèse choisie (arbitrage du 06/10/2026). Seuls les amortissements de l'immeuble effectivement déduits (frais d'acquisition amortis compris) minorent le prix d'acquisition ; ceux du mobilier, bien meuble hors du champ de la plus-value immobilière, ne sont pas réintégrés. À confirmer par un notaire.",
+      "arbitrage": {
+        "date": "2026-10-06",
+        "choix": "Réintégrer dans la plus-value les seuls amortissements de l'immeuble effectivement déduits.",
+        "alternative_ecartee": "Réintégrer aussi les amortissements du mobilier (lecture littérale des « amortissements déduits » du cahier des charges, §6.7), ce qui alourdirait l'impôt de plus-value."
+      }
     },
     "immatriculation_delai_jours": {
       "valeur": 15,
@@ -769,6 +792,32 @@
     }
   },
 
+  "sci_ir": {
+    "frais_constitution_deductibles": {
+      "valeur": false,
+      "unite": "booléen",
+      "source": "Aucune source lue ne traite la déduction des frais de constitution d'une SCI ; charges déductibles des revenus fonciers : CGI art. 31, BOI-RFPI-BASE-20-10",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/5804-PGP.html/identifiant=BOI-RFPI-BASE-20-10-20160706",
+      "date_verification": "2026-10-06",
+      "statut": "a_confirmer",
+      "commentaire": "Hypothèse choisie (arbitrage du 06/10/2026) : frais de statuts, d'immatriculation et d'annonce légale non déduits des revenus fonciers (choix prudent). TODO(fiscal) : à confirmer par un expert-comptable.",
+      "arbitrage": {
+        "date": "2026-10-06",
+        "choix": "Ne pas déduire les frais de constitution de la SCI des revenus fonciers (choix prudent).",
+        "alternative_ecartee": "Les déduire l'année de leur paiement, ce qui augmenterait le déficit de la première année."
+      }
+    },
+    "frais_bancaires_couverts_par_forfait": {
+      "valeur": true,
+      "unite": "booléen",
+      "source": "Lecture de l'outil : CGI art. 31, I-1°, e ; BOI-RFPI-BASE-20-10 du 06/07/2016, §210 à 240",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/5804-PGP.html/identifiant=BOI-RFPI-BASE-20-10-20160706",
+      "date_verification": "2026-10-06",
+      "statut": "a_confirmer",
+      "commentaire": "Frais de tenue du compte bancaire de la SCI assimilés aux autres frais de gestion, couverts par le forfait par local et donc non déduits en plus. Les honoraires de comptabilité versés à un tiers restent déductibles pour leur montant réel (§60 à 80)."
+    }
+  },
+
   "societe_is": {
     "impot_societes": {
       "valeur": { "taux_reduit": 0.15, "plafond_benefice_taux_reduit": 42500, "taux_normal": 0.25 },
@@ -907,6 +956,15 @@
       "date_verification": "2026-10-06",
       "statut": "verifie",
       "commentaire": "Les travaux retenus dans la base de la réduction ne sont pas déductibles des revenus fonciers."
+    },
+    "reprise_cession_anticipee": {
+      "valeur": true,
+      "unite": "booléen",
+      "source": "BOI-IR-RICI-365-30 du 28/03/2024, §230 ; BOI-IR-RICI-360-40 du 10/05/2019, §20 et §50",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/8512-PGP.html/identifiant=BOI-IR-RICI-360-40-20190510",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Cession du logement pendant l'engagement : l'impôt de l'année de la cession est majoré du montant total des réductions obtenues, sans étalement. Exception lue : transfert de propriété par décès d'un membre du foyer soumis à imposition commune (§20)."
     }
   },
 
@@ -975,6 +1033,38 @@
       "date_verification": "2026-10-06",
       "statut": "a_confirmer",
       "commentaire": "Désactivé par défaut (prudence)."
+    },
+    "frais_acquisition_deduits_en_charge": {
+      "valeur": "forfait_ou_reels_conserves",
+      "unite": "règle",
+      "source": "Lecture de l'outil : BOI-RFPI-PVI-20-10-20-20 du 20/12/2013, §240 (vise les seuls travaux déjà déduits)",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/265-PGP.html/identifiant=BOI-RFPI-PVI-20-10-20-20-20131220",
+      "date_verification": "2026-10-06",
+      "statut": "a_confirmer",
+      "commentaire": "Hypothèse choisie (arbitrage du 06/10/2026). Frais d'acquisition passés en charge en LMNP : le forfait de 7,5 % ou les frais réels restent retenus dans la plus-value, aucune source lue ne l'excluant. À signaler au notaire.",
+      "arbitrage": {
+        "date": "2026-10-06",
+        "choix": "Conserver le forfait de 7,5 % ou les frais réels dans la plus-value, même si les frais ont été passés en charge.",
+        "alternative_ecartee": "Ne retenir aucun frais d'acquisition dans la plus-value (option prudente), ce qui alourdirait l'impôt de plus-value."
+      }
+    },
+    "travaux_denormandie_retenus": {
+      "valeur": false,
+      "unite": "booléen",
+      "source": "Lecture de l'outil : BOI-RFPI-PVI-20-10-20-20 du 20/12/2013, §240 et §265",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/265-PGP.html/identifiant=BOI-RFPI-PVI-20-10-20-20-20131220",
+      "date_verification": "2026-10-06",
+      "statut": "a_confirmer",
+      "commentaire": "Travaux compris dans la base de la réduction Denormandie. Le §240 exclut de la plus-value les dépenses incluses dans la base d'une réduction d'impôt, sauf si l'avantage est repris (rupture de l'engagement) : ils sont alors retenus, quelle que soit la valeur de ce paramètre. Le §265 admet de les retenir s'ils précèdent la première location, pour les dispositifs ouverts à la fois au neuf et à l'ancien avec travaux, mais ne cite que le Scellier, le Censi-Bouvard et le Demessine (BOFiP de 2013, antérieur au Pinel et au Denormandie). Exclusion retenue par prudence ; à confirmer par un notaire."
+    },
+    "depart_detention_vefa": {
+      "valeur": "date_conclusion_contrat",
+      "unite": "règle",
+      "source": "BOI-RFPI-PVI-20-20 du 18/07/2023, §20 et §40",
+      "url_officielle": "https://bofip.impots.gouv.fr/bofip/292-PGP.html/identifiant=BOI-RFPI-PVI-20-20-20230718",
+      "date_verification": "2026-10-06",
+      "statut": "verifie",
+      "commentaire": "Immeuble acquis en l'état futur d'achèvement : la détention court à compter de la conclusion du contrat, et non de la livraison. Elle se compte par périodes de douze mois jusqu'à la date de cession."
     },
     "surtaxe_plus_values_elevees": {
       "valeur": {

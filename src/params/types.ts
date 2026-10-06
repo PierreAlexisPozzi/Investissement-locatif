@@ -60,6 +60,9 @@ export const PERIMETRES_ASSIMILES_LLI = [
 export const STATUTS_CUMUL_JEANBRUN_LLI = ['non_exclu_par_les_textes_lus', 'autorise', 'exclu'] as const
 export const PREMIERES_ANNEES_DENORMANDIE = ['annee_achevement_travaux'] as const
 export const MODES_APPRECIATION_SURTAXE = ['quote_part', 'societe'] as const
+export const PERIMETRES_REINTEGRATION_LMNP = ['immeuble', 'immeuble_et_mobilier'] as const
+export const TRAITEMENTS_FRAIS_DEDUITS_PV = ['forfait_ou_reels_conserves', 'exclus'] as const
+export const DEPARTS_DETENTION_VEFA = ['date_conclusion_contrat'] as const
 
 export interface TrancheBareme {
   /** Borne haute de la tranche par part, incluse ; null pour la dernière tranche. */
@@ -239,10 +242,12 @@ export interface ParametresFiscaux {
       readonly abattement: number
       readonly abattement_minimum: number
     }>
+    readonly micro_bic_exclu_indivision: Parametre<boolean>
     readonly seuil_non_professionnel_recettes: Parametre<number>
     readonly amortissement_limite_au_resultat: Parametre<boolean>
     readonly deficit_report_ans: Parametre<number>
     readonly reintegration_amortissements_pv: Parametre<{ readonly cessions_a_compter_du: string }>
+    readonly perimetre_reintegration_pv: Parametre<(typeof PERIMETRES_REINTEGRATION_LMNP)[number]>
     readonly immatriculation_delai_jours: Parametre<number>
     readonly modelisation: Parametre<{
       readonly part_terrain: number
@@ -283,6 +288,11 @@ export interface ParametresFiscaux {
     readonly statut_cumul: Parametre<(typeof STATUTS_CUMUL_JEANBRUN_LLI)[number]>
   }
 
+  readonly sci_ir: {
+    readonly frais_constitution_deductibles: Parametre<boolean>
+    readonly frais_bancaires_couverts_par_forfait: Parametre<boolean>
+  }
+
   readonly societe_is: {
     readonly impot_societes: Parametre<{
       readonly taux_reduit: number
@@ -310,6 +320,7 @@ export interface ParametresFiscaux {
     readonly imputation_sur_impot_progressif: Parametre<boolean>
     readonly dans_plafonnement_niches: Parametre<boolean>
     readonly travaux_base_non_deductibles: Parametre<boolean>
+    readonly reprise_cession_anticipee: Parametre<boolean>
   }
 
   readonly plus_value_immobiliere: {
@@ -319,6 +330,9 @@ export interface ParametresFiscaux {
     readonly forfait_frais_acquisition: Parametre<number>
     readonly forfait_travaux: Parametre<{ readonly taux: number; readonly detention_superieure_a_ans: number }>
     readonly forfait_travaux_bien_neuf_amorti: Parametre<boolean>
+    readonly frais_acquisition_deduits_en_charge: Parametre<(typeof TRAITEMENTS_FRAIS_DEDUITS_PV)[number]>
+    readonly travaux_denormandie_retenus: Parametre<boolean>
+    readonly depart_detention_vefa: Parametre<(typeof DEPARTS_DETENTION_VEFA)[number]>
     readonly surtaxe_plus_values_elevees: Parametre<{
       readonly seuil: number
       readonly tranches: readonly TrancheSurtaxe[]

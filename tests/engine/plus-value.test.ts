@@ -104,6 +104,12 @@ describe('calcul complet de la plus-value', () => {
     expect(pv.frais_acquisition_forfaitaires).toBe(false)
   })
 
+  it('frais d’acquisition exclus (option écartée pour les frais passés en charge) : ni frais réels ni forfait', () => {
+    const pv = calculerPlusValue({ ...base, frais_acquisition_reels: 25000, frais_acquisition_exclus: true }, p)
+    expect(pv.frais_acquisition_retenus).toBe(0)
+    expect(pv.frais_acquisition_forfaitaires).toBe(false)
+  })
+
   it('le forfait travaux de 15 % exige plus de 5 ans de détention et une autorisation', () => {
     expect(calculerPlusValue({ ...base, forfait_travaux_autorise: true, annees_detention: 6 }, p).travaux_retenus).toBe(
       37500,
