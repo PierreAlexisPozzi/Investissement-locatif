@@ -75,7 +75,7 @@ Outils :
 ## Mise à jour annuelle des paramètres
 
 1. Créer `src/params/fiscal-AAAA.json` à partir du fichier de l'année précédente et adapter l'import de `src/params/index.ts`.
-2. Pour chaque paramètre, ouvrir `url_officielle`, relire la règle et mettre à jour `valeur`, `source` (version du BOFiP, date de la fiche), `date_verification`, `statut` et `commentaire`. Valeurs révisées chaque année : barème de l'impôt, plafond du quotient familial, décote, abattement de 10 %, plafonds de loyer et de ressources (BOI-BAREME-000017), seuils des régimes micro, taux de prélèvements sociaux, dates de fin des dispositifs. Contrôler aussi la loi de finances de l'année et les textes en discussion (section 6 de `HYPOTHESES.md`).
+2. Pour chaque paramètre, ouvrir `url_officielle`, relire la règle et mettre à jour `valeur`, `source` (version du BOFiP, date de la fiche), `date_verification`, `statut` et `commentaire`. Valeurs révisées chaque année : barème de l'impôt, plafond du quotient familial, décote, abattement de 10 %, plafonds de loyer et de ressources (BOI-BAREME-000017), seuils des régimes micro, taux de prélèvements sociaux, dates de fin des dispositifs. Contrôler aussi la loi de finances de l'année et les textes en discussion (section 7 de `HYPOTHESES.md`).
 3. Mettre à jour la section `meta` (date d'arrêt, textes pris en compte).
 4. Lancer `npm run params:liens`, `npm test` et `npm run params:rapport`, puis mettre à jour `HYPOTHESES.md` (les tests signalent tout écart).
 5. Ouvrir une pull request dédiée.
@@ -89,7 +89,7 @@ Le dépôt ne contient aucune donnée personnelle : ni revenus, ni dossier de si
 - Paramètres arrêtés au 06/10/2026 et vérifiés sur des sources officielles (liste dans `HYPOTHESES.md`, section 1). La loi de finances pour 2027 et le projet de loi visant la relance et la décentralisation du logement, en cours d'examen, ne sont pas pris en compte.
 - Légifrance n'a pas pu être lu automatiquement. Le texte de la loi de finances pour 2026 a été lu dans sa version définitivement adoptée, publiée par l'Assemblée nationale, et ses articles 47 (Jeanbrun) et 98 (LLI) n'ont pas été censurés. Les règles marquées `texte_non_consulte` restent à relire sur Légifrance.
 - Le cumul Jeanbrun + LLI n'est mentionné par aucune source officielle consultée, ni pour l'autoriser ni pour l'interdire.
-- Hors périmètre ou simplifiés : SCI à l'IS (variante indicative), IFI, CEHR et CDHR, démembrement de propriété, intérêts intercalaires détaillés (différé simple), CSG déductible (option désactivée par défaut), Jeanbrun dans l'ancien, déficit foncier majoré pour travaux de rénovation énergétique, outre-mer, demi-parts particulières et frais réels, option du PFU pour le barème, sortie du LLI par cession des parts de la SCI. Détail dans `HYPOTHESES.md`, section 5.
+- Hors périmètre ou simplifiés : SCI à l'IS (variante indicative), IFI, CEHR et CDHR, démembrement de propriété, intérêts intercalaires détaillés (différé simple), CSG déductible (option désactivée par défaut), Jeanbrun dans l'ancien, déficit foncier majoré pour travaux de rénovation énergétique, outre-mer, demi-parts particulières et frais réels, option du PFU pour le barème, sortie du LLI par cession des parts de la SCI. Détail dans `HYPOTHESES.md`, section 6.
 - Les points `a_confirmer` doivent être validés par un notaire ou un expert-comptable avant toute signature.
 
 ## Conventions

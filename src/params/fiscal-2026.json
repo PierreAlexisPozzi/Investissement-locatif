@@ -212,7 +212,12 @@
       "url_officielle": "https://bofip.impots.gouv.fr/bofip/8501-PGP.html/identifiant=BOI-IR-RICI-360-20-30-20260310",
       "date_verification": "2026-10-06",
       "statut": "verifie",
-      "commentaire": "Le plafond au m² après coefficient est arrondi au centime avant d'être multiplié par la surface. Zone A, 45 m² : 14,64 × 1,12 = 16,3968 → 16,40 €/m² → 738,00 €/mois. Le cahier des charges (§13) attend 737,86 €, valeur obtenue sans cet arrondi intermédiaire."
+      "commentaire": "Hypothèse choisie (arbitrage du 06/10/2026). Le plafond au m² après coefficient est arrondi au centime avant d'être multiplié par la surface. Zone A, 45 m² : 14,64 × 1,12 = 16,3968 → 16,40 €/m² → 738,00 €/mois. Le cahier des charges (§13) attendait 737,86 €, valeur obtenue sans cet arrondi intermédiaire.",
+      "arbitrage": {
+        "date": "2026-10-06",
+        "choix": "Arrondir le plafond au m² au centime après coefficient, comme le BOFiP : 738,00 € pour 45 m² en zone A.",
+        "alternative_ecartee": "Calcul sans arrondi intermédiaire du cahier des charges (§13) : 737,86 €."
+      }
     },
     "surface_prise_en_compte": {
       "valeur": { "part_annexes": 0.5, "plafond_annexes_m2": 8 },
@@ -473,7 +478,12 @@
       "url_officielle": "https://bofip.impots.gouv.fr/bofip/4142-PGP.html/identifiant=BOI-RFPI-BASE-30-20-20250916",
       "date_verification": "2026-10-06",
       "statut": "verifie",
-      "commentaire": "Les frais accessoires à l'emprunt (frais de dossier, assurance emprunteur, frais de garantie) suivent le régime des intérêts : ils sont imputés en priorité sur les loyers et ne s'imputent jamais sur le revenu global."
+      "commentaire": "Hypothèse choisie (arbitrage du 06/10/2026). Les frais accessoires à l'emprunt (frais de dossier, assurance emprunteur, frais de garantie) suivent le régime des intérêts : ils sont imputés en priorité sur les loyers et ne s'imputent jamais sur le revenu global.",
+      "arbitrage": {
+        "date": "2026-10-06",
+        "choix": "Traiter l'assurance emprunteur et les frais de dossier et de garantie comme des intérêts dans la ventilation du déficit, comme le BOFiP.",
+        "alternative_ecartee": "N'imputer en priorité que les intérêts au sens strict (lecture littérale du cahier des charges, §8.2), ce qui augmenterait le déficit imputable sur le revenu global."
+      }
     },
     "limite_sans_prorata_temporis": {
       "valeur": true,
@@ -960,7 +970,12 @@
       "url_officielle": "https://bofip.impots.gouv.fr/bofip/8597-PGP.html/identifiant=BOI-RFPI-TPVIE-20-20230718",
       "date_verification": "2026-10-06",
       "statut": "verifie",
-      "commentaire": "Seuil de 50 000 € apprécié sur la quote-part de chaque époux, partenaire ou concubin. Pour une SCI à l'IR, il s'apprécie au niveau de la société (sur la seule quote-part des associés à l'IR non exonérés), et non associé par associé comme l'indique le cahier des charges (§6.9 et §8.6). Exemple officiel : SCI, 52 500 € → 675 €."
+      "commentaire": "Hypothèse choisie (arbitrage du 06/10/2026). Seuil de 50 000 € apprécié sur la quote-part de chaque époux, partenaire ou concubin. Pour une SCI à l'IR, il s'apprécie au niveau de la société (sur la seule quote-part des associés à l'IR non exonérés), et non associé par associé comme l'indiquait le cahier des charges (§6.9 et §8.6). Exemple officiel : SCI, 52 500 € → 675 €.",
+      "arbitrage": {
+        "date": "2026-10-06",
+        "choix": "Pour une SCI à l'IR, apprécier le seuil de 50 000 € au niveau de la société, comme le BOFiP.",
+        "alternative_ecartee": "Apprécier le seuil associé par associé (cahier des charges, §6.9 et §8.6), ce qui exonérerait plus souvent chaque quote-part."
+      }
     }
   },
 

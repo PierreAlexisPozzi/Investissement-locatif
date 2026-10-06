@@ -8,6 +8,18 @@
 export const STATUTS_PARAMETRE = ['verifie', 'texte_non_consulte', 'a_confirmer'] as const
 export type StatutParametre = (typeof STATUTS_PARAMETRE)[number]
 
+/**
+ * Hypothèse choisie par l'utilisateur lorsqu'une règle admettait plusieurs
+ * lectures ou s'écartait du cahier des charges. Elle est listée dans
+ * HYPOTHESES.md (section « Arbitrages retenus ») et signalée dans l'interface.
+ */
+export interface Arbitrage {
+  /** Date de la décision (AAAA-MM-JJ). */
+  readonly date: string
+  readonly choix: string
+  readonly alternative_ecartee: string
+}
+
 export interface Parametre<T> {
   readonly valeur: T
   readonly unite: string
@@ -17,6 +29,7 @@ export interface Parametre<T> {
   readonly date_verification: string | null
   readonly statut: StatutParametre
   readonly commentaire: string
+  readonly arbitrage?: Arbitrage
 }
 
 /*

@@ -5,7 +5,7 @@ Arrêté au **06/10/2026**. Ce document accompagne :
 - `src/params/fiscal-2026.json` : les règles fiscales, chacune avec sa source, son URL officielle, sa date de vérification et son statut ;
 - `src/params/hypotheses-defaut.json` : les hypothèses de marché et de modélisation par défaut, qui ne sont pas des règles fiscales.
 
-Il est mis à jour dans la même pull request que le code concerné. Un test (`tests/garde-fous/hypotheses-a-jour.test.ts`) vérifie que la section 2 liste exactement les paramètres dont le statut n'est pas `verifie`.
+Il est mis à jour dans la même pull request que le code concerné. Un test (`tests/garde-fous/hypotheses-a-jour.test.ts`) vérifie que la section 2 liste exactement les paramètres dont le statut n'est pas `verifie`, et la section 4 exactement les paramètres qui portent un arbitrage.
 
 ## 1. Sources consultées le 06/10/2026
 
@@ -59,20 +59,32 @@ Décompte : 96 paramètres, dont 88 vérifiés, 7 à confirmer et 1 dont le text
 
 ## 3. Écarts relevés avec le cahier des charges
 
-Les sources lues le 06/10/2026 contredisent ou précisent le cahier des charges sur les points suivants. Les paramètres suivent les sources ; les arbitrages attendus figurent dans la description de la pull request.
+Les sources lues le 06/10/2026 contredisent ou précisent le cahier des charges sur les points suivants. Les paramètres suivent les sources ; les points 1, 3 et 5 ont été arbitrés le 06/10/2026 (section 4).
 
-1. **Loyer plafond, test du §13 (zone A, 45 m²)** : le BOFiP arrondit le plafond au m² au centime après coefficient (BOI-IR-RICI-360-20-30, §130) : 14,64 × 1,12 = 16,3968 → 16,40 €/m², soit **738,00 €/mois**, et non 737,86 € (calcul sans arrondi intermédiaire). Paramètre `loyers_plafonds.arrondi_plafond_m2`.
+1. **Loyer plafond, test du §13 (zone A, 45 m²)** : le BOFiP arrondit le plafond au m² au centime après coefficient (BOI-IR-RICI-360-20-30, §130) : 14,64 × 1,12 = 16,3968 → 16,40 €/m², soit **738,00 €/mois**, et non 737,86 € (calcul sans arrondi intermédiaire). Paramètre `loyers_plafonds.arrondi_plafond_m2`. *Arbitré : méthode du BOFiP.*
 2. **Exemple officiel d'amortissement des biens loués (§13)** : l'exemple du BOI-BIC-AMT-20-40-10-20, §90, donne 1 500 € déductibles et **1 560 € reportables**, car il retranche d'abord 540 € au titre de la limite propre aux véhicules de tourisme. Les 2 100 € attendus par le cahier des charges sont justes pour un logement, qui n'est pas soumis à cette limite : le test sera libellé « adapté de l'exemple officiel ».
-3. **Surtaxe sur les plus-values élevées en SCI (§6.9, §8.6)** : pour une SCI à l'IR, le seuil de 50 000 € s'apprécie au niveau de la société, sur la quote-part des seuls associés à l'IR non exonérés (BOI-RFPI-TPVIE-20, §60 et exemple 3), et non associé par associé. La règle de la quote-part vaut pour les époux, partenaires de PACS et concubins détenant directement le bien.
+3. **Surtaxe sur les plus-values élevées en SCI (§6.9, §8.6)** : pour une SCI à l'IR, le seuil de 50 000 € s'apprécie au niveau de la société, sur la quote-part des seuls associés à l'IR non exonérés (BOI-RFPI-TPVIE-20, §60 et exemple 3), et non associé par associé. La règle de la quote-part vaut pour les époux, partenaires de PACS et concubins détenant directement le bien. *Arbitré : règle du BOFiP.*
 4. **Éligibilité géographique du LLI (§7)** : hors zones A bis, A et B1, le taux réduit reste ouvert dans certains périmètres, notamment les communes sous convention ORT ou contrat de PPA (BOI-TVA-IMM-30, §70). « Zone B2 » n'est donc pas à lui seul un motif d'inéligibilité.
-5. **Ventilation du déficit foncier (§8.2)** : l'assurance emprunteur et les frais d'emprunt (dossier, garantie) suivent le régime des intérêts (BOI-RFPI-BASE-30-20, §110). Ils entrent dans la part imputée en priorité sur les loyers et jamais sur le revenu global.
+5. **Ventilation du déficit foncier (§8.2)** : l'assurance emprunteur et les frais d'emprunt (dossier, garantie) suivent le régime des intérêts (BOI-RFPI-BASE-30-20, §110). Ils entrent dans la part imputée en priorité sur les loyers et jamais sur le revenu global. *Arbitré : règle du BOFiP.*
 6. **Point de départ des délais LLI (§6.5, §8.3)** : les 10, 15 et 20 ans courent à compter de la livraison (achèvement en VEFA), pas de la signature (BOI-TVA-IMM-30, §220).
 7. **Denormandie (§6.8)** : pour un logement acheté en vue de travaux, la réduction s'impute pour la première fois l'année d'achèvement des travaux (BOI-IR-RICI-365-30, §150). Elle s'impute sur l'impôt progressif après décote, jamais sur l'impôt de plus-value (BOI-IR-RICI-360-30-10, §300).
 8. **Majoration des plafonds Jeanbrun (§6.4)** : la condition des 50 % porte sur les revenus **bruts** des logements amortis (texte de l'article 31, I-1°, i).
 9. **Statuts relevés** grâce au texte adopté et au BOFiP (cahier des charges : `texte_non_consulte`, désormais `verifie`) : point de départ de l'amortissement Jeanbrun, limite cumulée de 80 %, conservation des parts d'une société non soumise à l'IS, système du quotient et exceptions en cas de rupture, non-cumul avec l'article 199 undecies C, surface des annexes plafonnée à 8 m², étalement par tiers du complément de prorogation Denormandie.
 10. **Statut abaissé** : taux normal de TVA de 20 % (`verifie` → `texte_non_consulte`), voir section 2.
 
-## 4. Hypothèses par défaut (`hypotheses-defaut.json`)
+## 4. Arbitrages retenus : hypothèses choisies
+
+Choix faits lorsqu'une règle s'écartait du cahier des charges ou admettait plusieurs lectures. Chacun est porté par le champ `arbitrage` du paramètre concerné et sera signalé dans l'interface. À revoir si un professionnel ou une source nouvelle contredit le choix.
+
+<!-- debut:arbitrages -->
+| Paramètre | Date | Choix retenu | Option écartée | Effet |
+|---|---|---|---|---|
+| `loyers_plafonds.arrondi_plafond_m2` | 06/10/2026 | Plafond au m² arrondi au centime après coefficient (BOFiP) | Calcul sans arrondi intermédiaire du §13 | Zone A, 45 m² : 738,00 € au lieu de 737,86 € |
+| `deficit_foncier.frais_emprunt_assimiles_interets` | 06/10/2026 | Assurance emprunteur et frais de dossier et de garantie traités comme des intérêts (BOFiP) | Seuls les intérêts imputés en priorité (lecture littérale du §8.2) | Déficit imputable sur le revenu global plus faible, donc moins d'économie d'impôt immédiate |
+| `plus_value_immobiliere.surtaxe_appreciation_seuil` | 06/10/2026 | Seuil de 50 000 € apprécié au niveau de la SCI à l'IR (BOFiP) | Seuil apprécié associé par associé (§6.9 et §8.6) | Surtaxe plus souvent due en SCI |
+<!-- fin:arbitrages -->
+
+## 5. Hypothèses par défaut (`hypotheses-defaut.json`)
 
 Valeurs du §5.5 reprises telles quelles, sauf mention « choix de l'outil » (valeur absente du cahier des charges, à valider).
 
@@ -96,7 +108,7 @@ Valeurs du §5.5 reprises telles quelles, sauf mention « choix de l'outil » (v
 
 Les hypothèses de modélisation LMNP (part du terrain, durées d'amortissement) sont dans `fiscal-2026.json` avec le statut `a_confirmer`, comme le prévoit le §6.7.
 
-## 5. Simplifications et hors périmètre
+## 6. Simplifications et hors périmètre
 
 - **Impôt sur le revenu** : nombre de parts saisi par l'utilisateur ; demi-parts particulières (parent isolé, invalidité, ancien combattant) et frais réels non modélisés ; plafond de niches majoré à 18 000 € (outre-mer, Sofica) non modélisé ; outre-mer hors périmètre.
 - **CEHR, CDHR, IFI, démembrement de propriété** : hors périmètre. Le Jeanbrun exclut de toute façon les droits démembrés.
@@ -111,7 +123,7 @@ Les hypothèses de modélisation LMNP (part du terrain, durées d'amortissement)
 - **LMNP** : CFE saisie par l'utilisateur (montant fixé par la commune) ; résidences gérées et meublés de tourisme hors périmètre.
 - **Arrondis** : calcul sans arrondi intermédiaire, arrondi à l'euro en fin de calcul de l'impôt (sauf plafond de loyer au m², arrondi au centime comme le prévoit le BOFiP).
 
-## 6. Veille législative
+## 7. Veille législative
 
 - **Projet de loi de finances pour 2027** : en discussion, non pris en compte.
 - **Projet de loi visant la relance et la décentralisation du logement** : adopté par le Sénat le 08/07/2026, transmis à l'Assemblée nationale. Il prévoit de « renforcer le statut du bailleur privé » ; la fiche F39735 annonce un assouplissement des conditions du Jeanbrun. À relire avant toute signature.
