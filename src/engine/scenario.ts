@@ -1177,10 +1177,23 @@ function microBicExclu(d: Dossier, p: ParametresFiscaux): boolean {
   return p.lmnp.micro_bic_exclu_indivision.valeur && d.foyers.foyers.length > 1
 }
 
+/** Micro-BIC de l'ensemble des foyers, chacun sur sa quote-part des recettes : éligible si chacun l'est. */
+function microBicDesFoyers(annee: number, recettes: number, d: Dossier, p: ParametresFiscaux): ResultatMicroBic {
+  const parFoyer = d.foyers.foyers.map((foyer) => microBic(annee, recettes * foyer.quote_part, p))
+  return {
+    annee,
+    eligible: parFoyer.every((m) => m.eligible),
+    motifs_ineligibilite: parFoyer.flatMap((m) => m.motifs_ineligibilite),
+    recettes,
+    abattement: parFoyer.reduce((total, m) => total + m.abattement, 0),
+    benefice_imposable: parFoyer.reduce((total, m) => total + m.benefice_imposable, 0),
+  }
+}
+
 /** Première année où le micro-BIC deviendrait plus favorable que le réel, sur toute la détention. */
 function basculeLmnp(d: Dossier, cfg: Configuration, options: OptionsSimulation, p: ParametresFiscaux): number | null {
   const exercices = simulerImpotRevenu(d, cfg, 'reel', options, p).exercices_lmnp
-  const micro: ResultatMicroBic[] = exercices.map((r) => microBic(r.annee, r.recettes, p))
+  const micro = exercices.map((r) => microBicDesFoyers(r.annee, r.recettes, d, p))
   return anneeBasculeVersMicro(exercices, micro)
 }
 

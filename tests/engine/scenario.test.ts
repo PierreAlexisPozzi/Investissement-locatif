@@ -284,6 +284,16 @@ describe('corrections de la revue de l’étape 4', () => {
     // 40 € par mois, soit moins de 305 € de recettes par foyer : bénéfice nul pour chacun.
     expect(s?.annees.filter((a) => a.mois_location === 12).every((a) => a.resultat_fiscal === 0)).toBe(true)
   })
+
+  it('micro-BIC sans l’exclusion de l’indivision : la bascule s’apprécie aussi foyer par foyer', () => {
+    // Environ 96 000 € de recettes : au-delà du seuil pour l'ensemble, en deçà pour chacun des deux foyers.
+    const loyerEleve: Dossier = {
+      ...dossierConcubins,
+      bien: { ...dossierConcubins.bien, loyer_marche_meuble: 8000 },
+      financement: { ...dossierConcubins.financement, emprunt: 0, frais_dossier: 0, frais_garantie: 0 },
+    }
+    expect(simulerScenario(loyerEleve, 'S4', { horizon: 16 }, sansExclusion).simulation?.regime).toBe('reel_puis_micro')
+  })
 })
 
 describe('placement de référence équivalent (S6)', () => {
