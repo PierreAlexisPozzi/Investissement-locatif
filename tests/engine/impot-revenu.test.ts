@@ -122,6 +122,39 @@ describe('réductions d’impôt et plafonnement global des niches', () => {
   })
 })
 
+describe('système du quotient (revenu exceptionnel, CGI art. 163-0 A)', () => {
+  const PRECISION = 6
+  const couple = { parts: 2, imposition_commune: true }
+
+  it('la décote s’applique à l’impôt total, supplément du quotient compris (brochure IR 2026, p. 370)', () => {
+    const d = calculerImpot(40000, couple, p, { revenu_exceptionnel: { montant: 4000, coefficient: 2 } })
+    // Revenu ordinaire : 1 848 € ; avec la moitié du revenu exceptionnel : 2 068 € ; supplément 2 × 220 €.
+    expect(d.supplement_quotient).toBeCloseTo(440, PRECISION)
+    expect(d.impot_brut).toBeCloseTo(2288, PRECISION)
+    expect(d.decote).toBeCloseTo(447.68, PRECISION)
+    expect(d.impot_net).toBe(1840)
+  })
+
+  it('le quotient atténue la progressivité quand le revenu exceptionnel franchit une tranche', () => {
+    const ordinaire = calculerImpot(160000, couple, p)
+    const auQuotient = calculerImpot(160000, couple, p, { revenu_exceptionnel: { montant: 40000, coefficient: 4 } })
+    const sansQuotient = calculerImpot(200000, couple, p)
+    expect(auQuotient.supplement_quotient).toBeCloseTo(12372.24, PRECISION)
+    expect(sansQuotient.impot_brut - ordinaire.impot_brut).toBeCloseTo(15393.06, PRECISION)
+    expect(auQuotient.tmi).toBe(ordinaire.tmi)
+  })
+
+  it('sans revenu exceptionnel, aucun supplément', () => {
+    expect(calculerImpot(90000, couple, p).supplement_quotient).toBe(0)
+  })
+
+  it('refuse un coefficient inférieur à 1', () => {
+    expect(() => calculerImpot(90000, couple, p, { revenu_exceptionnel: { montant: 1000, coefficient: 0.5 } })).toThrow(
+      RangeError,
+    )
+  })
+})
+
 describe('salaires : déduction forfaitaire de 10 %', () => {
   it.each([
     [40000, 4000],
