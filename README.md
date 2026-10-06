@@ -9,7 +9,7 @@ Application web locale qui simule un investissement locatif sous plusieurs dispo
 | Étape | Contenu | État |
 |---|---|---|
 | 1 | Squelette, paramètres fiscaux sourcés, `HYPOTHESES.md`, intégration continue | livrée |
-| 2 | Moteur : impôt, loyer plafond, emprunt, revenus fonciers, plus-value | à venir |
+| 2 | Moteur : impôt, loyer plafond, emprunt, revenus fonciers, plus-value | livrée |
 | 3 | Moteur : Jeanbrun, LLI/SCI, LMNP, Denormandie, placement de référence | à venir |
 | 4 | Orchestration des scénarios, indicateurs, sensibilités | à venir |
 | 5 | Recommandation et contre-expertise | à venir |
@@ -41,6 +41,7 @@ src/
   engine/          moteur de calcul : fonctions pures sans effet de bord (étapes 2 à 5)
   ui/              interface React, sans aucun calcul fiscal (étape 6)
 tests/
+  engine/          tests du moteur : valeurs du cahier des charges et exemples officiels
   params/          validation et cohérence des paramètres
   garde-fous/      aucune valeur fiscale en dur, HYPOTHESES.md à jour
 scripts/           outils de mise à jour annuelle des paramètres
@@ -49,6 +50,21 @@ docs/              cas de test officiels relevés lors de la vérification
 
 Choix techniques : Vite 8, React 19, TypeScript 6.0 en mode strict, Vitest 5, ESLint 10 avec l'analyse typée de typescript-eslint. TypeScript est figé sur la version 6.0 : la version 7 n'expose plus l'API utilisée par typescript-eslint et par le garde-fou des valeurs en dur. Recharts sera ajouté avec l'interface (étape 6).
 
+## Moteur de calcul
+
+Le moteur (`src/engine/`) est fait de fonctions pures : chacune reçoit les paramètres fiscaux en argument, ce qui permet de recalculer avec des paramètres modifiés ou indexés, et retourne un objet détaillé (chaque étape intermédiaire) pour que tout indicateur puisse être déplié jusqu'à sa formule.
+
+| Module | Rôle |
+|---|---|
+| `impot-revenu.ts` | Barème, quotient familial plafonné, décote, réductions sous plafond des niches, seuil de recouvrement, revenu global et déficits globaux, impôt différentiel avec et sans l'opération, indexation du barème |
+| `loyer-plafond.ts` | Surface prise en compte, coefficient de surface, plafond de loyer, loyer retenu et manque à gagner, plafonds de ressources |
+| `emprunt.ts` | Tableau d'amortissement au centime, assurance, différé, annuités par année civile, indemnités de remboursement anticipé, taux d'endettement |
+| `revenus-fonciers.ts` | Régime réel et ventilation du déficit, micro-foncier, prélèvements sociaux, maintien de la location |
+| `plus-value.ts` | Prix d'acquisition corrigé, abattements, impôt et prélèvements sociaux, surtaxe par cédant, surcoût de la réintégration des amortissements |
+| `deficits.ts`, `arrondis.ts` | Stocks de déficits par millésime, arrondis commerciaux |
+
+Les autres modules (Jeanbrun, LLI, SCI, LMNP, Denormandie, placement de référence, orchestration, indicateurs, recommandation, contre-expertise) arrivent aux étapes 3 à 5.
+
 ## Paramètres fiscaux
 
 Chaque valeur de `src/params/fiscal-2026.json` porte `valeur`, `unite`, `source`, `url_officielle`, `date_verification`, `statut` et `commentaire`. Le statut vaut :
@@ -56,6 +72,8 @@ Chaque valeur de `src/params/fiscal-2026.json` porte `valeur`, `unite`, `source`
 - `verifie` : lu sur une source officielle à la date indiquée ;
 - `texte_non_consulte` : règle rapportée de la loi mais non lue directement ;
 - `a_confirmer` : à valider par un notaire, un expert-comptable ou par rescrit, y compris les hypothèses de modélisation que les textes ne fixent pas.
+
+Un paramètre peut aussi porter un champ `arbitrage` (date, choix retenu, option écartée) : c'est une hypothèse choisie par l'utilisateur lorsqu'une règle admettait plusieurs lectures ou contredisait le cahier des charges. Les arbitrages sont listés dans `HYPOTHESES.md` (section 4) et seront signalés dans l'interface.
 
 Seuls les domaines de l'État listés dans `src/params/sources-officielles.ts` sont admis comme sources. La liste des points non vérifiés, les écarts relevés avec le cahier des charges et les simplifications figurent dans [`HYPOTHESES.md`](HYPOTHESES.md).
 
