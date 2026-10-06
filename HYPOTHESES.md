@@ -59,12 +59,12 @@ Décompte : 96 paramètres, dont 88 vérifiés, 7 à confirmer et 1 dont le text
 
 ## 3. Écarts relevés avec le cahier des charges
 
-Les sources lues le 06/10/2026 contredisent ou précisent le cahier des charges sur les points suivants. Les paramètres suivent les sources ; les points 1, 3 et 5 ont été arbitrés le 06/10/2026 (section 4).
+Les sources lues le 06/10/2026 contredisent ou précisent le cahier des charges sur les points suivants. Les paramètres suivent les sources ; les points 1, 3, 4 et 5 ont été arbitrés le 06/10/2026 (section 4).
 
 1. **Loyer plafond, test du §13 (zone A, 45 m²)** : le BOFiP arrondit le plafond au m² au centime après coefficient (BOI-IR-RICI-360-20-30, §130) : 14,64 × 1,12 = 16,3968 → 16,40 €/m², soit **738,00 €/mois**, et non 737,86 € (calcul sans arrondi intermédiaire). Paramètre `loyers_plafonds.arrondi_plafond_m2`. *Arbitré : méthode du BOFiP.*
 2. **Exemple officiel d'amortissement des biens loués (§13)** : l'exemple du BOI-BIC-AMT-20-40-10-20, §90, donne 1 500 € déductibles et **1 560 € reportables**, car il retranche d'abord 540 € au titre de la limite propre aux véhicules de tourisme. Les 2 100 € attendus par le cahier des charges sont justes pour un logement, qui n'est pas soumis à cette limite : le test sera libellé « adapté de l'exemple officiel ».
 3. **Surtaxe sur les plus-values élevées en SCI (§6.9, §8.6)** : pour une SCI à l'IR, le seuil de 50 000 € s'apprécie au niveau de la société, sur la quote-part des seuls associés à l'IR non exonérés (BOI-RFPI-TPVIE-20, §60 et exemple 3), et non associé par associé. La règle de la quote-part vaut pour les époux, partenaires de PACS et concubins détenant directement le bien. *Arbitré : règle du BOFiP.*
-4. **Éligibilité géographique du LLI (§7)** : hors zones A bis, A et B1, le taux réduit reste ouvert dans certains périmètres, notamment les communes sous convention ORT ou contrat de PPA (BOI-TVA-IMM-30, §70). « Zone B2 » n'est donc pas à lui seul un motif d'inéligibilité.
+4. **Éligibilité géographique du LLI (§7)** : hors zones A bis, A et B1, le taux réduit reste ouvert dans certains périmètres, notamment les communes sous convention ORT ou contrat de PPA (BOI-TVA-IMM-30, §70). « Zone B2 » n'est donc pas à lui seul un motif d'inéligibilité. *Arbitré : règle du BOFiP, périmètre déclaré par l'utilisateur.*
 5. **Ventilation du déficit foncier (§8.2)** : l'assurance emprunteur et les frais d'emprunt (dossier, garantie) suivent le régime des intérêts (BOI-RFPI-BASE-30-20, §110). Ils entrent dans la part imputée en priorité sur les loyers et jamais sur le revenu global. *Arbitré : règle du BOFiP.*
 6. **Point de départ des délais LLI (§6.5, §8.3)** : les 10, 15 et 20 ans courent à compter de la livraison (achèvement en VEFA), pas de la signature (BOI-TVA-IMM-30, §220).
 7. **Denormandie (§6.8)** : pour un logement acheté en vue de travaux, la réduction s'impute pour la première fois l'année d'achèvement des travaux (BOI-IR-RICI-365-30, §150). Elle s'impute sur l'impôt progressif après décote, jamais sur l'impôt de plus-value (BOI-IR-RICI-360-30-10, §300).
@@ -82,6 +82,9 @@ Choix faits lorsqu'une règle s'écartait du cahier des charges ou admettait plu
 | `loyers_plafonds.arrondi_plafond_m2` | 06/10/2026 | Plafond au m² arrondi au centime après coefficient (BOFiP) | Calcul sans arrondi intermédiaire du §13 | Zone A, 45 m² : 738,00 € au lieu de 737,86 € |
 | `deficit_foncier.frais_emprunt_assimiles_interets` | 06/10/2026 | Assurance emprunteur et frais de dossier et de garantie traités comme des intérêts (BOFiP) | Seuls les intérêts imputés en priorité (lecture littérale du §8.2) | Déficit imputable sur le revenu global plus faible, donc moins d'économie d'impôt immédiate |
 | `plus_value_immobiliere.surtaxe_appreciation_seuil` | 06/10/2026 | Seuil de 50 000 € apprécié au niveau de la SCI à l'IR (BOFiP) | Seuil apprécié associé par associé (§6.9 et §8.6) | Surtaxe plus souvent due en SCI |
+| `jeanbrun.plafond_proratise_premiere_annee` | 06/10/2026 | Plafond annuel proratisé la première année, comme l'annuité (prudent) | Plafond plein dès la première année (lecture littérale) | Au-delà de 285 714 € de prix en intermédiaire, première déduction plus faible de quelques centaines d'euros, une seule fois |
+| `lmnp.modelisation` | 06/10/2026 | Frais d'acquisition passés en charge l'année 1 ; l'autre option calculée en sensibilité | Frais incorporés au prix de revient et amortis hors terrain | Déficit reportable 10 ans seulement, qui peut se périmer si l'amortissement absorbe le résultat ; pas de réintégration dans la plus-value |
+| `lli.perimetres_assimiles` | 06/10/2026 | LLI éligible hors zones A bis, A et B1 si la commune est déclarée dans un périmètre assimilé (ORT, PPA…) (BOFiP) | Zone B2 ou C toujours inéligible (§7) | LLI possible en zone B2 ou C sous convention ORT ou contrat de PPA ; aucun effet en zone tendue |
 <!-- fin:arbitrages -->
 
 ## 5. Hypothèses par défaut (`hypotheses-defaut.json`)
