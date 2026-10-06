@@ -117,7 +117,7 @@ export interface AnnuiteJeanbrun {
   readonly fraction_annee: number
   /** Annuité de la quote-part du foyer, avant plafond. */
   readonly annuite: number
-  /** Plafond du foyer pour l'année, proratisé la première année (arbitrage du 06/10/2026). */
+  /** Plafond du foyer pour l'année, proratisé les années partielles (arbitrage du 06/10/2026). */
   readonly plafond: number
   /** Amortissement déductible de l'année. */
   readonly amortissement: number
@@ -154,7 +154,8 @@ export function tableauAmortissementJeanbrun(e: EntreeAmortissementJeanbrun, p: 
     const premiere = annee === depart.annee
     const fraction = (premiere ? fractionPremiereAnnee : 1) * (annee === e.derniere_annee ? (e.fraction_derniere_annee ?? 1) : 1)
     const annuite = annuitePleine * fraction
-    const plafond = premiere && jb.plafond_proratise_premiere_annee.valeur ? plafondAnnuel * fraction : plafondAnnuel
+    // Le choix prudent de la première année vaut pour toute année partielle, année de cession comprise.
+    const plafond = fraction < 1 && jb.plafond_proratise_premiere_annee.valeur ? plafondAnnuel * fraction : plafondAnnuel
     const amortissement = Math.max(0, Math.min(annuite, plafond, base - cumul))
     cumul += amortissement
     annees.push({ annee, fraction_annee: fraction, annuite, plafond, amortissement, plafonne: annuite > plafond, cumul })

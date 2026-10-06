@@ -363,7 +363,7 @@
       "url_officielle": "https://www.assemblee-nationale.fr/dyn/17/textes/l17t0227_texte-adopte-seance",
       "date_verification": "2026-10-06",
       "statut": "a_confirmer",
-      "commentaire": "Hypothèse choisie (arbitrage du 06/10/2026). Choix prudent : le plafond annuel est proratisé comme l'annuité la première année. Lecture littérale possible : plafond plein dès la première année. N'a d'effet qu'au-delà de 285 714 € de prix en intermédiaire, et seulement la première année.",
+      "commentaire": "Hypothèse choisie (arbitrage du 06/10/2026). Choix prudent : le plafond annuel est proratisé comme l'annuité la première année. Lecture littérale possible : plafond plein dès la première année. Le même choix s'applique à l'année de la cession lorsqu'elle est partielle. N'a d'effet qu'au-delà de 285 714 € de prix en intermédiaire, et seulement les années partielles.",
       "arbitrage": {
         "date": "2026-10-06",
         "choix": "Proratiser le plafond annuel la première année, comme l'annuité (lecture prudente).",
