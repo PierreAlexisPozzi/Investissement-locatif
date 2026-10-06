@@ -929,7 +929,8 @@ function simulerImpotRevenu(
     cfg.jeanbrun === null &&
     !cfg.lli &&
     denormandie === null &&
-    b.travaux_deductibles !== false
+    b.travaux_deductibles !== false &&
+    regime !== 'micro'
       ? prix.travaux
       : 0
 

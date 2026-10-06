@@ -227,6 +227,12 @@ describe('micro-foncier entre concubins', () => {
 })
 
 describe('corrections de la revue de l’étape 4', () => {
+  it('logement ancien au micro-foncier : les travaux non déduits entrent dans la plus-value', () => {
+    const s = simuler(dossierAncien, 'S0', 9, 'micro')
+    expect(s.sortie.plus_value?.travaux_retenus).toBe(60000)
+    expect(s.annees.every((a) => a.resultat_fiscal > -60000)).toBe(true)
+  })
+
   it('revente un 1er janvier : l’année de cession figure au calendrier, sans mois de détention', () => {
     const janvier: Dossier = {
       ...dossierType,
