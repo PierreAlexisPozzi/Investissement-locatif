@@ -249,7 +249,9 @@ export function prixReventeEquilibre(d: Dossier, id: IdScenario, horizon: number
 export interface BrancheTornado {
   readonly variable: 'prix_revente' | 'loyer' | 'vacance' | 'taux_emprunt' | 'revenus'
   readonly libelle: string
+  /** TRI avec la variable déplacée vers le bas (prix, loyer, vacance, taux ou revenus plus faibles). */
   readonly tri_bas: number | null
+  /** TRI avec la variable déplacée vers le haut. */
   readonly tri_haut: number | null
   /** Écart entre les deux TRI, pour classer les branches. */
   readonly amplitude: number
@@ -317,14 +319,14 @@ export function tornado(d: Dossier, id: IdScenario, horizon: number, p: Parametr
     branche(
       'vacance',
       'Vacance locative',
-      tri({ ...d, hypotheses: { ...h, vacance_mois_par_an: sens.vacance_mois.haute } }),
       tri({ ...d, hypotheses: { ...h, vacance_mois_par_an: sens.vacance_mois.basse } }),
+      tri({ ...d, hypotheses: { ...h, vacance_mois_par_an: sens.vacance_mois.haute } }),
     ),
     branche(
       'taux_emprunt',
       'Taux d’emprunt',
-      tri({ ...d, financement: { ...f, taux_annuel: f.taux_annuel + sens.variation_taux_emprunt } }),
       tri({ ...d, financement: { ...f, taux_annuel: Math.max(0, f.taux_annuel - sens.variation_taux_emprunt) } }),
+      tri({ ...d, financement: { ...f, taux_annuel: f.taux_annuel + sens.variation_taux_emprunt } }),
     ),
     branche(
       'revenus',

@@ -110,6 +110,14 @@ describe('sensibilités (§9)', () => {
     expect(loyer?.tri_bas ?? 0).toBeLessThan(t?.tri_central ?? 0)
   })
 
+  it('tornado : chaque branche déplace la variable vers le bas puis vers le haut', () => {
+    const branches = tornado(dossierType, 'S1', 16, p)?.branches ?? []
+    const tri = (variable: string) => branches.find((b) => b.variable === variable)
+    expect(tri('vacance')?.tri_bas ?? 0).toBeGreaterThan(tri('vacance')?.tri_haut ?? 0)
+    expect(tri('taux_emprunt')?.tri_bas ?? 0).toBeGreaterThan(tri('taux_emprunt')?.tri_haut ?? 0)
+    expect(tri('prix_revente')?.tri_bas ?? 0).toBeLessThan(tri('prix_revente')?.tri_haut ?? 0)
+  })
+
   it('tableau croisé : le TRI baisse avec la décote du neuf et monte avec la revalorisation', () => {
     const g = tableauCroise(dossierType, 'S1', 16, p)
     expect(g.tri).toHaveLength(g.decotes.length)
