@@ -8,7 +8,7 @@
  * argument.
  */
 import type { ModeAppreciationSurtaxe, ParametresFiscaux, TrancheAbattement } from '../params'
-import { TOLERANCE_COMPARAISON } from './constantes-numeriques'
+import { verifierQuotesParts } from './commun'
 
 /** Qui cède : la nature des cédants commande l'appréciation du seuil de la surtaxe. */
 export type NatureCedants = 'personne_seule' | 'epoux' | 'partenaires_pacs' | 'concubins' | 'sci_ir'
@@ -91,10 +91,7 @@ function modeAppreciation(nature: NatureCedants, p: ParametresFiscaux): ModeAppr
  * quote-part, une seule pour la société (SCI à l'IR, arbitrage du 06/10/2026).
  */
 export function assiettesSurtaxe(plusValueImposable: number, cedants: Cedants, p: ParametresFiscaux): number[] {
-  const somme = cedants.quotes_parts.reduce((total, q) => total + q, 0)
-  if (cedants.quotes_parts.some((q) => !(q > 0)) || Math.abs(somme - 1) > TOLERANCE_COMPARAISON) {
-    throw new RangeError('Les quotes-parts des cédants doivent être positives et de somme égale à 1')
-  }
+  verifierQuotesParts(cedants.quotes_parts)
   return modeAppreciation(cedants.nature, p) === 'societe'
     ? [plusValueImposable]
     : cedants.quotes_parts.map((q) => plusValueImposable * q)
