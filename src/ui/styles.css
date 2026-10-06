@@ -40,9 +40,62 @@ body {
   color: var(--accent);
 }
 
+.corps {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.navigation {
+  flex: 0 0 15rem;
+  padding: 1rem 0.75rem;
+  background: var(--surface);
+  border-right: 1px solid var(--bordure);
+}
+
+.navigation ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.navigation button {
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  font: inherit;
+  text-align: left;
+  color: var(--texte);
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.navigation button:disabled {
+  color: var(--texte-attenue);
+  cursor: not-allowed;
+}
+
 .contenu {
   flex: 1;
   padding: 1rem 1.25rem;
+}
+
+.contenu h2 {
+  margin-top: 0;
+  font-size: 1.05rem;
+}
+
+@media (max-width: 48rem) {
+  .corps {
+    flex-direction: column;
+  }
+
+  .navigation {
+    flex-basis: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--bordure);
+  }
 }
 
 .pied {
