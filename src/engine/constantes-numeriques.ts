@@ -18,3 +18,10 @@ export const TOLERANCE_ARRONDI = 1e-9
 
 /** Écart toléré quand on compare des sommes de fractions saisies (0,1 + 0,2 + 0,7 ≈ 1). */
 export const TOLERANCE_COMPARAISON = 1e-9
+
+/** Bornes de recherche du taux de rendement interne : de −99 % à +100 % par an. */
+export const TRI_MINIMUM = -0.99
+export const TRI_MAXIMUM = 1
+
+/** Nombre maximal d'itérations des recherches dichotomiques (TRI, seuils de bascule). */
+export const ITERATIONS_RECHERCHE = 200
