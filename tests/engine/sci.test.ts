@@ -3,21 +3,39 @@ import {
   exerciceSciIs,
   fiscaliteDistribution,
   fraisAnnuelsSci,
+  fraisConstitutionDeductibles,
   impotSocietes,
   planAmortissementSciIs,
   plusValueCessionSciIs,
   repartirEntreAssocies,
 } from '../../src/engine/sci'
-import { parametresFiscaux2026 as p } from '../../src/params'
+import { parametresFiscaux2026 as p, type ParametresFiscaux } from '../../src/params'
 
 const PRECISION = 6
 
 describe('SCI à l’impôt sur le revenu', () => {
-  it('frais annuels revalorisés ; seule la comptabilité est déduite des revenus fonciers', () => {
-    const f = fraisAnnuelsSci({ constitution: 1500, comptabilite_annuelle: 1200, frais_bancaires_annuels: 120 }, 3, 0.02)
+  const frais = { constitution: 1500, comptabilite_annuelle: 1200, frais_bancaires_annuels: 120 }
+
+  it('frais annuels revalorisés ; la comptabilité est déduite, les frais bancaires relèvent du forfait de gestion', () => {
+    const f = fraisAnnuelsSci(frais, 3, 0.02, p)
     expect(f.deductibles_revenus_fonciers).toBeCloseTo(1200 * 1.0404, PRECISION)
     expect(f.non_deductibles_revenus_fonciers).toBeCloseTo(120 * 1.0404, PRECISION)
     expect(f.total).toBeCloseTo(1320 * 1.0404, PRECISION)
+  })
+
+  it('si les frais bancaires n’étaient pas couverts par le forfait, ils seraient déduits', () => {
+    const autre: ParametresFiscaux = {
+      ...p,
+      sci_ir: {
+        ...p.sci_ir,
+        frais_bancaires_couverts_par_forfait: { ...p.sci_ir.frais_bancaires_couverts_par_forfait, valeur: false },
+      },
+    }
+    expect(fraisAnnuelsSci(frais, 1, 0.02, autre).deductibles_revenus_fonciers).toBe(1320)
+  })
+
+  it('frais de constitution non déduits (arbitrage du 06/10/2026)', () => {
+    expect(fraisConstitutionDeductibles(frais, p)).toBe(0)
   })
 
   it('répartit un montant entre associés selon leurs quotes-parts', () => {

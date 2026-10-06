@@ -148,6 +148,15 @@ describe('revente et choix du régime', () => {
     expect(amortissementsReintegresLmnp(r.etat, '2025-02-14', p)).toBe(0)
   })
 
+  it('option écartée : réintégrer aussi les amortissements du mobilier', () => {
+    const r = exerciceLmnpReel(exercice(2028, 10000, 6000, 6000, 2000), ETAT_INITIAL_LMNP, p)
+    const avecMobilier: ParametresFiscaux = {
+      ...p,
+      lmnp: { ...p.lmnp, perimetre_reintegration_pv: { ...p.lmnp.perimetre_reintegration_pv, valeur: 'immeuble_et_mobilier' } },
+    }
+    expect(amortissementsReintegresLmnp(r.etat, '2036-06-30', avecMobilier)).toBeCloseTo(4000, PRECISION)
+  })
+
   it('repère la première année où le micro-BIC deviendrait plus favorable', () => {
     const reel = simulerLmnpReel([exercice(2028, 10000, 2000, 9000), exercice(2029, 10000, 2000, 1000)], p)
     const micro = [microBic(2028, 10000, p), microBic(2029, 10000, p)]

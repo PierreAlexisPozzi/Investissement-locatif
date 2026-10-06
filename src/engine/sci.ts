@@ -16,36 +16,41 @@ import type { ParametresFiscaux } from '../params'
 import { repartir } from './commun'
 
 export interface FraisSci {
-  /**
-   * Statuts, immatriculation, annonce légale : payés l'année 0, non déduits des
-   * revenus fonciers. TODO(fiscal) : aucune source lue ne traite leur déduction.
-   */
+  /** Statuts, immatriculation, annonce légale : payés l'année de l'acquisition. */
   readonly constitution: number
   readonly comptabilite_annuelle: number
   readonly frais_bancaires_annuels: number
 }
 
 export interface FraisAnnuelsSci {
-  /** Comptabilité : charge déductible des revenus fonciers (§8.2). */
+  /** Comptabilité (honoraires versés à un tiers) et, selon le paramètre, frais bancaires. */
   readonly deductibles_revenus_fonciers: number
-  /**
-   * Frais bancaires : autres frais de gestion, couverts par le forfait par local
-   * (BOI-RFPI-BASE-20-10, §240) et donc non déduits en plus (lecture de l'outil).
-   */
+  /** Frais bancaires couverts par le forfait de frais de gestion (paramètre `sci_ir.frais_bancaires_couverts_par_forfait`). */
   readonly non_deductibles_revenus_fonciers: number
   readonly total: number
 }
 
 /** Frais de fonctionnement de l'année de rang `rang` (1 = première année), revalorisés au taux annuel donné. */
-export function fraisAnnuelsSci(f: FraisSci, rang: number, revalorisation: number): FraisAnnuelsSci {
+export function fraisAnnuelsSci(
+  f: FraisSci,
+  rang: number,
+  revalorisation: number,
+  p: ParametresFiscaux,
+): FraisAnnuelsSci {
   const coefficient = (1 + revalorisation) ** (rang - 1)
-  const deductibles = f.comptabilite_annuelle * coefficient
-  const nonDeductibles = f.frais_bancaires_annuels * coefficient
+  const comptabilite = f.comptabilite_annuelle * coefficient
+  const bancaires = f.frais_bancaires_annuels * coefficient
+  const bancairesDeductibles = !p.sci_ir.frais_bancaires_couverts_par_forfait.valeur
   return {
-    deductibles_revenus_fonciers: deductibles,
-    non_deductibles_revenus_fonciers: nonDeductibles,
-    total: deductibles + nonDeductibles,
+    deductibles_revenus_fonciers: comptabilite + (bancairesDeductibles ? bancaires : 0),
+    non_deductibles_revenus_fonciers: bancairesDeductibles ? 0 : bancaires,
+    total: comptabilite + bancaires,
   }
+}
+
+/** Part des frais de constitution déduite des revenus fonciers l'année du paiement (aucune par défaut, arbitrage du 06/10/2026). */
+export function fraisConstitutionDeductibles(f: FraisSci, p: ParametresFiscaux): number {
+  return p.sci_ir.frais_constitution_deductibles.valeur ? f.constitution : 0
 }
 
 /** Part de chaque associé dans un résultat, une créance ou un flux de la SCI. */
