@@ -945,7 +945,7 @@ function simulerImpotRevenu(
     const venteCetteAnnee = annee === anneeCession
     let resultatFiscal: number
     let amortissementDeduit = 0
-    let bic = 0
+    let bicFoyers: readonly number[] = foyers.map(() => 0)
     let deficitsLmnp = 0
     const autres = autresChargesFoncieres(x, annee === anneeLivraison ? travauxDeductiblesS0 : 0)
 
@@ -969,8 +969,9 @@ function simulerImpotRevenu(
         chargesAnterieures = 0
         const micro = regime === 'micro' || (anneeBascule !== null && annee >= anneeBascule)
         if (micro) {
-          bic = microBic(annee, x.loyers, p).benefice_imposable
-          resultatFiscal = bic
+          // Seuil et abattement minimum s'apprécient foyer par foyer, sur sa quote-part des recettes.
+          bicFoyers = foyers.map((foyer) => microBic(annee, x.loyers * foyer.quote_part, p).benefice_imposable)
+          resultatFiscal = bicFoyers.reduce((total, montant) => total + montant, 0)
         } else {
           const dotations = plan === null ? { immeuble: 0, mobilier: 0 } : dotationsLmnp(plan, a.rang_location, moisPremiereActivite)
           const prorata = venteCetteAnnee ? a.mois_detention / MOIS_PAR_AN : 1
@@ -986,7 +987,7 @@ function simulerImpotRevenu(
           )
           etatLmnp = r.etat
           exercicesLmnp.push(r)
-          bic = r.benefice_imposable
+          bicFoyers = foyers.map((foyer) => r.benefice_imposable * foyer.quote_part)
           amortissementDeduit = r.amortissement_deduit
           resultatFiscal = r.resultat_avant_amortissement - r.amortissement_deduit
           deficitsLmnp = r.etat.deficits.reduce((total, m) => total + m.montant, 0)
@@ -1016,7 +1017,7 @@ function simulerImpotRevenu(
               amortissement: tableaux[i]?.annees.find((l) => l.annee === annee)?.amortissement ?? 0,
               micro: regime === 'micro',
             },
-        bic: bic * q,
+        bic: bicFoyers[i] ?? 0,
         reduction: venteCetteAnnee && ruptureDenormandie ? 0 : reductionAnnee,
         reintegration_jeanbrun:
           venteCetteAnnee && rupture !== null && rupture !== undefined && rupture.montant_reintegre > 0
@@ -1290,20 +1291,17 @@ function regimesCandidats(d: Dossier, cfg: Configuration, options: OptionsSimula
   return sansAvantage && !existantsAuReel ? ['reel', 'micro'] : ['reel']
 }
 
+/** Le micro-foncier ou le micro-BIC n'est retenu que si chaque foyer en remplit les conditions chaque année. */
 function regimeAdmissible(simulation: ResultatSimulation, cfg: Configuration, d: Dossier, p: ParametresFiscaux): boolean {
   if (simulation.regime !== 'micro') return true
-  return simulation.annees.every((a) => {
-    if (cfg.regime === 'lmnp') return microBic(a.annee, a.loyers_encaisses, p).eligible
-    // Le seuil du micro-foncier s'apprécie foyer par foyer, sur l'ensemble de ses recettes foncières.
-    return d.foyers.foyers.every(
-      (foyer) =>
-        revenuFoncierMicro(
-          a.annee,
-          a.loyers_encaisses * foyer.quote_part + (foyer.revenus_fonciers_existants?.recettes ?? 0),
-          p,
-        ).eligible,
-    )
-  })
+  return simulation.annees.every((a) =>
+    d.foyers.foyers.every((foyer) => {
+      const quotePart = a.loyers_encaisses * foyer.quote_part
+      return cfg.regime === 'lmnp'
+        ? microBic(a.annee, quotePart, p).eligible
+        : revenuFoncierMicro(a.annee, quotePart + (foyer.revenus_fonciers_existants?.recettes ?? 0), p).eligible
+    }),
+  )
 }
 
 /** Simule un scénario pour un horizon ; null pour un scénario inéligible (§7). */

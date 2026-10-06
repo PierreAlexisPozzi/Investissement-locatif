@@ -254,6 +254,13 @@ describe('corrections de la revue de l’étape 4', () => {
     expect(premiere?.charges.taxe_fonciere).toBeCloseTo((900 * 8) / 12, PRECISION)
     expect(premiere?.charges.copropriete).toBeCloseTo((600 * 8) / 12, PRECISION)
   })
+
+  it('micro-BIC entre concubins : l’abattement minimum s’applique à la quote-part de chaque foyer', () => {
+    const petitLoyer: Dossier = { ...dossierConcubins, bien: { ...dossierConcubins.bien, loyer_marche_meuble: 40 } }
+    const s = simuler(petitLoyer, 'S4', 16, 'micro')
+    // 40 € par mois, soit moins de 305 € de recettes par foyer : bénéfice nul pour chacun.
+    expect(s.annees.filter((a) => a.mois_location === 12).every((a) => a.resultat_fiscal === 0)).toBe(true)
+  })
 })
 
 describe('placement de référence équivalent (S6)', () => {
