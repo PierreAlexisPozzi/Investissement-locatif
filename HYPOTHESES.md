@@ -37,6 +37,8 @@ Seuls les sites de l'État admis par le cahier des charges font foi. Chaque page
 | service-public F10864 | vérifiée le 15/04/2026 | Plus-value immobilière |
 | BOI-RFPI-TPVIE-20 | 18/07/2023 | Surtaxe sur les plus-values élevées |
 | BOI-RFPI-PVI-20-10-20-20 | 20/12/2013 | Frais et travaux majorant le prix d'acquisition |
+| BOI-RFPI-PVI-20-20 | 18/07/2023 | Délai de détention, point de départ en VEFA |
+| BOI-IR-RICI-360-40 | 10/05/2019 | Remise en cause des réductions Pinel et Denormandie |
 | service-public F21618, F2385, F22414 | 15/04 et 22/05/2026 | PFU, PEA, assurance-vie |
 | entreprendre.service-public F23575 | vérifiée le 17/02/2026 | Impôt sur les sociétés |
 | service-public F1669, F16123 | 16/09/2026, 05/04/2024 | Remboursement anticipé, taux d'endettement |
@@ -45,7 +47,7 @@ Seuls les sites de l'État admis par le cahier des charges font foi. Chaque page
 
 ## 2. Paramètres dont le statut n'est pas `verifie`
 
-Décompte : 98 paramètres, dont 90 vérifiés, 7 à confirmer et 1 dont le texte n'a pas été consulté. Liste régénérable avec `npm run params:rapport`.
+Décompte : 104 paramètres, dont 92 vérifiés, 11 à confirmer et 1 dont le texte n'a pas été consulté. Liste régénérable avec `npm run params:rapport`.
 
 <!-- debut:parametres-non-verifies -->
 | Paramètre | Statut | Valeur retenue | Ce qui reste à établir | À qui le demander |
@@ -54,15 +56,19 @@ Décompte : 98 paramètres, dont 90 vérifiés, 7 à confirmer et 1 dont le text
 | `jeanbrun.plafond_proratise_premiere_annee` | a_confirmer | oui (prudent) | Le plafond annuel de 8 000 € est-il proratisé la première année ? Sans effet sous 285 714 € de prix. | Expert-comptable ou rescrit |
 | `jeanbrun.concubins_plafond_par_foyer` | a_confirmer | quote-part par foyer | Application du plafond « par foyer fiscal » à deux concubins coacquéreurs. | Notaire ou expert-comptable |
 | `lmnp.modelisation` | a_confirmer | terrain 15 %, bâti 30 ans, mobilier 7 ans, frais en charge l'année 1 | Paramètres comptables non fixés par les textes. | Expert-comptable |
+| `lmnp.perimetre_reintegration_pv` | a_confirmer | immeuble seul (arbitré) | Réintégration des amortissements du mobilier dans la plus-value. | Notaire |
 | `lli.tva_taux_normal` | texte_non_consulte | 20 % | Article 278 du CGI non lu (Légifrance inaccessible) ; le BOFiP parle du « taux normal » sans chiffre. | Lecture de Légifrance |
 | `lli.tf_deductible_si_creance` | a_confirmer | non déductible (prudent) | La non-déductibilité de la taxe foncière ouvrant droit à créance vise le « bénéfice imposable » des personnes morales : effet sur les revenus fonciers des associés d'une SCI à l'IR non tranché. | Expert-comptable ou rescrit |
 | `cumul_jeanbrun_lli.statut_cumul` | a_confirmer | non exclu par les textes lus | Aucune source ne traite le cumul ; l'article 31 n'exclut que l'article 199 undecies C. Absence d'exclusion ne vaut pas autorisation. | Notaire ou rescrit (écrit) |
 | `plus_value_immobiliere.forfait_travaux_bien_neuf_amorti` | a_confirmer | non appliqué (prudent) | Forfait travaux de 15 % sur un bien neuf amorti (Jeanbrun, LMNP). | Notaire |
+| `plus_value_immobiliere.frais_acquisition_deduits_en_charge` | a_confirmer | forfait ou frais réels conservés (arbitré) | Prise en compte dans la plus-value de frais d'acquisition déjà passés en charge en LMNP. | Notaire |
+| `sci_ir.frais_constitution_deductibles` | a_confirmer | non déduits (arbitré, prudent) | Déduction des frais de constitution d'une SCI des revenus fonciers. | Expert-comptable |
+| `sci_ir.frais_bancaires_couverts_par_forfait` | a_confirmer | oui | Frais bancaires de la SCI couverts par le forfait de frais de gestion. | Expert-comptable |
 <!-- fin:parametres-non-verifies -->
 
 ## 3. Écarts relevés avec le cahier des charges
 
-Les sources lues le 06/10/2026 contredisent ou précisent le cahier des charges sur les points suivants. Les paramètres suivent les sources ; les points 1, 3, 4 et 5 ont été arbitrés le 06/10/2026 (section 4).
+Les sources lues le 06/10/2026 contredisent ou précisent le cahier des charges sur les points suivants. Les paramètres suivent les sources ; les points 1, 3, 4, 5 et 12 ont été arbitrés le 06/10/2026 (section 4).
 
 1. **Loyer plafond, test du §13 (zone A, 45 m²)** : le BOFiP arrondit le plafond au m² au centime après coefficient (BOI-IR-RICI-360-20-30, §130) : 14,64 × 1,12 = 16,3968 → 16,40 €/m², soit **738,00 €/mois**, et non 737,86 € (calcul sans arrondi intermédiaire). Paramètre `loyers_plafonds.arrondi_plafond_m2`. *Arbitré : méthode du BOFiP.*
 2. **Exemple officiel d'amortissement des biens loués (§13)** : l'exemple du BOI-BIC-AMT-20-40-10-20, §90, donne 1 500 € déductibles et **1 560 € reportables**, car il retranche d'abord 540 € au titre de la limite propre aux véhicules de tourisme. Les 2 100 € attendus par le cahier des charges sont justes pour un logement, qui n'est pas soumis à cette limite : le test est libellé « adapté de l'exemple officiel » (`tests/engine/lmnp.test.ts`).
@@ -75,7 +81,9 @@ Les sources lues le 06/10/2026 contredisent ou précisent le cahier des charges 
 9. **Statuts relevés** grâce au texte adopté et au BOFiP (cahier des charges : `texte_non_consulte`, désormais `verifie`) : point de départ de l'amortissement Jeanbrun, limite cumulée de 80 %, conservation des parts d'une société non soumise à l'IS, système du quotient et exceptions en cas de rupture, non-cumul avec l'article 199 undecies C, surface des annexes plafonnée à 8 m², étalement par tiers du complément de prorogation Denormandie.
 10. **Statut abaissé** : taux normal de TVA de 20 % (`verifie` → `texte_non_consulte`), voir section 2.
 11. **Frais de gestion des revenus fonciers (§8.2)** : le forfait de 20 € par local (BOI-RFPI-BASE-20-10, §210 à 240), absent du cahier des charges, s'ajoute aux charges déductibles. Il couvre les frais de gestion qui ne se déduisent pas pour leur montant réel ; seuls les honoraires versés à des tiers (gérance, comptabilité) se déduisent en plus.
-12. **Réintégration des amortissements LMNP (§6.7, §8.6)** : l'outil réintègre dans la plus-value les seuls amortissements de l'immeuble effectivement déduits ; ceux du mobilier, bien meuble hors du champ de la plus-value immobilière, ne le sont pas. Le cahier des charges parle des « amortissements déduits » sans distinction : lecture à confirmer.
+12. **Réintégration des amortissements LMNP (§6.7, §8.6)** : l'outil réintègre dans la plus-value les seuls amortissements de l'immeuble effectivement déduits ; ceux du mobilier, bien meuble hors du champ de la plus-value immobilière, ne le sont pas. Le cahier des charges parle des « amortissements déduits » sans distinction : lecture à confirmer. *Arbitré : immeuble seul.*
+13. **Détention d'un logement acquis en VEFA (§8.6)** : pour la plus-value, elle court à compter de la conclusion du contrat, pas de la livraison (BOI-RFPI-PVI-20-20, §40), par périodes de douze mois jusqu'à la cession (§20).
+14. **Sortie anticipée du Denormandie (§9)** : la cession pendant l'engagement majore l'impôt de l'année du montant total des réductions obtenues (BOI-IR-RICI-360-40, §50, applicable au Denormandie selon BOI-IR-RICI-365-30, §230). Le cahier des charges ne la chiffrait pas.
 
 ## 4. Arbitrages retenus : hypothèses choisies
 
@@ -90,11 +98,14 @@ Choix faits lorsqu'une règle s'écartait du cahier des charges ou admettait plu
 | `jeanbrun.plafond_proratise_premiere_annee` | 06/10/2026 | Plafond annuel proratisé la première année, comme l'annuité (prudent) | Plafond plein dès la première année (lecture littérale) | Au-delà de 285 714 € de prix en intermédiaire, première déduction plus faible de quelques centaines d'euros, une seule fois |
 | `lmnp.modelisation` | 06/10/2026 | Frais d'acquisition passés en charge l'année 1 ; l'autre option calculée en sensibilité | Frais incorporés au prix de revient et amortis hors terrain | Déficit reportable 10 ans seulement, qui peut se périmer si l'amortissement absorbe le résultat ; pas de réintégration dans la plus-value |
 | `lli.perimetres_assimiles` | 06/10/2026 | LLI éligible hors zones A bis, A et B1 si la commune est déclarée dans un périmètre assimilé (ORT, PPA…) (BOFiP) | Zone B2 ou C toujours inéligible (§7) | LLI possible en zone B2 ou C sous convention ORT ou contrat de PPA ; aucun effet en zone tendue |
+| `lmnp.perimetre_reintegration_pv` | 06/10/2026 | Seuls les amortissements de l'immeuble effectivement déduits sont réintégrés dans la plus-value | Réintégrer aussi ceux du mobilier | Impôt de plus-value plus faible |
+| `plus_value_immobiliere.frais_acquisition_deduits_en_charge` | 06/10/2026 | Forfait de 7,5 % ou frais réels conservés dans la plus-value, même passés en charge en LMNP | Aucun frais retenu (prudent) | Impôt de plus-value plus faible ; point à signaler au notaire |
+| `sci_ir.frais_constitution_deductibles` | 06/10/2026 | Frais de constitution de la SCI non déduits des revenus fonciers (prudent) | Déduction l'année du paiement | Déficit de la première année plus faible |
 <!-- fin:arbitrages -->
 
 ## 5. Hypothèses par défaut (`hypotheses-defaut.json`)
 
-Valeurs du §5.5 reprises telles quelles, sauf mention « choix de l'outil » (valeur absente du cahier des charges, à valider).
+Valeurs du §5.5 reprises telles quelles, sauf mention « choix de l'outil » (valeur absente du cahier des charges). Les choix de l'outil ont été validés le 06/10/2026.
 
 | Hypothèse | Défaut | Origine |
 |---|---|---|
@@ -129,7 +140,7 @@ Les hypothèses de modélisation LMNP (part du terrain, durées d'amortissement)
 - **Plafonds de loyer social et très social** : fixés par commune (Loc'Avantages, arrêté du 06/01/2026), saisis par l'utilisateur. Une réduction locale des plafonds intermédiaires par le préfet de région reste à vérifier pour la commune.
 - **Jeanbrun** : un seul logement Jeanbrun par foyer, dont le plafond annuel est celui de son niveau de loyer ; dernière année amortie fournie par l'orchestration (étape 4). En cas de rupture, le supplément d'impôt suit le système du quotient (coefficient égal au nombre d'années civiles d'amortissement déduit), la décote s'appliquant à l'impôt total (brochure pratique IR 2026, p. 370).
 - **LLI** : mixité sociale et périmètre assimilé déclarés par l'utilisateur ; complément de TVA intégral, sans dégressivité, y compris quand les conditions cessent sans cession entre la 16e et la 20e année ; créance de taxe foncière encaissée l'année de la taxe (remboursement immédiat), y compris pour la variante à l'IS.
-- **SCI à l'IR** : frais de comptabilité déduits pour leur montant réel ; frais bancaires couverts par le forfait de frais de gestion (lecture de l'outil) ; frais de constitution non déduits des revenus fonciers, aucune source lue ne traitant leur déduction (`TODO(fiscal)`, choix prudent).
+- **SCI à l'IR** : frais de comptabilité déduits pour leur montant réel ; frais bancaires couverts par le forfait de frais de gestion (`sci_ir.frais_bancaires_couverts_par_forfait`, lecture de l'outil) ; frais de constitution non déduits des revenus fonciers (`sci_ir.frais_constitution_deductibles`, arbitrage du 06/10/2026, `TODO(fiscal)`).
 - **SCI à l'IS (S3 bis)** : variante indicative. IS à 15 % puis 25 % ; bâti amorti selon les hypothèses de modélisation du LMNP, sans limitation de l'amortissement au loyer ; frais d'acquisition traités selon l'option retenue pour le LMNP ; déficits reportables sans limite de durée ni plafond ; plus-value égale au prix net diminué de la valeur nette comptable ; bénéfices distribués au PFU.
 - **Sortie du LLI par cession des parts de la SCI** à un repreneur qui poursuit la location (pas de complément de TVA, BOI-TVA-IMM-30, §235) : non modélisée, marché étroit ; signalée dans les questions à poser.
 - **Intérêts intercalaires de VEFA** : traités par un différé partiel (intérêts et assurance seuls) calculé sur tout le capital dès la signature, ce qui est prudent ; le détail des appels de fonds n'est pas modélisé.
@@ -140,7 +151,7 @@ Les hypothèses de modélisation LMNP (part du terrain, durées d'amortissement)
 - **LMNP** : CFE saisie par l'utilisateur (montant fixé par la commune) ; résidences gérées, meublés de tourisme et loueur professionnel (signalé, non modélisé) hors périmètre. Un composant bâti unique et le mobilier ; prorata mensuel la première année et solde l'année suivant la dernière annuité ; amortissement déduit réparti entre composants au prorata des montants disponibles ; déficits antérieurs imputés après l'amortissement de l'année (§8.4, ordre non précisé par le BOFiP) ; micro-BIC apprécié sur les recettes de l'année. Le choix du meilleur régime et l'année de bascule relèvent de l'orchestration (étape 4).
 - **Frais d'acquisition passés en charge en LMNP et plus-value** : le BOFiP lu (BOI-RFPI-PVI-20-10-20-20, §240) exclut de la plus-value les travaux déjà déduits mais ne dit rien des frais d'acquisition déduits. Leur prise en compte (frais réels ou forfait de 7,5 %) est à confirmer par un notaire avant l'étape 4.
 - **Denormandie** : coût total de l'opération, pour la condition de 25 % de travaux, égal au prix, aux frais et aux travaux ; plafond de 5 500 €/m² appliqué à la surface habitable ; 12 ans modélisés par l'engagement initial et ses prorogations, au même rythme (2 %/an puis 1 %/an) ; détention en SCI à l'IR non exclue mais non utilisée par les scénarios.
-- **Placement de référence** : versement initial au début de la première année, versements de l'année répartis en fin de mois et capitalisation mensuelle au taux équivalent ; un flux négatif est un retrait, sans imposition immédiate ni clôture du PEA ; impôt et prélèvements sociaux calculés au rachat total, à l'horizon, sur le gain cumulé ; versements au-delà du plafond du PEA (par titulaire) placés sur un compte-titres ; assurance-vie : abattement appliqué avant le partage entre taux de 7,5 % et 12,8 %.
+- **Placement de référence** : versement initial au début de la première année, versements de l'année répartis en fin de mois et capitalisation mensuelle au taux équivalent ; un flux négatif est un retrait, sans imposition immédiate ni clôture du PEA ; impôt et prélèvements sociaux calculés au rachat total, à l'horizon, sur le gain cumulé ; versements au-delà du plafond du PEA (par titulaire) placés sur un compte-titres ; assurance-vie : abattement appliqué avant le partage entre taux de 7,5 % et 12,8 %. Conventions validées le 06/10/2026.
 - **Arrondis** : calcul sans arrondi intermédiaire, arrondi à l'euro en fin de calcul de l'impôt (sauf plafond de loyer au m², arrondi au centime comme le prévoit le BOFiP).
 
 ## 7. Veille législative
