@@ -137,16 +137,26 @@ const CONFIGURATIONS: Readonly<Record<IdScenario, Configuration>> = {
   S5_12: { ...base, loyer: 'intermediaire', denormandie: { engagement_initial: 'neuf_ans', prorogations: 1 } },
 }
 
+/** Alerte de simulation reprise, chiffres à l'appui, par les alertes de la recommandation (§10.5). */
+export const ALERTE_JEANBRUN_PLAFONNE = 'Jeanbrun : l’annuité dépasse le plafond annuel du foyer, l’amortissement est plafonné'
+
+/** Niveau du plafond de loyer d'un scénario ; null pour un loyer de marché (S0, S4). */
+export function plafondLoyerScenario(id: IdScenario): NiveauLoyer | null {
+  const loyer = CONFIGURATIONS[id].loyer
+  return loyer === 'marche_nu' || loyer === 'marche_meuble' ? null : loyer
+}
+
 /** Engagements fiscaux d'un scénario : durée de blocage et pénalités de sortie anticipée (§9). */
 export interface EngagementsScenario {
-  readonly jeanbrun: boolean
+  /** Niveau de loyer de l'engagement Jeanbrun ; null sans Jeanbrun. */
+  readonly jeanbrun: NiveauLoyer | null
   readonly lli: boolean
   readonly denormandie: { readonly engagement_initial: EngagementInitialDenormandie; readonly prorogations: number } | null
 }
 
 export function engagementsScenario(id: IdScenario): EngagementsScenario {
   const cfg = CONFIGURATIONS[id]
-  return { jeanbrun: cfg.jeanbrun !== null, lli: cfg.lli, denormandie: cfg.denormandie }
+  return { jeanbrun: cfg.jeanbrun, lli: cfg.lli, denormandie: cfg.denormandie }
 }
 
 /** Régime d'imposition des loyers : réel, micro (S0, S4), ou réel puis micro à partir de l'année de bascule (S4). */
@@ -915,7 +925,7 @@ function simulerImpotRevenu(
     t === null ? null : ruptureJeanbrun(t, cal.date_debut_location, cal.date_cession, 'cession', p),
   )
   if (tableaux.some((t) => t?.annees.some((a) => a.plafonne) === true)) {
-    alertes.push('Jeanbrun : l’annuité dépasse le plafond annuel du foyer, l’amortissement est plafonné')
+    alertes.push(ALERTE_JEANBRUN_PLAFONNE)
   }
 
   // Denormandie : réduction de la quote-part de chaque foyer, reprise en cas de cession avant le terme de l'engagement.

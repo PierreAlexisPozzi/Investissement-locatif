@@ -104,7 +104,7 @@ function anneeDeReference(s: ResultatSimulation) {
 export function dateSortieSansPenalite(id: IdScenario, cal: Calendrier, p: ParametresFiscaux): string | null {
   const engagements = engagementsScenario(id)
   const dates: string[] = []
-  if (engagements.jeanbrun) dates.push(finEngagementJeanbrun(cal.date_debut_location, p))
+  if (engagements.jeanbrun !== null) dates.push(finEngagementJeanbrun(cal.date_debut_location, p))
   if (engagements.lli) {
     // Sortie libre à partir de la 16e année suivant la livraison (logement unique).
     dates.push(ajouterAnnees(cal.date_livraison, p.lli.complement_tva.valeur.fin_periode_cession_partielle))
@@ -286,7 +286,8 @@ function avecLoyers(d: Dossier, facteur: number): Dossier {
   }
 }
 
-function avecRevenus(d: Dossier, facteur: number): Dossier {
+/** Dossier dont les revenus imposables des foyers, changements prévus compris, sont multipliés par un facteur. */
+export function avecRevenus(d: Dossier, facteur: number): Dossier {
   return {
     ...d,
     foyers: {

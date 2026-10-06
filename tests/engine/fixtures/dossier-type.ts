@@ -82,3 +82,14 @@ export const dossierConcubins: Dossier = {
     ],
   },
 }
+
+/**
+ * Variante favorable à l'immobilier, pour tester la cohérence de la recommandation (§14) :
+ * loyers plus élevés, revente sans décote du neuf et revalorisée de 2,5 %/an, capacité d'épargne de 1 500 €.
+ */
+export const dossierFavorable: Dossier = {
+  ...dossierType,
+  foyers: { ...dossierType.foyers, capacite_epargne_mensuelle: 1500 },
+  bien: { ...dossierType.bien, loyer_marche_nu: 1000, loyer_marche_meuble: 1150 },
+  hypotheses: { ...dossierType.hypotheses, prix: { decote_neuf: 0, revalorisation_annuelle: 0.025 } },
+}
