@@ -240,6 +240,14 @@ describe('corrections de la revue de l’étape 4', () => {
     expect(alerte).toContain('2035, 2036, 2037')
     expect(alerte).not.toContain('2034')
   })
+
+  it('logement ancien : taxe foncière, copropriété et assurance dès l’achat, pas à la fin des travaux', () => {
+    const s = simuler(dossierAncien, 'S0', 9)
+    const premiere = s.annees[0]
+    // Achat en mai 2026 : 8 mois détenus la première année.
+    expect(premiere?.charges.taxe_fonciere).toBeCloseTo((900 * 8) / 12, PRECISION)
+    expect(premiere?.charges.copropriete).toBeCloseTo((600 * 8) / 12, PRECISION)
+  })
 })
 
 describe('placement de référence équivalent (S6)', () => {

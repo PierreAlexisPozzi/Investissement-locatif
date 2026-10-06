@@ -458,7 +458,9 @@ function donneesAnnuelles(
   const h = d.hypotheses
   const ex = d.exploitation
   const anneeAcquisition = anneeDuRang(cal.rang_acquisition)
-  const anneeLivraison = anneeDuRang(cal.rang_livraison)
+  // Neuf : taxe foncière due à partir de l'année suivant l'achèvement réel ; ancien : chaque année détenue.
+  const ancien = b.etat === 'ancien'
+  const anneeAchevement = lireDate(b.date_livraison).annee
   const loyerBase = loyerMensuelDeBase(d, cfg, p)
   const capitalInitial = d.financement.emprunt
   let restant = capitalInitial
@@ -473,8 +475,8 @@ function donneesAnnuelles(
     const loyers = retenu * moisEncaisses
     const decote = (marche - retenu) * moisEncaisses
 
-    const rangTaxe = a.annee - anneeLivraison
-    const exoneree = rangTaxe <= h.annees_exoneration_taxe_fonciere
+    const rangTaxe = ancien ? a.annee - anneeAcquisition + 1 : a.annee - anneeAchevement
+    const exoneree = !ancien && rangTaxe <= h.annees_exoneration_taxe_fonciere
     const prorataDetention = a.mois_detention / MOIS_PAR_AN
     const taxeAnnuelle = b.taxe_fonciere * coefCharges
     const taxeFonciere = rangTaxe >= 1 && !exoneree ? taxeAnnuelle * prorataDetention : 0
@@ -491,7 +493,8 @@ function donneesAnnuelles(
           p,
         ).montant * prorataDetention
       : 0
-    const prorataLivre = a.mois_apres_livraison / MOIS_PAR_AN
+    // Copropriété et assurance : dès l'achat pour un logement ancien, à la livraison pour un logement neuf.
+    const prorataLivre = (ancien ? a.mois_detention : a.mois_apres_livraison) / MOIS_PAR_AN
     const sci = cfg.detention === 'nom_propre' ? null : fraisAnnuelsSci(ex.sci, ecart + 1, h.revalorisation_charges, p)
     const loue = a.mois_location > 0
     const charges: ChargesAnnee = {
