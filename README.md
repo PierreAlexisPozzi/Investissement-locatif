@@ -10,7 +10,7 @@ Application web locale qui simule un investissement locatif sous plusieurs dispo
 |---|---|---|
 | 1 | Squelette, paramètres fiscaux sourcés, `HYPOTHESES.md`, intégration continue | livrée |
 | 2 | Moteur : impôt, loyer plafond, emprunt, revenus fonciers, plus-value | livrée |
-| 3 | Moteur : Jeanbrun, LLI/SCI, LMNP, Denormandie, placement de référence | à venir |
+| 3 | Moteur : Jeanbrun, LLI/SCI, LMNP, Denormandie, placement de référence | livrée |
 | 4 | Orchestration des scénarios, indicateurs, sensibilités | à venir |
 | 5 | Recommandation et contre-expertise | à venir |
 | 6 | Interface (écrans 1 à 9), exports, persistance | à venir |
@@ -56,14 +56,20 @@ Le moteur (`src/engine/`) est fait de fonctions pures : chacune reçoit les para
 
 | Module | Rôle |
 |---|---|
-| `impot-revenu.ts` | Barème, quotient familial plafonné, décote, réductions sous plafond des niches, seuil de recouvrement, revenu global et déficits globaux, impôt différentiel avec et sans l'opération, indexation du barème |
+| `impot-revenu.ts` | Barème, quotient familial plafonné, décote, réductions sous plafond des niches ou hors plafond, système du quotient, seuil de recouvrement, revenu global et déficits globaux, impôt différentiel avec et sans l'opération, indexation du barème |
 | `loyer-plafond.ts` | Surface prise en compte, coefficient de surface, plafond de loyer, loyer retenu et manque à gagner, plafonds de ressources |
 | `emprunt.ts` | Tableau d'amortissement au centime, assurance, différé, annuités par année civile, indemnités de remboursement anticipé, taux d'endettement |
-| `revenus-fonciers.ts` | Régime réel et ventilation du déficit, micro-foncier, prélèvements sociaux, maintien de la location |
+| `revenus-fonciers.ts` | Régime réel et ventilation du déficit, frais de gestion forfaitaires, micro-foncier, prélèvements sociaux, maintien de la location |
 | `plus-value.ts` | Prix d'acquisition corrigé, abattements, impôt et prélèvements sociaux, surtaxe par cédant, surcoût de la réintégration des amortissements |
-| `deficits.ts`, `arrondis.ts` | Stocks de déficits par millésime, arrondis commerciaux |
+| `jeanbrun.ts` | Éligibilité, base amortissable, annuité plafonnée par foyer, prorata de la première année, limite cumulée, rupture de l'engagement et réintégration au quotient |
+| `lli.ts` | Éligibilité (zones et périmètres assimilés), TVA à taux réduit, complément de TVA selon l'année de sortie, créance de taxe foncière, cumul avec le Jeanbrun |
+| `sci.ts` | Frais de la SCI, répartition entre associés, variante indicative à l'IS (impôt, amortissement, plus-value, distribution) |
+| `lmnp.ts` | Micro-BIC, régime réel, amortissement par composants limité au résultat et différé, déficits sur 10 ans, statut, réintégration à la revente |
+| `denormandie.ts` | Éligibilité, base plafonnée, réduction étalée et prorogations, imputation sous le plafond des niches, part perdue |
+| `placement-reference.ts` | Mêmes décaissements placés au rendement paramétré, fiscalité de sortie du PEA, de l'assurance-vie ou du compte-titres |
+| `deficits.ts`, `arrondis.ts`, `commun.ts`, `dates.ts`, `format.ts` | Stocks de déficits par millésime, arrondis, éligibilité motivée, quotes-parts, dates ISO, mise en forme des motifs |
 
-Les autres modules (Jeanbrun, LLI, SCI, LMNP, Denormandie, placement de référence, orchestration, indicateurs, recommandation, contre-expertise) arrivent aux étapes 3 à 5.
+L'orchestration des scénarios, les indicateurs, la recommandation et la contre-expertise arrivent aux étapes 4 et 5.
 
 ## Paramètres fiscaux
 
@@ -107,7 +113,7 @@ Le dépôt ne contient aucune donnée personnelle : ni revenus, ni dossier de si
 - Paramètres arrêtés au 06/10/2026 et vérifiés sur des sources officielles (liste dans `HYPOTHESES.md`, section 1). La loi de finances pour 2027 et le projet de loi visant la relance et la décentralisation du logement, en cours d'examen, ne sont pas pris en compte.
 - Légifrance n'a pas pu être lu automatiquement. Le texte de la loi de finances pour 2026 a été lu dans sa version définitivement adoptée, publiée par l'Assemblée nationale, et ses articles 47 (Jeanbrun) et 98 (LLI) n'ont pas été censurés. Les règles marquées `texte_non_consulte` restent à relire sur Légifrance.
 - Le cumul Jeanbrun + LLI n'est mentionné par aucune source officielle consultée, ni pour l'autoriser ni pour l'interdire.
-- Hors périmètre ou simplifiés : SCI à l'IS (variante indicative), IFI, CEHR et CDHR, démembrement de propriété, intérêts intercalaires détaillés (différé simple), CSG déductible (option désactivée par défaut), Jeanbrun dans l'ancien, déficit foncier majoré pour travaux de rénovation énergétique, outre-mer, demi-parts particulières et frais réels, option du PFU pour le barème, sortie du LLI par cession des parts de la SCI. Détail dans `HYPOTHESES.md`, section 6.
+- Hors périmètre ou simplifiés : SCI à l'IS (variante indicative), loueur en meublé professionnel, IFI, CEHR et CDHR, démembrement de propriété, intérêts intercalaires détaillés (différé simple), CSG déductible (option désactivée par défaut), Jeanbrun dans l'ancien, déficit foncier majoré pour travaux de rénovation énergétique, outre-mer, demi-parts particulières et frais réels, option du PFU pour le barème, sortie du LLI par cession des parts de la SCI. Détail dans `HYPOTHESES.md`, section 6.
 - Les points `a_confirmer` doivent être validés par un notaire ou un expert-comptable avant toute signature.
 
 ## Conventions
