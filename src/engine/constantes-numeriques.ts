@@ -25,3 +25,9 @@ export const TRI_MAXIMUM = 1
 
 /** Nombre maximal d'itérations des recherches dichotomiques (TRI, seuils de bascule). */
 export const ITERATIONS_RECHERCHE = 200
+
+/** Années de l'effort d'épargne initial (§9 : effort moyen des années 1 à 3). */
+export const ANNEES_EFFORT_INITIAL = 3
+
+/** Borne haute de la recherche du prix de revente d'équilibre, en multiple du prix central. */
+export const FACTEUR_PRIX_REVENTE_MAXIMUM = 3
