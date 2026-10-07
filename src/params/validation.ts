@@ -139,12 +139,68 @@ function anomaliesEnumerations(d: Elargi<ParametresFiscaux>): string[] {
   return anomalies
 }
 
+/** Un taux ou une fraction se lit entre 0 et 1 : unité « taux décimal » ou « part … », ou clé `taux…`, `part_…`, `abattement`. */
+function estUnTaux(cle: string, unite: string): boolean {
+  const uniteDeTaux = (unite.startsWith('taux décimal') && !unite.includes(';')) || unite.startsWith('part ')
+  return uniteDeTaux || /^(taux|part_)/.test(cle) || cle === 'abattement'
+}
+
+/**
+ * Domaine des valeurs, contrôlé aussi sur les paramètres modifiés dans l'interface : nombres finis et positifs,
+ * taux entre 0 et 1, barème de l'impôt et tranches d'abattement ou de surtaxe ordonnés.
+ */
+function anomaliesDeValeur(d: Elargi<ParametresFiscaux>): string[] {
+  const anomalies: string[] = []
+  for (const { chemin, parametre } of listerParametres(d)) {
+    const unite = parametre.unite
+    const visiter = (valeur: unknown, ici: string, cle: string): void => {
+      if (typeof valeur === 'number') {
+        if (!Number.isFinite(valeur) || valeur < 0) anomalies.push(`${ici} : nombre positif ou nul attendu (${String(valeur)})`)
+        else if (estUnTaux(cle, unite) && valeur > 1) anomalies.push(`${ici} : taux décimal entre 0 et 1 attendu (${String(valeur)}) ; 0,3 signifie 30 %`)
+      } else if (Array.isArray(valeur)) {
+        valeur.forEach((x: unknown, k) => {
+          visiter(x, `${ici}[${String(k)}]`, cle)
+        })
+      } else if (typeof valeur === 'object' && valeur !== null) {
+        for (const [k, x] of Object.entries(valeur)) visiter(x, `${ici}.${k}`, k)
+      }
+    }
+    visiter(parametre.valeur, chemin, chemin.split('.').at(-1) ?? chemin)
+  }
+
+  const bareme = d.impot_revenu.bareme.valeur
+  if (bareme.length === 0) anomalies.push('impot_revenu.bareme : au moins une tranche attendue')
+  bareme.forEach((t, k) => {
+    const derniere = k === bareme.length - 1
+    const precedente = bareme[k - 1]
+    if (derniere !== (t.jusqua === null)) anomalies.push(`impot_revenu.bareme[${String(k)}] : seule la dernière tranche est ouverte (borne null)`)
+    if (precedente !== undefined && t.jusqua !== null && precedente.jusqua !== null && !(t.jusqua > precedente.jusqua)) {
+      anomalies.push(`impot_revenu.bareme[${String(k)}] : bornes croissantes attendues`)
+    }
+    if (precedente !== undefined && t.taux < precedente.taux) anomalies.push(`impot_revenu.bareme[${String(k)}] : taux croissants attendus`)
+  })
+
+  const tranchesOrdonnees = (chemin: string, tranches: readonly { readonly de: number; readonly a: number | null }[]): void => {
+    tranches.forEach((t, k) => {
+      const precedente = tranches[k - 1]
+      if (t.a !== null && t.a < t.de) anomalies.push(`${chemin}[${String(k)}] : borne « a » inférieure à « de »`)
+      if (precedente !== undefined && (precedente.a === null || t.de < precedente.a)) anomalies.push(`${chemin}[${String(k)}] : tranches ordonnées attendues`)
+    })
+  }
+  const pv = d.plus_value_immobiliere
+  tranchesOrdonnees('plus_value_immobiliere.abattement_ir.tranches', pv.abattement_ir.valeur.tranches)
+  tranchesOrdonnees('plus_value_immobiliere.abattement_ps.tranches', pv.abattement_ps.valeur.tranches)
+  tranchesOrdonnees('plus_value_immobiliere.surtaxe_plus_values_elevees.tranches', pv.surtaxe_plus_values_elevees.valeur.tranches)
+  return anomalies
+}
+
 /** Liste toutes les anomalies du fichier de paramètres ; liste vide si tout est conforme. */
 export function listerAnomalies(d: Elargi<ParametresFiscaux>): string[] {
   const anomalies: string[] = []
   if (!estDateIso(d.meta.date_arret)) anomalies.push(`meta.date_arret : date invalide (${d.meta.date_arret})`)
   anomalies.push(...anomaliesDeForme(d, d.meta.date_arret))
   anomalies.push(...anomaliesEnumerations(d))
+  anomalies.push(...anomaliesDeValeur(d))
   return anomalies
 }
 

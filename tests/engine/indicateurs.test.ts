@@ -8,11 +8,12 @@ import {
   prixReventeEquilibre,
   tableauCroise,
   tornado,
+  varianteFraisAcquisition,
   type Indicateurs,
 } from '../../src/engine/indicateurs'
 import { simulerScenario, type IdScenario } from '../../src/engine/scenario'
-import { parametresFiscaux2026 as p } from '../../src/params'
-import { dossierType } from './fixtures/dossier-type'
+import { parametresFiscaux2026 as p, type ParametresFiscaux } from '../../src/params'
+import { dossierFavorable, dossierType } from './fixtures/dossier-type'
 
 const PRECISION = 6
 
@@ -127,6 +128,36 @@ describe('sensibilités (§9)', () => {
       for (let j = 1; j < ligne.length; j++) expect(ligne[j] ?? 0).toBeGreaterThan(ligne[j - 1] ?? 0)
       if (i > 0) expect(ligne[0] ?? 0).toBeLessThan(g.tri[i - 1]?.[0] ?? 0)
     }
+  })
+})
+
+describe('option écartée des frais d’acquisition en LMNP (arbitrage de lmnp.modelisation)', () => {
+  it('location meublée : l’option écartée est simulée, le cas central reste celui de la comparaison', () => {
+    const v = varianteFraisAcquisition(dossierType, 'S4', 16, p)
+    if (v === null) throw new Error('S4 inéligible')
+    expect([v.retenu, v.alternative]).toEqual(['charge_annee_1', 'amortis'])
+    const central = indicateurs('S4')
+    expect(v.tri_central).toBe(central.tri)
+    expect(v.capital_net_central).toBe(central.capital_net_sortie)
+    // Résultats déficitaires : les frais sont déduits dans les deux cas (en charge, ou par la plus-value), sans impôt à décaler.
+    expect(v.capital_net_alternative).toBeCloseTo(v.capital_net_central, PRECISION)
+    // Bénéfices imposables : l'amortissement des frais décale l'impôt et change le résultat.
+    const favorable = varianteFraisAcquisition(dossierFavorable, 'S4', 16, p)
+    expect(favorable?.capital_net_alternative).not.toBeCloseTo(favorable?.capital_net_central ?? 0, 0)
+  })
+
+  it('suit le paramètre : l’option retenue devient l’alternative de l’autre', () => {
+    const m = p.lmnp.modelisation
+    const amortis: ParametresFiscaux = { ...p, lmnp: { ...p.lmnp, modelisation: { ...m, valeur: { ...m.valeur, frais_acquisition: 'amortis' } } } }
+    const v = varianteFraisAcquisition(dossierType, 'S4', 16, amortis)
+    expect([v?.retenu, v?.alternative]).toEqual(['amortis', 'charge_annee_1'])
+    expect(v?.tri_alternative).toBeCloseTo(varianteFraisAcquisition(dossierType, 'S4', 16, p)?.tri_central ?? 0, PRECISION)
+  })
+
+  it('SCI à l’IS concernée, location nue non', () => {
+    expect(varianteFraisAcquisition(dossierType, 'S3_IS', 16, p)).not.toBeNull()
+    expect(varianteFraisAcquisition(dossierType, 'S0', 16, p)).toBeNull()
+    expect(varianteFraisAcquisition(dossierType, 'S2', 16, p)).toBeNull()
   })
 })
 

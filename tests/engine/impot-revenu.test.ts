@@ -6,6 +6,7 @@ import {
   deductionFraisProfessionnels,
   impotDifferentiel,
   indexerImpotRevenu,
+  partsAvecEnfants,
   salairesNetsImposables,
   type Foyer,
 } from '../../src/engine/impot-revenu'
@@ -179,6 +180,21 @@ describe('salaires : déduction forfaitaire de 10 %', () => {
 
   it('la déduction s’applique à chaque membre du foyer', () => {
     expect(salairesNetsImposables([50000, 50000], p)).toBe(90000)
+  })
+})
+
+describe('parts selon les enfants à charge (CGI art. 194)', () => {
+  it.each([
+    [true, 0, 2],
+    [true, 1, 2.5],
+    [true, 2, 3],
+    [true, 3, 4],
+    [true, 4, 5],
+    [false, 0, 1],
+    [false, 2, 2],
+    [false, -1, 1],
+  ])('imposition commune %s, %i enfant(s) → %f parts', (commune, enfants, parts) => {
+    expect(partsAvecEnfants(commune, enfants, p)).toBe(parts)
   })
 })
 

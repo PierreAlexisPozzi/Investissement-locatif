@@ -9,7 +9,7 @@
  * argument. Les amplitudes des sensibilités viennent des hypothèses par défaut.
  */
 import type { ParametresFiscaux } from '../params'
-import { hypothesesDefaut } from '../params'
+import { hypothesesDefaut, TRAITEMENTS_FRAIS_ACQUISITION_LMNP } from '../params'
 import { rechercheDichotomique, tauxRendementInterne, valeurActuelleNette, type FluxDate } from './actualisation'
 import { calendrierOperation, rangMois, type Calendrier } from './calendrier'
 import {
@@ -27,6 +27,7 @@ import { calculerImpot } from './impot-revenu'
 import { finEngagementJeanbrun } from './jeanbrun'
 import { prixTtc } from './lli'
 import {
+  caracteristiquesScenario,
   engagementsScenario,
   simulerScenario,
   SCENARIOS,
@@ -401,6 +402,42 @@ export function tableauCroise(d: Dossier, id: IdScenario, horizon: number, p: Pa
     }),
   )
   return { decotes, revalorisations, tri }
+}
+
+export interface VarianteFraisAcquisition {
+  /** Traitement des frais d'acquisition retenu par le paramètre `lmnp.modelisation`. */
+  readonly retenu: (typeof TRAITEMENTS_FRAIS_ACQUISITION_LMNP)[number]
+  /** Option écartée par l'arbitrage du 06/10/2026, simulée ici. */
+  readonly alternative: (typeof TRAITEMENTS_FRAIS_ACQUISITION_LMNP)[number]
+  readonly tri_central: number | null
+  readonly tri_alternative: number | null
+  readonly capital_net_central: number
+  readonly capital_net_alternative: number
+}
+
+/**
+ * Sensibilité à l'arbitrage `lmnp.modelisation` (frais d'acquisition passés en charge ou amortis), pour la location
+ * meublée et la SCI à l'IS qui en reprend la modélisation ; null pour les autres scénarios ou un scénario inéligible.
+ */
+export function varianteFraisAcquisition(d: Dossier, id: IdScenario, horizon: number, p: ParametresFiscaux): VarianteFraisAcquisition | null {
+  const c = caracteristiquesScenario(id)
+  if (!c.meuble && c.detention !== 'sci_is') return null
+  const centrale = simulerScenario(d, id, { horizon }, p).simulation
+  if (centrale === null) return null
+  const m = p.lmnp.modelisation
+  const retenu = m.valeur.frais_acquisition
+  const alternative = TRAITEMENTS_FRAIS_ACQUISITION_LMNP.find((t) => t !== retenu) ?? retenu
+  const pAlternatif: ParametresFiscaux = { ...p, lmnp: { ...p.lmnp, modelisation: { ...m, valeur: { ...m.valeur, frais_acquisition: alternative } } } }
+  const s = simulerScenario(d, id, optionsAuRegimeCentral(centrale, horizon), pAlternatif).simulation
+  if (s === null) return null
+  return {
+    retenu,
+    alternative,
+    tri_central: tauxRendementInterne(centrale.flux),
+    tri_alternative: tauxRendementInterne(s.flux),
+    capital_net_central: centrale.sortie.produit_net,
+    capital_net_alternative: s.sortie.produit_net,
+  }
 }
 
 /** Pénalité d'une sortie un an avant la fin des engagements : complément de TVA et reprises fiscales. */
