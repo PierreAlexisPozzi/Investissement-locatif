@@ -9,7 +9,7 @@ import { ECRANS } from '../../src/ui/etat/etat'
 import { FournisseurApplication } from '../../src/ui/etat/FournisseurApplication'
 import { etatInitial } from '../../src/ui/etat/initialisation'
 import { CLE_DOSSIER_COURANT, CLE_DOSSIERS, CLE_PARAMETRES, type Stockage } from '../../src/ui/etat/stockage'
-import { dossierType } from '../engine/fixtures/dossier-type'
+import { dossierAncien, dossierType } from '../engine/fixtures/dossier-type'
 import { simulationOptimiste } from '../engine/fixtures/simulation-vendeur'
 
 /** Délai laissé aux calculs différés (recommandation complète, sensibilités). */
@@ -231,6 +231,16 @@ describe('revenus fonciers existants', () => {
     await user.clear(recettes)
     await user.type(recettes, String(p.micro_foncier.seuil_recettes.valeur + 1))
     expect(screen.getByText(/le régime réel est obligatoire/)).toBeTruthy()
+  })
+})
+
+describe('écran du bien', () => {
+  it('logement ancien : travaux déductibles cochés par défaut, comme le moteur les compte', async () => {
+    window.location.hash = '/bien'
+    const fichier = fichierDossier('Ancien (fictif)', dossierAncien, '2026-10-07T08:00:00.000Z')
+    monter(stockageMemoire({ [CLE_DOSSIERS]: JSON.stringify({ version: 1, dossiers: [{ id: 'ancien', fichier }] }) }))
+    await titreEcran('Le bien et le financement')
+    expect(screen.getByLabelText<HTMLInputElement>('Travaux d’amélioration déductibles en location nue classique (S0)').checked).toBe(true)
   })
 })
 

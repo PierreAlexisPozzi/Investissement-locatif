@@ -207,7 +207,7 @@ export function EcranBien() {
               <ChampTexte libelle="DPE après travaux" valeur={b.dpe_apres} onChange={(dpe_apres) => { majBien({ dpe_apres }) }} />
               <ChampCase
                 libelle="Travaux d’amélioration déductibles en location nue classique (S0)"
-                valeur={b.travaux_deductibles ?? false}
+                valeur={b.travaux_deductibles !== false}
                 onChange={(travaux_deductibles) => {
                   majBien({ travaux_deductibles })
                 }}
