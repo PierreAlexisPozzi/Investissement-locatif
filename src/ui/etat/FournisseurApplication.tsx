@@ -5,7 +5,7 @@ import type { IdScenario } from '../../engine/scenario'
 import { appliquerSurcharges, type ParametresFiscaux, type SurchargeParametre, type SurchargesParametres } from '../../params'
 import { Contexte, type ActionsApplication, type ContexteApplication } from './application'
 import { dossierCourant, reduire, type EtatApplication } from './etat'
-import { dossierEnregistreVierge, nouvelIdentifiant } from './initialisation'
+import { dossierEnregistreJeuEssai, dossierEnregistreVierge, nouvelIdentifiant } from './initialisation'
 import { CLE_DOSSIERS, ecrireDossierCourant, ecrireDossiers, lireDossiers, type Stockage } from './stockage'
 
 interface Proprietes {
@@ -80,6 +80,9 @@ export function FournisseurApplication({ etatInitial, stockage, parametresDeBase
       },
       nouveauDossier: () => {
         envoyer({ type: 'ajouter', dossier: dossierEnregistreVierge(new Date(), parametresDeBase) })
+      },
+      chargerJeuEssai: () => {
+        envoyer({ type: 'ajouter', dossier: dossierEnregistreJeuEssai(new Date()) })
       },
       dupliquerDossier: () => {
         const source = dossierCourant(etat)

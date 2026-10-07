@@ -1,0 +1,102 @@
+{
+  "format": "investissement-locatif/dossier",
+  "version": 1,
+  "nom": "Cas type (fictif)",
+  "enregistre_le": "2026-10-07T08:00:00.000Z",
+  "dossier": {
+    "foyers": {
+      "situation": "marie_pacse",
+      "foyers": [
+        {
+          "libelle": "Couple",
+          "revenu_imposable": 90000,
+          "parts": 2,
+          "quote_part": 1
+        }
+      ],
+      "capacite_epargne_mensuelle": 800,
+      "apport_disponible": 40000
+    },
+    "bien": {
+      "nombre_pieces": 2,
+      "etat": "vefa",
+      "type_logement": "appartement_collectif",
+      "zone": "A",
+      "commune_denormandie": false,
+      "programme_lli": true,
+      "surface": {
+        "habitable": 45
+      },
+      "prix_ht": 250000,
+      "frais_notaire": 7500,
+      "date_acquisition": "2026-11-15",
+      "date_livraison": "2028-06-30",
+      "date_debut_location": "2028-09-01",
+      "loyer_marche_nu": 800,
+      "loyer_marche_meuble": 900,
+      "taxe_fonciere": 900,
+      "teom": 150,
+      "charges_copropriete_non_recuperables": 600,
+      "prix_m2_ancien_recent": 5500
+    },
+    "financement": {
+      "emprunt": 250000,
+      "taux_annuel": 0.034,
+      "duree_mois": 300,
+      "differe_mois": 18,
+      "taux_assurance_annuel": 0.003,
+      "frais_dossier": 1000,
+      "frais_garantie": 2500
+    },
+    "exploitation": {
+      "frais_gestion_part_loyers": 0.07,
+      "assurance_loyers_impayes_part_loyers": 0.025,
+      "assurance_pno_annuelle": 150,
+      "lmnp": {
+        "mobilier": 5000,
+        "comptable_annuel": 500,
+        "cfe_annuelle": 300
+      },
+      "sci": {
+        "constitution": 1500,
+        "comptabilite_annuelle": 1200,
+        "frais_bancaires_annuels": 120
+      }
+    },
+    "hypotheses": {
+      "revalorisation_loyers": 0.015,
+      "revalorisation_charges": 0.02,
+      "vacance_mois_par_an": 0.5,
+      "entretien_part_loyers": 0.05,
+      "frais_cession": 0.05,
+      "prix": {
+        "decote_neuf": 0.15,
+        "revalorisation_annuelle": 0.01
+      },
+      "inflation": 0.015,
+      "indexation_bareme": "egale_inflation",
+      "evolution_revenus": "egale_inflation",
+      "rendement_placement": 0.04,
+      "enveloppe_placement": "pea",
+      "annees_exoneration_taxe_fonciere": 0,
+      "ira_appliquees": true,
+      "csg_deductible": false
+    }
+  },
+  "simulation_vendeur": {
+    "scenario": "S1",
+    "horizon": 9,
+    "prix": 300000,
+    "loyer_mensuel": 738,
+    "revalorisation_loyers": 0.02,
+    "revalorisation_prix": 0.02,
+    "vacance_mois_par_an": 0,
+    "charges_copropriete": 600,
+    "taxe_fonciere": 900,
+    "taux_emprunt": 0.034,
+    "economie_impot_annoncee": 30000,
+    "effort_epargne_annonce": 250,
+    "tmi_supposee": 0.3,
+    "tri_annonce": 0.05
+  }
+}

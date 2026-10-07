@@ -17,7 +17,7 @@ const stockage = stockageNavigateur()
 
 createRoot(racine).render(
   <StrictMode>
-    <FournisseurApplication etatInitial={etatInitial(stockage, new Date(), parametresFiscaux2026)} stockage={stockage} parametresDeBase={parametresFiscaux2026}>
+    <FournisseurApplication etatInitial={etatInitial(stockage, new Date())} stockage={stockage} parametresDeBase={parametresFiscaux2026}>
       <App />
     </FournisseurApplication>
   </StrictMode>,

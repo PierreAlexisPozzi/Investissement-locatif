@@ -15,6 +15,8 @@ export interface ActionsApplication {
   readonly modifierObjectifs: (modifier: (o: Objectifs) => Objectifs) => void
   readonly modifierVendeur: (simulation: SimulationVendeur | undefined) => void
   readonly nouveauDossier: () => void
+  /** Ajoute le jeu d'essai fictif comme nouveau dossier. */
+  readonly chargerJeuEssai: () => void
   readonly dupliquerDossier: () => void
   readonly selectionnerDossier: (id: string) => void
   readonly renommerDossier: (nom: string) => void
