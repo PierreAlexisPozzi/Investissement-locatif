@@ -10,7 +10,7 @@ import { SelecteurHorizon } from '../composants/SelecteurHorizon'
 import { useApplication } from '../etat/application'
 import { calculs, essayer, useCalculDiffere } from '../etat/calculs'
 import { useEcran } from '../etat/navigation'
-import { formaterNombre, formaterTauxCalcule } from '../format'
+import { eurosParMois, formaterEuros, formaterNombre, formaterTauxCalcule } from '../format'
 
 /** Délai sans nouveau mouvement de curseur avant le calcul complet (seuils de bascule compris). */
 const DELAI_RECOMMANDATION = 400
@@ -66,6 +66,22 @@ function Curseurs({ objectifs }: { readonly objectifs: Objectifs }) {
   )
 }
 
+/** Valeur brute d'un critère : montant, effort mensuel, taux, ou note du barème qualitatif. */
+function valeurCritere(critere: Critere, valeur: number): string {
+  switch (critere) {
+    case 'economie_impot':
+      return formaterEuros(valeur)
+    case 'effort_epargne':
+      return eurosParMois(valeur)
+    case 'tri':
+      return formaterTauxCalcule(valeur)
+    case 'souplesse':
+    case 'simplicite':
+    case 'transmission':
+      return `barème ${formaterNombre(valeur)}`
+  }
+}
+
 /** Colonnes du classement : rang, scénario, score, critères, TRI, comparaison au placement. */
 const COLONNES_CLASSEMENT = CRITERES.length + 5
 
@@ -80,6 +96,10 @@ function TableauClassement({ classement }: { readonly classement: Classement }) 
   return (
     <div className="tableau-defilant">
       <table className="tableau-compact tableau-classement">
+        <caption>
+          Pour chaque critère : sa valeur, puis sa note de 0 à 100 entre le pire et le meilleur des scénarios classés, et les points qu’elle apporte au score
+          (note × poids ÷ somme des poids).
+        </caption>
         <thead>
           <tr>
             <th scope="col">Rang</th>
@@ -116,8 +136,15 @@ function TableauClassement({ classement }: { readonly classement: Classement }) 
               {CRITERES.map((c) => {
                 const n = e.notes.find((x) => x.critere === c)
                 return (
-                  <td key={c} className="nombre" title={n === undefined ? undefined : `Valeur ${formaterNombre(n.valeur)}, note ${formaterNombre(n.note)}`}>
-                    {n === undefined ? '—' : `${formaterNombre(n.note)} → ${formaterNombre(n.points)}`}
+                  <td key={c} className="nombre">
+                    {n === undefined ? (
+                      '—'
+                    ) : (
+                      <>
+                        <span className="valeur-critere">{valeurCritere(c, n.valeur)}</span>
+                        {formaterNombre(n.note)} → {formaterNombre(n.points)}
+                      </>
+                    )}
                   </td>
                 )
               })}

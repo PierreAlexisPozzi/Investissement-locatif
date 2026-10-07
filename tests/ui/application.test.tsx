@@ -253,6 +253,18 @@ describe('écran du bien', () => {
   })
 })
 
+describe('classement de la recommandation', () => {
+  it('chaque critère affiche sa valeur, puis sa note et ses points', async () => {
+    window.location.hash = '/recommandation'
+    monter(stockageEssai())
+    await titreEcran('Recommandation')
+    const tableau = (await screen.findByText(/^Pour chaque critère : sa valeur/, {}, ATTENTE_CALCUL)).closest('table')
+    if (tableau === null) throw new Error('classement absent')
+    expect(within(tableau).getAllByText(/^barème \d/).length).toBeGreaterThan(0)
+    expect(within(tableau).getAllByText(/\/mois$/).length).toBeGreaterThan(0)
+  })
+})
+
 describe('saisie d’une date', () => {
   it('une date en cours de frappe (année 0002) reste affichée sans être transmise', async () => {
     const { ChampDate } = await import('../../src/ui/composants/Champs')

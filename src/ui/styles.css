@@ -771,6 +771,19 @@ tbody th {
   min-width: 11rem;
 }
 
+.tableau-classement caption {
+  padding: 0.3rem 0.45rem;
+  font-size: 0.8rem;
+  text-align: left;
+  color: var(--texte-attenue);
+}
+
+.valeur-critere {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--texte-attenue);
+}
+
 .tableau-classement tbody tr:first-child > * {
   border-top: 1px solid var(--bordure);
 }
