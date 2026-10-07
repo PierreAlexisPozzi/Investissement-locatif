@@ -16,6 +16,13 @@ export const parametresFiscaux2026: ParametresFiscaux = verifierParametres(donne
 export * from './types'
 export { listerParametres, estParametre, type EntreeParametre } from './parcours'
 export { listerAnomalies, verifierParametres } from './validation'
+export {
+  appliquerSurcharges,
+  memeForme,
+  type ParametresEffectifs,
+  type SurchargeParametre,
+  type SurchargesParametres,
+} from './surcharges'
 export { DOMAINES_OFFICIELS, estUrlOfficielle } from './sources-officielles'
 export {
   hypothesesDefaut,
