@@ -3,6 +3,7 @@
  * et avertissements produits par le moteur. Les valeurs viennent toujours des
  * paramètres : aucun seuil n'est écrit en dur dans un texte.
  */
+import type { StatutParametre } from '../params'
 import { lireDate } from './dates'
 
 const EUROS = new Intl.NumberFormat('fr-FR', {
@@ -39,6 +40,13 @@ export function formaterDate(iso: string): string {
   const { annee, mois, jour } = lireDate(iso)
   const deuxChiffres = (n: number): string => String(n).padStart(2, '0')
   return `${deuxChiffres(jour)}/${deuxChiffres(mois)}/${String(annee)}`
+}
+
+/** Statut d'un paramètre en clair (badges de l'interface, motifs des questions). */
+export const LIBELLES_STATUTS: Readonly<Record<StatutParametre, string>> = {
+  verifie: 'vérifié',
+  texte_non_consulte: 'texte non consulté',
+  a_confirmer: 'à confirmer',
 }
 
 /** Zone de loyer lisible : « A_bis » → « A bis ». */

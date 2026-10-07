@@ -200,7 +200,7 @@ export function dossierVierge(aujourdHui: string, p: ParametresFiscaux): Dossier
   return {
     foyers: {
       situation: 'marie_pacse',
-      foyers: [{ libelle: 'Foyer', revenu_imposable: 0, parts: 2, quote_part: 1 }],
+      foyers: foyersPourSituation([], 'marie_pacse', p),
       capacite_epargne_mensuelle: 0,
       apport_disponible: 0,
     },
@@ -239,6 +239,37 @@ export function dossierVierge(aujourdHui: string, p: ParametresFiscaux): Dossier
     },
     hypotheses: hypothesesParDefaut('central'),
   }
+}
+
+const LIBELLES_PAR_DEFAUT = ['Foyer', 'Couple', 'Concubin 1', 'Concubin 2']
+
+/**
+ * Foyers fiscaux d'une nouvelle situation du couple : un seul foyer de quote-part 1, ou deux concubins à parts
+ * égales. Les saisies du premier foyer sont conservées ; les parts reviennent aux parts de base de la situation
+ * (enfants à ressaisir) et les libellés par défaut suivent la situation.
+ */
+export function foyersPourSituation(actuels: readonly FoyerFiscal[], situation: SituationFoyers, p: ParametresFiscaux): FoyerFiscal[] {
+  const parts = p.impot_revenu.parts_quotient_familial.valeur
+  const libelle = (f: FoyerFiscal | undefined, defaut: string): string =>
+    f === undefined || LIBELLES_PAR_DEFAUT.includes(f.libelle) || f.libelle.trim() === '' ? defaut : f.libelle
+  const [premier, second] = actuels
+  const vide: FoyerFiscal = { libelle: '', revenu_imposable: 0, parts: parts.personne_seule, quote_part: 1 }
+  if (situation === 'concubins') {
+    const moitie = 1 / 2
+    return [
+      { ...(premier ?? vide), libelle: libelle(premier, 'Concubin 1'), parts: parts.personne_seule, quote_part: moitie },
+      { ...(second ?? vide), libelle: libelle(second, 'Concubin 2'), parts: parts.personne_seule, quote_part: moitie },
+    ]
+  }
+  const couple = situation === 'marie_pacse'
+  return [
+    {
+      ...(premier ?? vide),
+      libelle: libelle(premier, couple ? 'Couple' : 'Foyer'),
+      parts: couple ? parts.couple_marie_pacse : parts.personne_seule,
+      quote_part: 1,
+    },
+  ]
 }
 
 /** Saisies encore vides dont la simulation a besoin ; liste vide quand le dossier est complet. */

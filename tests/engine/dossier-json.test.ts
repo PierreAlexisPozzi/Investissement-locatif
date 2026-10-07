@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { objectifsParDefaut, type Dossier } from '../../src/engine/dossier'
 import { fichierDossier, FORMAT_FICHIER_DOSSIER, lireFichierDossier, VERSION_FICHIER_DOSSIER } from '../../src/engine/dossier-json'
 import { dossierAncien, dossierConcubins, dossierType } from './fixtures/dossier-type'
+import { simulationOptimiste, simulationPrudente } from './fixtures/simulation-vendeur'
 
 const HORODATAGE = '2026-10-07T08:00:00.000Z'
 
@@ -31,6 +32,15 @@ describe('export et relecture d’un dossier JSON', () => {
       const lu = lireFichierDossier(exporte(d))
       expect(lu).toEqual({ ok: true, nom: 'Essai', dossier: d, anomalies: [] })
     }
+  })
+
+  it('conserve la simulation du vendeur saisie pour la contre-expertise', () => {
+    for (const v of [simulationOptimiste, simulationPrudente]) {
+      const lu = lireFichierDossier(JSON.parse(JSON.stringify(fichierDossier('Essai', dossierType, HORODATAGE, v))))
+      expect(lu).toEqual({ ok: true, nom: 'Essai', dossier: dossierType, simulation_vendeur: v, anomalies: [] })
+    }
+    const brut = JSON.parse(JSON.stringify(fichierDossier('Essai', dossierType, HORODATAGE, { ...simulationOptimiste, scenario: 'S9' as 'S1' }))) as unknown
+    expect(erreurs(brut)).toEqual([expect.stringMatching(/^simulation_vendeur\.scenario : valeur admise parmi /) as unknown])
   })
 
   it('l’en-tête du fichier identifie le format et sa version', () => {

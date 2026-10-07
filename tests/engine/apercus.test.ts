@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { apercuBien, situationFiscale } from '../../src/engine/apercus'
-import { anomaliesDossier, champsAComplete, dossierVierge, type Dossier } from '../../src/engine/dossier'
+import { anomaliesDossier, champsAComplete, dossierVierge, foyersPourSituation, type Dossier } from '../../src/engine/dossier'
 import { calculerImpot } from '../../src/engine/impot-revenu'
 import { prixTtc } from '../../src/engine/lli'
 import { coefficientSurface, plafondLoyer, plafondLoyerIntermediaire } from '../../src/engine/loyer-plafond'
@@ -15,7 +15,7 @@ describe('dossier vierge et saisies manquantes', () => {
     const v = dossierVierge(AUJOURD_HUI, p)
     expect(anomaliesDossier(v)).toEqual([])
     expect(champsAComplete(v)).toEqual([
-      'Revenu imposable (Foyer)',
+      'Revenu imposable (Couple)',
       'Capacité d’épargne mensuelle',
       'Prix hors taxes',
       'Frais de notaire',
@@ -36,6 +36,27 @@ describe('dossier vierge et saisies manquantes', () => {
     expect(champsAComplete(sansDuree)).toEqual(['Durée du prêt'])
     expect(champsAComplete({ ...sansDuree, financement: { ...sansDuree.financement, emprunt: 0 } })).toEqual([])
     expect(champsAComplete({ ...dossierAncien, bien: { ...dossierAncien.bien, prix_ht: 0 } })).toEqual(['Prix d’achat'])
+  })
+})
+
+describe('changement de situation du couple', () => {
+  const couple = dossierType.foyers.foyers
+
+  it('concubins : deux foyers à parts égales, une part chacun, saisies du premier conservées', () => {
+    const f = foyersPourSituation(couple, 'concubins', p)
+    expect(f.map((x) => [x.libelle, x.parts, x.quote_part])).toEqual([
+      ['Concubin 1', 1, 0.5],
+      ['Concubin 2', 1, 0.5],
+    ])
+    expect(f[0]?.revenu_imposable).toBe(90000)
+    expect(f[1]?.revenu_imposable).toBe(0)
+    expect(anomaliesDossier({ ...dossierType, foyers: { ...dossierType.foyers, situation: 'concubins', foyers: f } })).toEqual([])
+  })
+
+  it('retour à un seul foyer : quote-part 1, parts de base, libellé personnalisé conservé', () => {
+    const concubins = foyersPourSituation(couple, 'concubins', p).map((x, k) => (k === 0 ? { ...x, libelle: 'Alice' } : x))
+    expect(foyersPourSituation(concubins, 'marie_pacse', p).map((x) => [x.libelle, x.parts, x.quote_part])).toEqual([['Alice', 2, 1]])
+    expect(foyersPourSituation(couple, 'personne_seule', p).map((x) => [x.libelle, x.parts, x.quote_part])).toEqual([['Foyer', 1, 1]])
   })
 })
 

@@ -11,7 +11,7 @@ import { listerParametres } from '../params'
 import { MOIS_PAR_AN } from './constantes-numeriques'
 import type { ContreExpertise } from './contre-expertise'
 import type { Dossier } from './dossier'
-import { formaterEuros, formaterTaux } from './format'
+import { formaterEuros, formaterTaux, LIBELLES_STATUTS } from './format'
 import type { Alerte } from './recommandation'
 import { caracteristiquesScenario, engagementsScenario, LIBELLES_SCENARIOS, parametresAConfirmer, type IdScenario } from './scenario'
 
@@ -158,7 +158,7 @@ export function questionsAPoser(d: Dossier, id: IdScenario, p: ParametresFiscaux
   for (const chemin of parametresAConfirmer(d, id, p)) {
     const { interlocuteur, texte } = questionParametre(chemin, p)
     const parametre = parametres.get(chemin)
-    ajouter(interlocuteur, texte, `Valeur à confirmer${parametre === undefined ? '' : ` (${parametre.statut})`} : ${chemin}`, chemin)
+    ajouter(interlocuteur, texte, `Paramètre ${chemin}${parametre === undefined ? '' : ` : ${LIBELLES_STATUTS[parametre.statut]}`}`, chemin)
   }
 
   // Au notaire.

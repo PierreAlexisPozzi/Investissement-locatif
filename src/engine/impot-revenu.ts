@@ -89,6 +89,22 @@ export function partsDeBase(foyer: Foyer, p: ParametresFiscaux): number {
   return foyer.imposition_commune ? parts.couple_marie_pacse : parts.personne_seule
 }
 
+/**
+ * Parts du foyer selon les enfants à charge (CGI art. 194) : une demi-part pour chacun des deux premiers enfants,
+ * une part à partir du troisième. Les majorations particulières (parent isolé, invalidité, garde alternée) restent à saisir.
+ */
+export function partsAvecEnfants(impositionCommune: boolean, enfants: number, p: ParametresFiscaux): number {
+  const parts = p.impot_revenu.parts_quotient_familial.valeur
+  const n = Math.max(0, Math.floor(enfants))
+  // Les deux premiers rangs sont ceux du paramètre « enfant_rang_1_et_2 ».
+  const premiersRangs = Math.min(n, 2)
+  return (
+    partsDeBase({ parts: 0, imposition_commune: impositionCommune }, p) +
+    premiersRangs * parts.enfant_rang_1_et_2 +
+    (n - premiersRangs) * parts.enfant_rang_3_et_plus
+  )
+}
+
 /** Décote = forfait − taux × impôt brut, si l'impôt brut est inférieur au seuil ; jamais supérieure à l'impôt. */
 export function calculerDecote(impotBrut: number, impositionCommune: boolean, p: ParametresFiscaux): number {
   const { couple, personne_seule, taux } = p.impot_revenu.decote.valeur

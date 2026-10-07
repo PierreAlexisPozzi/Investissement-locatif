@@ -6,6 +6,7 @@
  */
 import { ENVELOPPES_PLACEMENT, MODES_EVOLUTION, PERIMETRES_ASSIMILES_LLI, ZONES, type PonderationsObjectifs } from '../params'
 import { ETATS_BIEN, TYPES_LOGEMENT } from './commun'
+import type { SimulationVendeur } from './contre-expertise'
 import { lireDate } from './dates'
 import type { Millesime } from './deficits'
 import {
@@ -23,6 +24,7 @@ import {
   type Objectifs,
   type RevenusFonciersExistants,
 } from './dossier'
+import { SCENARIOS } from './scenario'
 
 export const FORMAT_FICHIER_DOSSIER = 'investissement-locatif/dossier'
 export const VERSION_FICHIER_DOSSIER = 1
@@ -34,15 +36,24 @@ export interface FichierDossier {
   /** Horodatage ISO de l'export. */
   readonly enregistre_le: string
   readonly dossier: Dossier
+  /** Simulation remise par le vendeur, saisie pour la contre-expertise (§12). */
+  readonly simulation_vendeur?: SimulationVendeur
 }
 
 /** Contenu d'un fichier `*.dossier.json`. */
-export function fichierDossier(nom: string, dossier: Dossier, enregistreLe: string): FichierDossier {
-  return { format: FORMAT_FICHIER_DOSSIER, version: VERSION_FICHIER_DOSSIER, nom, enregistre_le: enregistreLe, dossier }
+export function fichierDossier(nom: string, dossier: Dossier, enregistreLe: string, simulationVendeur?: SimulationVendeur): FichierDossier {
+  const fichier: FichierDossier = { format: FORMAT_FICHIER_DOSSIER, version: VERSION_FICHIER_DOSSIER, nom, enregistre_le: enregistreLe, dossier }
+  return simulationVendeur === undefined ? fichier : { ...fichier, simulation_vendeur: simulationVendeur }
 }
 
 export type LectureDossier =
-  | { readonly ok: true; readonly nom: string; readonly dossier: Dossier; readonly anomalies: readonly string[] }
+  | {
+      readonly ok: true
+      readonly nom: string
+      readonly dossier: Dossier
+      readonly simulation_vendeur?: SimulationVendeur
+      readonly anomalies: readonly string[]
+    }
   | { readonly ok: false; readonly erreurs: readonly string[] }
 
 // ---------------------------------------------------------------------------
@@ -303,6 +314,27 @@ const dossier = objet<Dossier>({
   objectifs: [objectifs, 'optionnel'],
 })
 
+const simulationVendeur = objet<SimulationVendeur>({
+  scenario: [parmi(SCENARIOS), 'requis'],
+  horizon: [nombre(1), 'requis'],
+  prix: [positif, 'requis'],
+  loyer_mensuel: [positif, 'requis'],
+  revalorisation_loyers: [nombre(), 'requis'],
+  revalorisation_prix: [nombre(), 'requis'],
+  vacance_mois_par_an: [positif, 'requis'],
+  charges_copropriete: [positif, 'optionnel'],
+  entretien_part_loyers: [positif, 'optionnel'],
+  taxe_fonciere: [positif, 'optionnel'],
+  frais_sci_annuels: [positif, 'optionnel'],
+  taux_emprunt: [positif, 'requis'],
+  prix_revente: [positif, 'optionnel'],
+  economie_impot_annoncee: [nombre(), 'optionnel'],
+  effort_epargne_annonce: [nombre(), 'optionnel'],
+  impot_plus_value_annonce: [positif, 'optionnel'],
+  tmi_supposee: [positif, 'optionnel'],
+  tri_annonce: [nombre(), 'optionnel'],
+})
+
 /** Relit un fichier de dossier : format, version, puis chaque champ ; les incohérences restent signalées. */
 export function lireFichierDossier(contenu: unknown): LectureDossier {
   const erreurs: string[] = []
@@ -316,6 +348,8 @@ export function lireFichierDossier(contenu: unknown): LectureDossier {
   }
   const nom = texte(source.nom, 'nom', erreurs)
   const lu = dossier(source.dossier, 'dossier', erreurs)
-  if (nom === undefined || lu === undefined) return { ok: false, erreurs }
-  return { ok: true, nom, dossier: lu, anomalies: anomaliesDossier(lu) }
+  const vendeur = source.simulation_vendeur === undefined ? undefined : simulationVendeur(source.simulation_vendeur, 'simulation_vendeur', erreurs)
+  if (nom === undefined || lu === undefined || erreurs.length > 0) return { ok: false, erreurs }
+  const anomalies = anomaliesDossier(lu)
+  return vendeur === undefined ? { ok: true, nom, dossier: lu, anomalies } : { ok: true, nom, dossier: lu, simulation_vendeur: vendeur, anomalies }
 }
