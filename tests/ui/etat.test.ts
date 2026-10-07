@@ -214,11 +214,19 @@ describe('stockage local', () => {
     }).not.toThrow()
   })
 
-  it('état initial : un dossier vierge s’il n’y a rien d’enregistré', () => {
-    const e = etatInitial(stockageMemoire(), new Date('2026-10-07T10:00:00'), p)
+  it('état initial : le jeu d’essai fictif s’il n’y a rien d’enregistré, daté du lancement', () => {
+    const maintenant = new Date('2026-10-07T10:00:00')
+    const e = etatInitial(stockageMemoire(), maintenant)
     expect(e.dossiers).toHaveLength(1)
     expect(e.courant).toBe(e.dossiers[0]?.id)
-    expect(e.dossiers[0]?.dossier.bien.date_acquisition).toBe('2026-10-07')
+    expect(e.dossiers[0]).toMatchObject({ nom: 'Cas type (fictif)', dossier: dossierType, simulation_vendeur: simulationOptimiste })
+    expect(e.dossiers[0]?.modifie_le).toBe(maintenant.toISOString())
     expect(e.messages).toEqual([])
+  })
+
+  it('état initial : les dossiers enregistrés, sans jeu d’essai ajouté', () => {
+    const s = stockageMemoire()
+    ecrireDossiers(s, [enregistre('a', 'Mon dossier', dossierVierge('2026-10-07', p))])
+    expect(etatInitial(s, new Date('2026-10-07T10:00:00')).dossiers.map((x) => x.nom)).toEqual(['Mon dossier'])
   })
 })

@@ -35,7 +35,7 @@ function stockageEssai(parametresModifies?: SurchargesParametres) {
 
 function monter(stockage: Stockage) {
   render(
-    <FournisseurApplication etatInitial={etatInitial(stockage, new Date('2026-10-07T10:00:00'), p)} stockage={stockage} parametresDeBase={p}>
+    <FournisseurApplication etatInitial={etatInitial(stockage, new Date('2026-10-07T10:00:00'))} stockage={stockage} parametresDeBase={p}>
       <App />
     </FournisseurApplication>,
   )
@@ -66,19 +66,37 @@ afterEach(() => {
 })
 
 describe('application', () => {
+  it('premier lancement : le jeu d’essai fictif est préchargé et ses résultats sont calculés', async () => {
+    const user = userEvent.setup()
+    monter(stockageMemoire())
+    await titreEcran('Mon foyer')
+    expect(screen.getByLabelText<HTMLSelectElement>('Dossier').selectedOptions[0]?.textContent).toBe('Cas type (fictif)')
+    expect(screen.getByLabelText<HTMLInputElement>('Revenu net imposable annuel').value.replace(/\s/g, '')).toBe('90000')
+    await user.click(screen.getByRole('link', { name: /Comparaison/ }))
+    await titreEcran('Comparaison')
+    expect(screen.queryByText('Le dossier n’est pas encore calculable.')).toBeNull()
+    expect(await screen.findByRole('button', { name: 'Exporter en XLSX' })).toBeTruthy()
+  })
+
   it('dossier vierge : la tranche marginale suit la saisie, les résultats attendent un dossier complet', async () => {
     const user = userEvent.setup()
     const stockage = stockageMemoire()
     monter(stockage)
     await titreEcran('Mon foyer')
+    await user.click(screen.getByRole('button', { name: 'Nouveau' }))
     const revenu = screen.getByLabelText('Revenu net imposable annuel')
     await user.clear(revenu)
-    await user.type(revenu, '90000')
+    await user.type(revenu, '85000')
     const situation = screen.getByRole('complementary', { name: 'Situation fiscale actuelle' })
     expect(within(situation).getByText(/^30\s%$/)).toBeTruthy()
 
-    const enregistre = JSON.parse(stockage.contenu.get(CLE_DOSSIERS) ?? '{}') as { dossiers: { fichier: { dossier: typeof dossierType } }[] }
-    expect(enregistre.dossiers[0]?.fichier.dossier.foyers.foyers[0]?.revenu_imposable).toBe(90000)
+    const enregistre = JSON.parse(stockage.contenu.get(CLE_DOSSIERS) ?? '{}') as {
+      dossiers: { fichier: { nom: string; dossier: typeof dossierType } }[]
+    }
+    expect(enregistre.dossiers.map((x) => [x.fichier.nom, x.fichier.dossier.foyers.foyers[0]?.revenu_imposable])).toEqual([
+      ['Cas type (fictif)', 90000],
+      ['Dossier', 85000],
+    ])
 
     await user.click(screen.getByRole('link', { name: /Comparaison/ }))
     await titreEcran('Comparaison')
