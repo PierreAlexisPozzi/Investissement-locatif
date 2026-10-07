@@ -14,6 +14,8 @@ import { calculs, essayer, useCalculDiffere, type Sensibilites } from '../etat/c
 import { afficher, formaterDate, formaterEuros, formaterPoints, formaterTaux, formaterTauxCalcule } from '../format'
 import { telecharger, TYPE_CSV } from '../telechargement'
 
+const LIBELLES_FRAIS = { charge_annee_1: 'passés en charge la première année', amortis: 'amortis avec le bâti' } as const
+
 /** Délai avant le calcul des sensibilités (tornado, tableau croisé, prix d'équilibre). */
 const DELAI_SENSIBILITES = 200
 
@@ -158,6 +160,21 @@ function SensibilitesScenario({ s, horizon }: { readonly s: Sensibilites; readon
           Prix de revente d’équilibre avec le placement de référence :{' '}
           <strong>{s.equilibre.prix === null ? 'hors de l’intervalle étudié' : formaterEuros(s.equilibre.prix)}</strong> (prix central{' '}
           {formaterEuros(s.equilibre.prix_central)}, TRI du placement {formaterTauxCalcule(s.equilibre.tri_placement)}).
+        </p>
+      )}
+      {s.frais_acquisition === null ? null : (
+        <p>
+          Frais d’acquisition {LIBELLES_FRAIS[s.frais_acquisition.alternative]} au lieu d’être {LIBELLES_FRAIS[s.frais_acquisition.retenu]} (option écartée par
+          l’arbitrage du paramètre lmnp.modelisation) :{' '}
+          {formaterEuros(s.frais_acquisition.capital_net_alternative) === formaterEuros(s.frais_acquisition.capital_net_central) ? (
+            <strong>sans effet sur ce dossier à cet horizon</strong>
+          ) : (
+            <>
+              TRI <strong>{formaterTauxCalcule(s.frais_acquisition.tri_alternative)}</strong> au lieu de {formaterTauxCalcule(s.frais_acquisition.tri_central)}, capital
+              net <strong>{formaterEuros(s.frais_acquisition.capital_net_alternative)}</strong> au lieu de {formaterEuros(s.frais_acquisition.capital_net_central)}
+            </>
+          )}
+          .
         </p>
       )}
       <p>

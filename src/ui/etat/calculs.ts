@@ -14,10 +14,12 @@ import {
   prixReventeEquilibre,
   tableauCroise,
   tornado,
+  varianteFraisAcquisition,
   type ComparaisonHorizon,
   type PrixEquilibre,
   type TableauCroise,
   type Tornado,
+  type VarianteFraisAcquisition,
 } from '../../engine/indicateurs'
 import { classer, recommander, type Classement, type Recommandation } from '../../engine/recommandation'
 import type { IdScenario } from '../../engine/scenario'
@@ -69,6 +71,8 @@ export interface Sensibilites {
   readonly croise: TableauCroise | null
   readonly equilibre: PrixEquilibre | null
   readonly penalite: { readonly horizon: number; readonly montant: number } | null
+  /** Option écartée du traitement des frais d'acquisition (location meublée, SCI à l'IS). */
+  readonly frais_acquisition: VarianteFraisAcquisition | null
 }
 
 /** Calculs du moteur mis en cache ; `d` est le dossier sans ses objectifs (voir `useDossierDeCalcul`). */
@@ -86,6 +90,7 @@ export const calculs = {
       croise: tableauCroise(d, id, horizon, p),
       equilibre: prixReventeEquilibre(d, id, horizon, p),
       penalite: penaliteSortieAnticipee(d, id, p),
+      frais_acquisition: varianteFraisAcquisition(d, id, horizon, p),
     })),
   penalite: (d: Dossier, p: ParametresFiscaux, id: IdScenario) => memoiser(d, p, `penalite:${id}`, () => penaliteSortieAnticipee(d, id, p)),
   contreExpertise: (d: Dossier, p: ParametresFiscaux, v: SimulationVendeur): ContreExpertise =>
