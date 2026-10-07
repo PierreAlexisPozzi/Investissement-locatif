@@ -11,6 +11,11 @@ import type { SurchargeParametre, SurchargesParametres } from '../../params'
 
 export const CLE_DOSSIERS = 'investissement-locatif/dossiers'
 export const CLE_PARAMETRES = 'investissement-locatif/parametres'
+/**
+ * Dossier ouvert, à part des dossiers : chaque onglet garde le sien (deux onglets sur deux dossiers ne se réécrivent
+ * pas l'un l'autre) ; le dernier choisi sert au lancement suivant.
+ */
+export const CLE_DOSSIER_COURANT = 'investissement-locatif/dossier-courant'
 const VERSION_STOCKAGE = 1
 
 /** Sous-ensemble de l'interface `Storage`, remplaçable dans les tests. */
@@ -86,7 +91,7 @@ export function lireDossiers(stockage: Stockage | null, horodatage: string): Lec
     return { valeur: vide, erreurs: [`Dossiers enregistrés illisibles : ${mettreDeCote(stockage, CLE_DOSSIERS, horodatage)}`] }
   }
   if (lu.contenu === undefined) return { valeur: vide, erreurs: [] }
-  const contenu = lu.contenu as { dossiers: unknown[]; courant?: unknown }
+  const contenu = lu.contenu as { dossiers: unknown[] }
   const dossiers: DossierEnregistre[] = []
   const erreurs: string[] = []
   for (const [k, entree] of contenu.dossiers.entries()) {
@@ -107,23 +112,38 @@ export function lireDossiers(stockage: Stockage | null, horodatage: string): Lec
     })
   }
   if (erreurs.length > 0) erreurs.push(`Contenu d’origine : ${mettreDeCote(stockage, CLE_DOSSIERS, horodatage)}`)
-  const courant = typeof contenu.courant === 'string' && dossiers.some((x) => x.id === contenu.courant) ? contenu.courant : (dossiers[0]?.id ?? null)
+  const ouvert = stockage.getItem(CLE_DOSSIER_COURANT)
+  const courant = dossiers.some((x) => x.id === ouvert) ? ouvert : (dossiers[0]?.id ?? null)
   return { valeur: { dossiers, courant }, erreurs }
 }
 
+/** Écrit une clé si son contenu change : pas d'écriture, donc pas d'événement inutile dans les autres onglets. */
+function ecrireSiChange(stockage: Stockage, cle: string, texte: string): void {
+  if (stockage.getItem(cle) !== texte) stockage.setItem(cle, texte)
+}
+
 /** Enregistre les dossiers ; retourne un message si le navigateur refuse (stockage plein ou interdit). */
-export function ecrireDossiers(stockage: Stockage | null, etat: EtatDossiers): string | null {
+export function ecrireDossiers(stockage: Stockage | null, dossiers: readonly DossierEnregistre[]): string | null {
   if (stockage === null) return 'Stockage du navigateur indisponible : exportez vos dossiers en JSON pour les conserver'
   const contenu = {
     version: VERSION_STOCKAGE,
-    courant: etat.courant,
-    dossiers: etat.dossiers.map((x) => ({ id: x.id, fichier: fichierDossier(x.nom, x.dossier, x.modifie_le, x.simulation_vendeur) })),
+    dossiers: dossiers.map((x) => ({ id: x.id, fichier: fichierDossier(x.nom, x.dossier, x.modifie_le, x.simulation_vendeur) })),
   }
   try {
-    stockage.setItem(CLE_DOSSIERS, JSON.stringify(contenu))
+    ecrireSiChange(stockage, CLE_DOSSIERS, JSON.stringify(contenu))
     return null
   } catch {
     return 'Enregistrement impossible : stockage du navigateur plein ou interdit ; exportez vos dossiers en JSON'
+  }
+}
+
+/** Retient le dossier ouvert pour le lancement suivant ; sans conséquence s'il échoue (le premier dossier s'ouvre). */
+export function ecrireDossierCourant(stockage: Stockage | null, id: string): void {
+  if (stockage === null) return
+  try {
+    ecrireSiChange(stockage, CLE_DOSSIER_COURANT, id)
+  } catch {
+    // Stockage plein : l'enregistrement des dossiers le signale déjà.
   }
 }
 
@@ -141,7 +161,7 @@ export function lireSurcharges(stockage: Stockage | null, horodatage: string): L
 export function ecrireSurcharges(stockage: Stockage | null, surcharges: SurchargesParametres): string | null {
   if (stockage === null) return 'Stockage du navigateur indisponible : les paramètres modifiés seront perdus à la fermeture'
   try {
-    stockage.setItem(CLE_PARAMETRES, JSON.stringify(surcharges))
+    ecrireSiChange(stockage, CLE_PARAMETRES, JSON.stringify(surcharges))
     return null
   } catch {
     return 'Enregistrement des paramètres modifiés impossible : stockage du navigateur plein ou interdit'

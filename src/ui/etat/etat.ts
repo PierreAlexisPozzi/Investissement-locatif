@@ -48,6 +48,13 @@ export type Action =
   | { readonly type: 'supprimer'; readonly remplacant: DossierEnregistre }
   | { readonly type: 'surcharger'; readonly chemin: string; readonly surcharge: SurchargeParametre | null }
   | { readonly type: 'reinitialiser_surcharges' }
+  /** Contenu enregistré par un autre onglet : il remplace celui de cet onglet, qui garde son dossier ouvert. */
+  | {
+      readonly type: 'recharger'
+      readonly dossiers: readonly DossierEnregistre[]
+      readonly surcharges: SurchargesParametres
+      readonly message: string
+    }
   | { readonly type: 'choisir_scenario'; readonly scenario: IdScenario }
   | { readonly type: 'signaler'; readonly message: string }
   | { readonly type: 'effacer_messages' }
@@ -114,6 +121,12 @@ export function reduire(etat: EtatApplication, action: Action): EtatApplication 
     }
     case 'reinitialiser_surcharges':
       return { ...etat, surcharges: {} }
+    case 'recharger': {
+      if (action.dossiers.length === 0) return etat
+      const courant = action.dossiers.some((x) => x.id === etat.courant) ? etat.courant : (action.dossiers[0]?.id ?? etat.courant)
+      const messages = etat.messages.includes(action.message) ? etat.messages : [...etat.messages, action.message]
+      return { ...etat, dossiers: action.dossiers, courant, surcharges: action.surcharges, messages }
+    }
     case 'choisir_scenario':
       return { ...etat, scenario: action.scenario }
     case 'signaler':

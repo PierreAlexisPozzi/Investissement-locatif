@@ -5,8 +5,10 @@ import { parametresFiscaux2026 as p } from '../../src/params'
 import { dossierCourant, nomDisponible, reduire, type EtatApplication } from '../../src/ui/etat/etat'
 import { etatInitial } from '../../src/ui/etat/initialisation'
 import {
+  CLE_DOSSIER_COURANT,
   CLE_DOSSIERS,
   CLE_PARAMETRES,
+  ecrireDossierCourant,
   ecrireDossiers,
   ecrireSurcharges,
   lireDossiers,
@@ -74,6 +76,18 @@ describe('réducteur de l’état de l’application', () => {
     expect('simulation_vendeur' in dossierCourant(sans)).toBe(false)
   })
 
+  it('rechargement depuis un autre onglet : dossier courant conservé s’il existe encore', () => {
+    const e = { ...etat([enregistre('a', 'A'), enregistre('b', 'B')]), courant: 'b' }
+    const action = { type: 'recharger', surcharges: { 'micro_foncier.abattement': { valeur: 0.35 } }, message: 'm' } as const
+    const r = reduire(e, { ...action, dossiers: [enregistre('a', 'A2'), enregistre('b', 'B2'), enregistre('c', 'C')] })
+    expect(r.dossiers.map((x) => x.nom)).toEqual(['A2', 'B2', 'C'])
+    expect(r.courant).toBe('b')
+    expect(r.surcharges).toEqual(action.surcharges)
+    expect(r.messages).toEqual(['m'])
+    expect(reduire(e, { ...action, dossiers: [enregistre('c', 'C')] }).courant).toBe('c')
+    expect(reduire(e, { ...action, dossiers: [] })).toBe(e)
+  })
+
   it('paramètres modifiés : ajout, retrait, réinitialisation ; messages sans doublon', () => {
     const e = etat([enregistre('a', 'A')])
     const r = reduire(e, { type: 'surcharger', chemin: 'micro_foncier.abattement', surcharge: { valeur: 0.35 } })
@@ -86,13 +100,16 @@ describe('réducteur de l’état de l’application', () => {
 })
 
 describe('stockage local', () => {
-  it('écrit puis relit les dossiers au format du fichier d’export', () => {
+  it('écrit puis relit les dossiers au format du fichier d’export ; le dossier ouvert a sa propre clé', () => {
     const s = stockageMemoire()
     const dossiers = [{ ...enregistre('a', 'Cas type'), simulation_vendeur: simulationOptimiste }, enregistre('b', 'Vierge', dossierVierge('2026-10-07', p))]
-    expect(ecrireDossiers(s, { dossiers, courant: 'b' })).toBeNull()
+    expect(ecrireDossiers(s, dossiers)).toBeNull()
+    ecrireDossierCourant(s, 'b')
     const lu = lireDossiers(s, H)
     expect(lu.erreurs).toEqual([])
     expect(lu.valeur).toEqual({ dossiers, courant: 'b' })
+    expect(s.contenu.get(CLE_DOSSIER_COURANT)).toBe('b')
+    expect(s.contenu.get(CLE_DOSSIERS)).not.toContain('courant')
   })
 
   it('met de côté un contenu illisible au lieu de l’écraser', () => {
@@ -106,8 +123,8 @@ describe('stockage local', () => {
   it('écarte un dossier invalide, garde les autres et conserve l’original', () => {
     const valide = { id: 'a', fichier: fichierDossier('A', dossierType, H) }
     const invalide = { id: 'b', fichier: { ...fichierDossier('B', dossierType, H), dossier: { ...dossierType, bien: { ...dossierType.bien, zone: 'Z' } } } }
-    const brut = JSON.stringify({ version: 1, courant: 'b', dossiers: [valide, invalide] })
-    const s = stockageMemoire({ [CLE_DOSSIERS]: brut })
+    const brut = JSON.stringify({ version: 1, dossiers: [valide, invalide] })
+    const s = stockageMemoire({ [CLE_DOSSIERS]: brut, [CLE_DOSSIER_COURANT]: 'b' })
     const lu = lireDossiers(s, H)
     expect(lu.valeur.dossiers.map((x) => x.id)).toEqual(['a'])
     expect(lu.valeur.courant).toBe('a')
@@ -115,9 +132,76 @@ describe('stockage local', () => {
     expect(s.contenu.get(`${CLE_DOSSIERS}.illisible-${H}`)).toBe(brut)
   })
 
+  it('n’écrit pas un contenu identique (pas d’événement inutile dans les autres onglets)', () => {
+    const s = stockageMemoire()
+    const ecrites: string[] = []
+    const compte: Stockage = {
+      getItem: (cle) => s.getItem(cle),
+      setItem: (cle, valeur) => {
+        ecrites.push(cle)
+        s.setItem(cle, valeur)
+      },
+    }
+    const dossiers = [enregistre('a', 'A'), enregistre('b', 'B')]
+    for (let k = 0; k < 2; k++) {
+      ecrireDossiers(compte, dossiers)
+      ecrireDossierCourant(compte, 'a')
+      ecrireSurcharges(compte, {})
+    }
+    expect(ecrites).toEqual([CLE_DOSSIERS, CLE_DOSSIER_COURANT, CLE_PARAMETRES])
+  })
+
+  it('deux onglets ouverts sur deux dossiers ne se réécrivent pas l’un l’autre sans fin', () => {
+    const partage = stockageMemoire()
+    const ecrites: string[] = []
+    const stockage: Stockage = {
+      getItem: (cle) => partage.getItem(cle),
+      setItem: (cle, valeur) => {
+        ecrites.push(cle)
+        partage.setItem(cle, valeur)
+      },
+    }
+    const dossiers = [enregistre('a', 'A'), enregistre('b', 'B')]
+    const onglets: [EtatApplication, EtatApplication] = [{ ...etat(dossiers), courant: 'a' }, { ...etat(dossiers), courant: 'b' }]
+    // Comme les effets de l'application et l'événement `storage` du navigateur : un enregistrement des dossiers est
+    // relu par l'autre onglet, dont l'état change, ce qui l'enregistre à son tour ; le dossier ouvert n'est écrit
+    // que lorsqu'il change.
+    const enregistrer = (k: 0 | 1, echanges = 0): void => {
+      if (echanges > 10) throw new Error('réécritures sans fin entre les onglets')
+      const avant = ecrites.length
+      const courant = onglets[k].courant
+      ecrireDossiers(stockage, onglets[k].dossiers)
+      const autre = k === 0 ? 1 : 0
+      if (ecrites.slice(avant).includes(CLE_DOSSIERS)) {
+        const ouvert = onglets[autre].courant
+        onglets[autre] = reduire(onglets[autre], { type: 'recharger', dossiers: lireDossiers(stockage, H).valeur.dossiers, surcharges: {}, message: 'm' })
+        if (onglets[autre].courant !== ouvert) ecrireDossierCourant(stockage, onglets[autre].courant)
+        enregistrer(autre, echanges + 1)
+      }
+      expect(onglets[k].courant).toBe(courant)
+    }
+    for (const k of [0, 1] as const) {
+      enregistrer(k)
+      ecrireDossierCourant(stockage, onglets[k].courant)
+    }
+    expect(onglets.map((o) => o.courant)).toEqual(['a', 'b'])
+    expect(lireDossiers(stockage, H).valeur.courant).toBe('b')
+
+    ecrites.length = 0
+    onglets[0] = reduire(onglets[0], { type: 'renommer', nom: 'A2', horodatage: H })
+    enregistrer(0)
+    expect(ecrites.filter((c) => c === CLE_DOSSIERS).length).toBeLessThanOrEqual(2)
+    expect(ecrites).not.toContain(CLE_DOSSIER_COURANT)
+    expect(onglets[1].dossiers.map((x) => x.nom)).toEqual(['A2', 'B'])
+    expect(onglets.map((o) => o.courant)).toEqual(['a', 'b'])
+  })
+
   it('signale un stockage plein ou indisponible', () => {
-    expect(ecrireDossiers(stockageMemoire({}, true), { dossiers: [], courant: null })).toMatch(/stockage du navigateur plein/)
-    expect(ecrireDossiers(null, { dossiers: [], courant: null })).toMatch(/indisponible/)
+    expect(ecrireDossiers(stockageMemoire({}, true), [])).toMatch(/stockage du navigateur plein/)
+    expect(ecrireDossiers(null, [])).toMatch(/indisponible/)
+    expect(() => {
+      ecrireDossierCourant(stockageMemoire({}, true), 'a')
+    }).not.toThrow()
     expect(ecrireSurcharges(stockageMemoire({}, true), {})).toMatch(/plein/)
   })
 

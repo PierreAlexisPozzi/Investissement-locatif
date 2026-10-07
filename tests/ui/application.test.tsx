@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { act, cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { fichierDossier } from '../../src/engine/dossier-json'
@@ -8,7 +8,7 @@ import { App } from '../../src/ui/App'
 import { ECRANS } from '../../src/ui/etat/etat'
 import { FournisseurApplication } from '../../src/ui/etat/FournisseurApplication'
 import { etatInitial } from '../../src/ui/etat/initialisation'
-import { CLE_DOSSIERS, CLE_PARAMETRES, type Stockage } from '../../src/ui/etat/stockage'
+import { CLE_DOSSIER_COURANT, CLE_DOSSIERS, CLE_PARAMETRES, type Stockage } from '../../src/ui/etat/stockage'
 import { dossierType } from '../engine/fixtures/dossier-type'
 import { simulationOptimiste } from '../engine/fixtures/simulation-vendeur'
 
@@ -30,7 +30,6 @@ function stockageMemoire(initial: Record<string, string> = {}): Stockage & { con
 function stockageEssai(surcharges?: Record<string, unknown>) {
   const dossiers = {
     version: 1,
-    courant: 'essai',
     dossiers: [{ id: 'essai', fichier: fichierDossier('Cas type (fictif)', dossierType, '2026-10-07T08:00:00.000Z', simulationOptimiste) }],
   }
   return stockageMemoire({
@@ -139,6 +138,27 @@ describe('application', () => {
     monter(stockageEssai({ 'micro_foncier.abattement': { valeur: 'trente' } }))
     await titreEcran('Paramètres fiscaux')
     expect(screen.getByText('micro_foncier.abattement : la valeur n’a pas la forme de l’original')).toBeTruthy()
+  })
+
+  it('un enregistrement fait dans un autre onglet est rechargé ; son choix de dossier ne l’est pas', async () => {
+    const stockage = stockageEssai()
+    monter(stockage)
+    await titreEcran('Mon foyer')
+    stockage.contenu.set(CLE_DOSSIER_COURANT, 'autre')
+    act(() => {
+      window.dispatchEvent(new StorageEvent('storage', { key: CLE_DOSSIER_COURANT }))
+    })
+    expect(screen.queryByText('Dossiers mis à jour depuis un autre onglet')).toBeNull()
+    const autre = JSON.parse(stockage.contenu.get(CLE_DOSSIERS) ?? '{}') as { dossiers: { id: string; fichier: { nom: string } }[] }
+    const premier = autre.dossiers[0]
+    if (premier === undefined) throw new Error('aucun dossier')
+    premier.fichier.nom = 'Renommé ailleurs'
+    stockage.contenu.set(CLE_DOSSIERS, JSON.stringify(autre))
+    act(() => {
+      window.dispatchEvent(new StorageEvent('storage', { key: CLE_DOSSIERS }))
+    })
+    expect(screen.getByRole('option', { name: 'Renommé ailleurs' })).toBeTruthy()
+    expect(screen.getByText('Dossiers mis à jour depuis un autre onglet')).toBeTruthy()
   })
 })
 

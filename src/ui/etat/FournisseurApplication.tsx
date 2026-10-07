@@ -6,7 +6,7 @@ import { appliquerSurcharges, type ParametresFiscaux, type SurchargeParametre } 
 import { Contexte, type ActionsApplication, type ContexteApplication } from './application'
 import { dossierCourant, reduire, type EtatApplication } from './etat'
 import { dossierEnregistreVierge, nouvelIdentifiant } from './initialisation'
-import { ecrireDossiers, ecrireSurcharges, type Stockage } from './stockage'
+import { CLE_DOSSIERS, CLE_PARAMETRES, ecrireDossierCourant, ecrireDossiers, ecrireSurcharges, lireDossiers, lireSurcharges, type Stockage } from './stockage'
 
 interface Proprietes {
   readonly etatInitial: EtatApplication
@@ -23,7 +23,7 @@ export function FournisseurApplication({ etatInitial, stockage, parametresDeBase
 
   // Enregistrement automatique dans le navigateur ; un échec est signalé sans bloquer la saisie.
   useEffect(() => {
-    const erreur = ecrireDossiers(stockage, { dossiers: etat.dossiers, courant: etat.courant })
+    const erreur = ecrireDossiers(stockage, etat.dossiers)
     if (erreur === null) return
     const minuteur = window.setTimeout(() => {
       envoyer({ type: 'signaler', message: erreur })
@@ -31,7 +31,12 @@ export function FournisseurApplication({ etatInitial, stockage, parametresDeBase
     return () => {
       window.clearTimeout(minuteur)
     }
-  }, [stockage, etat.dossiers, etat.courant])
+  }, [stockage, etat.dossiers])
+
+  // Dossier ouvert : écrit seulement quand il change, pas quand un autre onglet fait recharger les dossiers.
+  useEffect(() => {
+    ecrireDossierCourant(stockage, etat.courant)
+  }, [stockage, etat.courant])
 
   useEffect(() => {
     const erreur = ecrireSurcharges(stockage, etat.surcharges)
@@ -43,6 +48,29 @@ export function FournisseurApplication({ etatInitial, stockage, parametresDeBase
       window.clearTimeout(minuteur)
     }
   }, [stockage, etat.surcharges])
+
+  // Un autre onglet a enregistré : son contenu remplace celui-ci, pour qu'aucun des deux n'efface l'autre. Le dossier
+  // ouvert, propre à chaque onglet, a sa propre clé, ignorée ici.
+  useEffect(() => {
+    if (stockage === null) return
+    const ecouter = (e: StorageEvent): void => {
+      if (e.key !== null && e.key !== CLE_DOSSIERS && e.key !== CLE_PARAMETRES) return
+      const horodatage = new Date().toISOString()
+      const dossiers = lireDossiers(stockage, horodatage)
+      const surcharges = lireSurcharges(stockage, horodatage)
+      envoyer({
+        type: 'recharger',
+        dossiers: dossiers.valeur.dossiers,
+        surcharges: surcharges.valeur,
+        message: 'Dossiers mis à jour depuis un autre onglet',
+      })
+      for (const message of [...dossiers.erreurs, ...surcharges.erreurs]) envoyer({ type: 'signaler', message })
+    }
+    window.addEventListener('storage', ecouter)
+    return () => {
+      window.removeEventListener('storage', ecouter)
+    }
+  }, [stockage])
 
   const parametres = useMemo(() => appliquerSurcharges(parametresDeBase, etat.surcharges), [parametresDeBase, etat.surcharges])
   const p = parametres.parametres
