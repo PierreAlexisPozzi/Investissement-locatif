@@ -168,6 +168,13 @@ export function questionsAPoser(d: Dossier, id: IdScenario, p: ParametresFiscaux
   if (caracteristiques.detention !== 'nom_propre') {
     ajouter('notaire', 'Quels statuts de SCI prévoir (objet, gérance, cession des parts, transmission) ?', `${nom} se détient en SCI`)
   }
+  if (engagements.lli && p.lli.cession_parts_sans_complement.valeur) {
+    ajouter(
+      'notaire',
+      'Une sortie par cession des parts de la SCI à un repreneur qui poursuit la location intermédiaire éviterait-elle le complément de TVA ? À quel prix ces parts se négocient-elles ?',
+      `Sortie possible sans complément de TVA, non modélisée par l’outil : ${p.lli.cession_parts_sans_complement.source}`,
+    )
+  }
 
   // À l'expert-comptable.
   if (caracteristiques.meuble) {

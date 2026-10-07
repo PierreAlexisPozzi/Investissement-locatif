@@ -47,6 +47,14 @@ describe('questions à poser (écran 9)', () => {
     expect(contient(a('expert_comptable', s4), 'indivision')).toBe(false)
   })
 
+  it('LLI : la sortie par cession des parts de la SCI, non modélisée, est soumise au notaire', () => {
+    for (const id of ['S2', 'S3', 'S3_IS'] as const) {
+      const q = a('notaire', questionsAPoser(dossierType, id, p)).find((x) => x.texte.includes('cession des parts de la SCI'))
+      expect(q?.motif, id).toContain(p.lli.cession_parts_sans_complement.source)
+    }
+    expect(contient(questionsAPoser(dossierType, 'S1', p), 'cession des parts de la SCI')).toBe(false)
+  })
+
   it('concubins : convention d’indivision au notaire ; en meublé, déclaration au réel faute de micro-BIC', () => {
     const q = questionsAPoser(dossierConcubins, 'S4', p)
     expect(contient(a('notaire', q), 'convention d’indivision')).toBe(true)
