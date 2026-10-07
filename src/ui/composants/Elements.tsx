@@ -29,6 +29,12 @@ export function BadgeStatut({ entree, avecChemin = false }: { readonly entree: E
   )
 }
 
+/** Badge d'un paramètre affiché directement, s'il n'est pas vérifié (§3, principe 5). */
+export function BadgeParametre({ chemin, p }: { readonly chemin: string; readonly p: ParametresFiscaux }) {
+  const entree = listerParametres(p).find((e) => e.chemin === chemin)
+  return entree === undefined || entree.parametre.statut === 'verifie' ? null : <BadgeStatut entree={entree} />
+}
+
 /** Badges des paramètres non vérifiés dont dépend un scénario. */
 export function BadgesParametres({ chemins, p }: { readonly chemins: readonly string[]; readonly p: ParametresFiscaux }) {
   if (chemins.length === 0) return null

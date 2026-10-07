@@ -9,6 +9,7 @@ import { ECRANS } from '../../src/ui/etat/etat'
 import { FournisseurApplication } from '../../src/ui/etat/FournisseurApplication'
 import { etatInitial } from '../../src/ui/etat/initialisation'
 import { CLE_DOSSIER_COURANT, CLE_DOSSIERS, CLE_PARAMETRES, type Stockage } from '../../src/ui/etat/stockage'
+import { LIBELLES_STATUTS } from '../../src/ui/libelles'
 import { dossierAncien, dossierType } from '../engine/fixtures/dossier-type'
 import { simulationOptimiste } from '../engine/fixtures/simulation-vendeur'
 
@@ -241,6 +242,14 @@ describe('écran du bien', () => {
     monter(stockageMemoire({ [CLE_DOSSIERS]: JSON.stringify({ version: 1, dossiers: [{ id: 'ancien', fichier }] }) }))
     await titreEcran('Le bien et le financement')
     expect(screen.getByLabelText<HTMLInputElement>('Travaux d’amélioration déductibles en location nue classique (S0)').checked).toBe(true)
+  })
+
+  it('aperçu : le prix au taux normal de TVA porte le statut de ce taux, non vérifié', async () => {
+    window.location.hash = '/bien'
+    monter(stockageEssai())
+    await titreEcran('Le bien et le financement')
+    const statut = LIBELLES_STATUTS[p.lli.tva_taux_normal.statut]
+    expect(within(screen.getByText(/^Prix TTC au taux normal/)).getByRole('link', { name: statut })).toBeTruthy()
   })
 })
 

@@ -5,7 +5,7 @@ import type { Bien, Exploitation, Financement } from '../../engine/dossier'
 import { PERIMETRES_ASSIMILES_LLI, ZONES } from '../../params'
 import { ChampCase, ChampDate, ChampListe, ChampMontant, ChampNombre, ChampTaux, ChampTexte, Groupe } from '../composants/Champs'
 import { Ecran } from '../composants/Ecran'
-import { Encart, ListeMotifs, Pastille } from '../composants/Elements'
+import { BadgeParametre, Encart, ListeMotifs, Pastille } from '../composants/Elements'
 import { useApplication } from '../etat/application'
 import { essayer } from '../etat/calculs'
 import { formaterEuros, formaterNombre, formaterTaux, libelleZone } from '../format'
@@ -38,7 +38,9 @@ function ApercuBien() {
         <dd>{loyer(dossier.bien.loyer_marche_nu)}</dd>
         {dossier.bien.etat === 'ancien' ? null : (
           <>
-            <dt>Prix TTC au taux normal ({formaterTaux(p.lli.tva_taux_normal.valeur)})</dt>
+            <dt>
+              Prix TTC au taux normal ({formaterTaux(p.lli.tva_taux_normal.valeur)}) <BadgeParametre chemin="lli.tva_taux_normal" p={p} />
+            </dt>
             <dd>{formaterEuros(a.prix_ttc_taux_normal)}</dd>
             <dt>Prix TTC au taux réduit ({formaterTaux(p.lli.tva_taux_reduit.valeur)})</dt>
             <dd>{formaterEuros(a.prix_ttc_taux_reduit)}</dd>
