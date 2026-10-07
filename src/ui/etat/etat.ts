@@ -1,12 +1,12 @@
 /**
- * État de l'application : dossiers enregistrés, dossier courant, paramètres
- * modifiés. Le réducteur est pur ; identifiants et horodatages sont fournis
- * par l'appelant.
+ * État de l'application : dossiers enregistrés (chacun avec ses paramètres
+ * modifiés) et dossier courant. Le réducteur est pur ; identifiants et
+ * horodatages sont fournis par l'appelant.
  */
 import type { SimulationVendeur } from '../../engine/contre-expertise'
 import type { Dossier } from '../../engine/dossier'
 import type { IdScenario } from '../../engine/scenario'
-import type { SurchargeParametre, SurchargesParametres } from '../../params'
+import type { SurchargeParametre } from '../../params'
 import type { DossierEnregistre } from './stockage'
 
 export const ECRANS = [
@@ -31,7 +31,6 @@ export interface EtatApplication {
   readonly dossiers: readonly DossierEnregistre[]
   /** Identifiant du dossier courant : il en existe toujours un. */
   readonly courant: string
-  readonly surcharges: SurchargesParametres
   /** Scénario affiché par les écrans Détail et Questions. */
   readonly scenario: IdScenario
   /** Messages à l'utilisateur : lecture du stockage, import. */
@@ -46,15 +45,11 @@ export type Action =
   | { readonly type: 'renommer'; readonly nom: string; readonly horodatage: string }
   /** Supprime le dossier courant ; le remplaçant sert s'il n'en reste aucun. */
   | { readonly type: 'supprimer'; readonly remplacant: DossierEnregistre }
-  | { readonly type: 'surcharger'; readonly chemin: string; readonly surcharge: SurchargeParametre | null }
-  | { readonly type: 'reinitialiser_surcharges' }
+  /** Modifie un paramètre fiscal pour le dossier courant seulement ; null rétablit la valeur du fichier. */
+  | { readonly type: 'surcharger'; readonly chemin: string; readonly surcharge: SurchargeParametre | null; readonly horodatage: string }
+  | { readonly type: 'reinitialiser_surcharges'; readonly horodatage: string }
   /** Contenu enregistré par un autre onglet : il remplace celui de cet onglet, qui garde son dossier ouvert. */
-  | {
-      readonly type: 'recharger'
-      readonly dossiers: readonly DossierEnregistre[]
-      readonly surcharges: SurchargesParametres
-      readonly message: string
-    }
+  | { readonly type: 'recharger'; readonly dossiers: readonly DossierEnregistre[]; readonly message: string }
   | { readonly type: 'choisir_scenario'; readonly scenario: IdScenario }
   | { readonly type: 'signaler'; readonly message: string }
   | { readonly type: 'effacer_messages' }
@@ -115,17 +110,22 @@ export function reduire(etat: EtatApplication, action: Action): EtatApplication 
       const [premier] = dossiers
       return premier === undefined ? etat : { ...etat, dossiers, courant: premier.id }
     }
-    case 'surcharger': {
-      const autres = Object.fromEntries(Object.entries(etat.surcharges).filter(([chemin]) => chemin !== action.chemin))
-      return { ...etat, surcharges: action.surcharge === null ? autres : { ...autres, [action.chemin]: action.surcharge } }
-    }
+    case 'surcharger':
+      return remplacerCourant(etat, (x) => {
+        const autres = Object.fromEntries(Object.entries(x.parametres_modifies ?? {}).filter(([chemin]) => chemin !== action.chemin))
+        const modifies = action.surcharge === null ? autres : { ...autres, [action.chemin]: action.surcharge }
+        const reste = sans(x, 'parametres_modifies')
+        return Object.keys(modifies).length === 0
+          ? { ...reste, modifie_le: action.horodatage }
+          : { ...reste, parametres_modifies: modifies, modifie_le: action.horodatage }
+      })
     case 'reinitialiser_surcharges':
-      return { ...etat, surcharges: {} }
+      return remplacerCourant(etat, (x) => ({ ...sans(x, 'parametres_modifies'), modifie_le: action.horodatage }))
     case 'recharger': {
       if (action.dossiers.length === 0) return etat
       const courant = action.dossiers.some((x) => x.id === etat.courant) ? etat.courant : (action.dossiers[0]?.id ?? etat.courant)
       const messages = etat.messages.includes(action.message) ? etat.messages : [...etat.messages, action.message]
-      return { ...etat, dossiers: action.dossiers, courant, surcharges: action.surcharges, messages }
+      return { ...etat, dossiers: action.dossiers, courant, messages }
     }
     case 'choisir_scenario':
       return { ...etat, scenario: action.scenario }

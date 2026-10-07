@@ -4,7 +4,16 @@
  * et typé, les champs inconnus sont ignorés, toute valeur invalide est
  * signalée avec son chemin.
  */
-import { ENVELOPPES_PLACEMENT, MODES_EVOLUTION, PERIMETRES_ASSIMILES_LLI, ZONES, type PonderationsObjectifs } from '../params'
+import {
+  ENVELOPPES_PLACEMENT,
+  MODES_EVOLUTION,
+  PERIMETRES_ASSIMILES_LLI,
+  STATUTS_PARAMETRE,
+  ZONES,
+  type PonderationsObjectifs,
+  type SurchargeParametre,
+  type SurchargesParametres,
+} from '../params'
 import { ETATS_BIEN, TYPES_LOGEMENT } from './commun'
 import type { SimulationVendeur } from './contre-expertise'
 import { lireDate } from './dates'
@@ -38,12 +47,24 @@ export interface FichierDossier {
   readonly dossier: Dossier
   /** Simulation remise par le vendeur, saisie pour la contre-expertise (§12). */
   readonly simulation_vendeur?: SimulationVendeur
+  /** Paramètres fiscaux modifiés pour ce dossier (écran 8) ; absents, le dossier suit le fichier versionné. */
+  readonly parametres_modifies?: SurchargesParametres
 }
 
 /** Contenu d'un fichier `*.dossier.json`. */
-export function fichierDossier(nom: string, dossier: Dossier, enregistreLe: string, simulationVendeur?: SimulationVendeur): FichierDossier {
+export function fichierDossier(
+  nom: string,
+  dossier: Dossier,
+  enregistreLe: string,
+  simulationVendeur?: SimulationVendeur,
+  parametresModifies?: SurchargesParametres,
+): FichierDossier {
   const fichier: FichierDossier = { format: FORMAT_FICHIER_DOSSIER, version: VERSION_FICHIER_DOSSIER, nom, enregistre_le: enregistreLe, dossier }
-  return simulationVendeur === undefined ? fichier : { ...fichier, simulation_vendeur: simulationVendeur }
+  return {
+    ...fichier,
+    ...(simulationVendeur === undefined ? {} : { simulation_vendeur: simulationVendeur }),
+    ...(parametresModifies === undefined || Object.keys(parametresModifies).length === 0 ? {} : { parametres_modifies: parametresModifies }),
+  }
 }
 
 export type LectureDossier =
@@ -52,6 +73,7 @@ export type LectureDossier =
       readonly nom: string
       readonly dossier: Dossier
       readonly simulation_vendeur?: SimulationVendeur
+      readonly parametres_modifies?: SurchargesParametres
       readonly anomalies: readonly string[]
     }
   | { readonly ok: false; readonly erreurs: readonly string[] }
@@ -335,6 +357,38 @@ const simulationVendeur = objet<SimulationVendeur>({
   tri_annonce: [nombre(), 'optionnel'],
 })
 
+const dateOuNull: Lecteur<string | null> = (valeur, chemin, erreurs) => (valeur === null ? null : date(valeur, chemin, erreurs))
+
+const surcharge = objet<SurchargeParametre>({
+  valeur: [(valeur) => valeur, 'optionnel'],
+  statut: [parmi(STATUTS_PARAMETRE), 'optionnel'],
+  date_verification: [dateOuNull, 'optionnel'],
+})
+
+/** Chemin pointé d'un paramètre (`jeanbrun.plafond_annuel`) ; son existence est contrôlée à l'application. */
+const CHEMIN_PARAMETRE = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/
+
+/** Paramètres modifiés du dossier : structure relue ici, valeurs contrôlées quand elles sont appliquées aux paramètres. */
+const parametresModifies: Lecteur<SurchargesParametres> = (valeur, chemin, erreurs) => {
+  if (typeof valeur !== 'object' || valeur === null || Array.isArray(valeur)) {
+    erreurs.push(`${chemin} : objet attendu`)
+    return undefined
+  }
+  const lu: Record<string, SurchargeParametre> = {}
+  let valide = true
+  for (const [cle, brut] of Object.entries(valeur)) {
+    if (!CHEMIN_PARAMETRE.test(cle)) {
+      erreurs.push(`${chemin} : « ${cle} » n’est pas un chemin de paramètre`)
+      valide = false
+      continue
+    }
+    const s = surcharge(brut, `${chemin}.${cle}`, erreurs)
+    if (s === undefined) valide = false
+    else lu[cle] = s
+  }
+  return valide ? lu : undefined
+}
+
 /** Relit un fichier de dossier : format, version, puis chaque champ ; les incohérences restent signalées. */
 export function lireFichierDossier(contenu: unknown): LectureDossier {
   const erreurs: string[] = []
@@ -349,7 +403,15 @@ export function lireFichierDossier(contenu: unknown): LectureDossier {
   const nom = texte(source.nom, 'nom', erreurs)
   const lu = dossier(source.dossier, 'dossier', erreurs)
   const vendeur = source.simulation_vendeur === undefined ? undefined : simulationVendeur(source.simulation_vendeur, 'simulation_vendeur', erreurs)
+  const modifies =
+    source.parametres_modifies === undefined ? undefined : parametresModifies(source.parametres_modifies, 'parametres_modifies', erreurs)
   if (nom === undefined || lu === undefined || erreurs.length > 0) return { ok: false, erreurs }
-  const anomalies = anomaliesDossier(lu)
-  return vendeur === undefined ? { ok: true, nom, dossier: lu, anomalies } : { ok: true, nom, dossier: lu, simulation_vendeur: vendeur, anomalies }
+  return {
+    ok: true,
+    nom,
+    dossier: lu,
+    ...(vendeur === undefined ? {} : { simulation_vendeur: vendeur }),
+    ...(modifies === undefined || Object.keys(modifies).length === 0 ? {} : { parametres_modifies: modifies }),
+    anomalies: anomaliesDossier(lu),
+  }
 }

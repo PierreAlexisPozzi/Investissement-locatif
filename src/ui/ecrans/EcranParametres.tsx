@@ -17,11 +17,11 @@ const LIBELLES_FILTRES: Readonly<Record<Filtre, string>> = {
   a_confirmer: 'À confirmer',
   texte_non_consulte: 'Texte non consulté',
   verifie: 'Vérifiés',
-  modifies: 'Modifiés localement',
+  modifies: 'Modifiés pour ce dossier',
 }
 
 function Editeur({ entree, base, onFermer }: { readonly entree: EntreeParametre; readonly base: EntreeParametre; readonly onFermer: () => void }) {
-  const { etat, parametresDeBase, actions } = useApplication()
+  const { enregistre, parametresDeBase, actions } = useApplication()
   const id = useId()
   const { chemin, parametre } = entree
   const [texte, setTexte] = useState(texteEdition(parametre.valeur))
@@ -36,7 +36,7 @@ function Editeur({ entree, base, onFermer }: { readonly entree: EntreeParametre;
       return
     }
     const surcharge: SurchargeParametre = { valeur: lu.valeur, statut, date_verification: date === '' ? null : date }
-    const essai = appliquerSurcharges(parametresDeBase, { ...etat.surcharges, [chemin]: surcharge })
+    const essai = appliquerSurcharges(parametresDeBase, { ...enregistre.parametres_modifies, [chemin]: surcharge })
     if (essai.erreurs.length > 0) {
       setErreurs(essai.erreurs)
       return
@@ -98,10 +98,10 @@ function Editeur({ entree, base, onFermer }: { readonly entree: EntreeParametre;
 }
 
 function LigneParametre({ entree, base }: { readonly entree: EntreeParametre; readonly base: EntreeParametre }) {
-  const { etat, actions } = useApplication()
+  const { enregistre, actions } = useApplication()
   const [edition, setEdition] = useState(false)
   const { chemin, parametre } = entree
-  const modifie = Object.hasOwn(etat.surcharges, chemin)
+  const modifie = Object.hasOwn(enregistre.parametres_modifies ?? {}, chemin)
   return (
     <li className={modifie ? 'parametre parametre-modifie' : 'parametre'}>
       <div className="parametre-entete">
@@ -167,7 +167,8 @@ function LigneParametre({ entree, base }: { readonly entree: EntreeParametre; re
 }
 
 export function EcranParametres() {
-  const { p, parametres, parametresDeBase, etat, actions } = useApplication()
+  const { p, parametres, parametresDeBase, enregistre, actions } = useApplication()
+  const modifies = enregistre.parametres_modifies ?? {}
   const [filtre, setFiltre] = useState<Filtre>('non_verifies')
   const [recherche, setRecherche] = useState('')
   const idRecherche = useId()
@@ -180,12 +181,12 @@ export function EcranParametres() {
     const garde =
       filtre === 'tous' ||
       (filtre === 'non_verifies' && statut !== 'verifie') ||
-      (filtre === 'modifies' && Object.hasOwn(etat.surcharges, e.chemin)) ||
+      (filtre === 'modifies' && Object.hasOwn(modifies, e.chemin)) ||
       filtre === statut
     return garde && (texte === '' || `${e.chemin} ${e.parametre.source} ${e.parametre.commentaire}`.toLowerCase().includes(texte))
   })
   const sections = [...new Set(retenues.map((e) => e.chemin.split('.')[0] ?? ''))]
-  const nombreModifies = Object.keys(etat.surcharges).length
+  const nombreModifies = Object.keys(modifies).length
   return (
     <Ecran
       id="parametres"
@@ -201,7 +202,7 @@ export function EcranParametres() {
           </button>
           {nombreModifies > 0 ? (
             <button type="button" className="bouton-discret" onClick={actions.reinitialiserParametres}>
-              Annuler toutes les modifications
+              Annuler les modifications de ce dossier
             </button>
           ) : null}
         </>
@@ -210,8 +211,8 @@ export function EcranParametres() {
       <p className="introduction">
         Paramètres arrêtés au {formaterDate(p.meta.date_arret)} : {comptes.map(([s, n]) => `${String(n)} ${LIBELLES_STATUTS[s]}`).join(', ')}.{' '}
         {nombreModifies > 0
-          ? `${String(nombreModifies)} paramètre(s) modifié(s) dans ce navigateur, appliqué(s) à tous les dossiers.`
-          : 'Les modifications restent dans ce navigateur ; exportez le fichier pour les reporter dans le dépôt.'}
+          ? `${String(nombreModifies)} paramètre(s) modifié(s) pour le dossier « ${enregistre.nom} » ; les autres dossiers gardent leur propre version.`
+          : 'Une modification ne vaut que pour le dossier ouvert : elle est enregistrée avec lui, export JSON compris. Exportez le fichier de paramètres pour la reporter dans le dépôt.'}
       </p>
       {parametres.erreurs.length > 0 ? (
         <Encart genre="erreur" titre="Modifications ignorées, paramètres du fichier en vigueur :">

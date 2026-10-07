@@ -7,12 +7,9 @@ import { etatInitial } from '../../src/ui/etat/initialisation'
 import {
   CLE_DOSSIER_COURANT,
   CLE_DOSSIERS,
-  CLE_PARAMETRES,
   ecrireDossierCourant,
   ecrireDossiers,
-  ecrireSurcharges,
   lireDossiers,
-  lireSurcharges,
   type DossierEnregistre,
   type Stockage,
 } from '../../src/ui/etat/stockage'
@@ -35,7 +32,7 @@ function stockageMemoire(initial: Record<string, string> = {}, plein = false): S
 }
 
 const enregistre = (id: string, nom: string, dossier = dossierType): DossierEnregistre => ({ id, nom, dossier, modifie_le: H })
-const etat = (dossiers: DossierEnregistre[]): EtatApplication => ({ dossiers, courant: dossiers[0]?.id ?? '', surcharges: {}, scenario: 'S0', messages: [] })
+const etat = (dossiers: DossierEnregistre[]): EtatApplication => ({ dossiers, courant: dossiers[0]?.id ?? '', scenario: 'S0', messages: [] })
 
 describe('réducteur de l’état de l’application', () => {
   it('modifie le dossier courant seulement, et le date', () => {
@@ -78,22 +75,33 @@ describe('réducteur de l’état de l’application', () => {
 
   it('rechargement depuis un autre onglet : dossier courant conservé s’il existe encore', () => {
     const e = { ...etat([enregistre('a', 'A'), enregistre('b', 'B')]), courant: 'b' }
-    const action = { type: 'recharger', surcharges: { 'micro_foncier.abattement': { valeur: 0.35 } }, message: 'm' } as const
+    const action = { type: 'recharger', message: 'm' } as const
     const r = reduire(e, { ...action, dossiers: [enregistre('a', 'A2'), enregistre('b', 'B2'), enregistre('c', 'C')] })
     expect(r.dossiers.map((x) => x.nom)).toEqual(['A2', 'B2', 'C'])
     expect(r.courant).toBe('b')
-    expect(r.surcharges).toEqual(action.surcharges)
     expect(r.messages).toEqual(['m'])
     expect(reduire(e, { ...action, dossiers: [enregistre('c', 'C')] }).courant).toBe('c')
     expect(reduire(e, { ...action, dossiers: [] })).toBe(e)
   })
 
-  it('paramètres modifiés : ajout, retrait, réinitialisation ; messages sans doublon', () => {
+  it('paramètres modifiés : propres au dossier courant, datés ; retrait et réinitialisation', () => {
+    const e = etat([enregistre('a', 'A'), enregistre('b', 'B')])
+    const abattement = { valeur: 0.35 }
+    const r = reduire(e, { type: 'surcharger', chemin: 'micro_foncier.abattement', surcharge: abattement, horodatage: '2026-10-08T00:00:00.000Z' })
+    expect(dossierCourant(r).parametres_modifies).toEqual({ 'micro_foncier.abattement': abattement })
+    expect(dossierCourant(r).modifie_le).toBe('2026-10-08T00:00:00.000Z')
+    expect(r.dossiers[1]).toBe(e.dossiers[1])
+    const deux = reduire(r, { type: 'surcharger', chemin: 'micro_foncier.seuil_recettes', surcharge: { valeur: 20000 }, horodatage: H })
+    expect(Object.keys(dossierCourant(deux).parametres_modifies ?? {})).toEqual(['micro_foncier.abattement', 'micro_foncier.seuil_recettes'])
+    const retire = reduire(r, { type: 'surcharger', chemin: 'micro_foncier.abattement', surcharge: null, horodatage: H })
+    expect('parametres_modifies' in dossierCourant(retire)).toBe(false)
+    expect('parametres_modifies' in dossierCourant(reduire(deux, { type: 'reinitialiser_surcharges', horodatage: H }))).toBe(false)
+    const copie = reduire(r, { type: 'ajouter', dossier: { ...dossierCourant(r), id: 'c', nom: 'A (copie)' } })
+    expect(dossierCourant(copie).parametres_modifies).toEqual({ 'micro_foncier.abattement': abattement })
+  })
+
+  it('messages sans doublon', () => {
     const e = etat([enregistre('a', 'A')])
-    const r = reduire(e, { type: 'surcharger', chemin: 'micro_foncier.abattement', surcharge: { valeur: 0.35 } })
-    expect(r.surcharges).toEqual({ 'micro_foncier.abattement': { valeur: 0.35 } })
-    expect(reduire(r, { type: 'surcharger', chemin: 'micro_foncier.abattement', surcharge: null }).surcharges).toEqual({})
-    expect(reduire(r, { type: 'reinitialiser_surcharges' }).surcharges).toEqual({})
     const m = reduire(reduire(e, { type: 'signaler', message: 'x' }), { type: 'signaler', message: 'x' })
     expect(m.messages).toEqual(['x'])
   })
@@ -102,7 +110,10 @@ describe('réducteur de l’état de l’application', () => {
 describe('stockage local', () => {
   it('écrit puis relit les dossiers au format du fichier d’export ; le dossier ouvert a sa propre clé', () => {
     const s = stockageMemoire()
-    const dossiers = [{ ...enregistre('a', 'Cas type'), simulation_vendeur: simulationOptimiste }, enregistre('b', 'Vierge', dossierVierge('2026-10-07', p))]
+    const dossiers = [
+      { ...enregistre('a', 'Cas type'), simulation_vendeur: simulationOptimiste, parametres_modifies: { 'micro_foncier.abattement': { valeur: 0.35 } } },
+      enregistre('b', 'Vierge', dossierVierge('2026-10-07', p)),
+    ]
     expect(ecrireDossiers(s, dossiers)).toBeNull()
     ecrireDossierCourant(s, 'b')
     const lu = lireDossiers(s, H)
@@ -146,9 +157,8 @@ describe('stockage local', () => {
     for (let k = 0; k < 2; k++) {
       ecrireDossiers(compte, dossiers)
       ecrireDossierCourant(compte, 'a')
-      ecrireSurcharges(compte, {})
     }
-    expect(ecrites).toEqual([CLE_DOSSIERS, CLE_DOSSIER_COURANT, CLE_PARAMETRES])
+    expect(ecrites).toEqual([CLE_DOSSIERS, CLE_DOSSIER_COURANT])
   })
 
   it('deux onglets ouverts sur deux dossiers ne se réécrivent pas l’un l’autre sans fin', () => {
@@ -174,7 +184,7 @@ describe('stockage local', () => {
       const autre = k === 0 ? 1 : 0
       if (ecrites.slice(avant).includes(CLE_DOSSIERS)) {
         const ouvert = onglets[autre].courant
-        onglets[autre] = reduire(onglets[autre], { type: 'recharger', dossiers: lireDossiers(stockage, H).valeur.dossiers, surcharges: {}, message: 'm' })
+        onglets[autre] = reduire(onglets[autre], { type: 'recharger', dossiers: lireDossiers(stockage, H).valeur.dossiers, message: 'm' })
         if (onglets[autre].courant !== ouvert) ecrireDossierCourant(stockage, onglets[autre].courant)
         enregistrer(autre, echanges + 1)
       }
@@ -202,17 +212,6 @@ describe('stockage local', () => {
     expect(() => {
       ecrireDossierCourant(stockageMemoire({}, true), 'a')
     }).not.toThrow()
-    expect(ecrireSurcharges(stockageMemoire({}, true), {})).toMatch(/plein/)
-  })
-
-  it('paramètres modifiés : relecture et contenu illisible mis de côté', () => {
-    const s = stockageMemoire()
-    expect(ecrireSurcharges(s, { 'micro_foncier.abattement': { valeur: 0.35 } })).toBeNull()
-    expect(lireSurcharges(s, H)).toEqual({ valeur: { 'micro_foncier.abattement': { valeur: 0.35 } }, erreurs: [] })
-    const abime = stockageMemoire({ [CLE_PARAMETRES]: '[1, 2]' })
-    const lu = lireSurcharges(abime, H)
-    expect(lu.valeur).toEqual({})
-    expect(lu.erreurs).toHaveLength(1)
   })
 
   it('état initial : un dossier vierge s’il n’y a rien d’enregistré', () => {

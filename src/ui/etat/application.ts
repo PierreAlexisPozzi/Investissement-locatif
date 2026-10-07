@@ -6,7 +6,7 @@ import { createContext, useContext } from 'react'
 import type { SimulationVendeur } from '../../engine/contre-expertise'
 import type { Dossier, Objectifs } from '../../engine/dossier'
 import type { IdScenario } from '../../engine/scenario'
-import type { ParametresEffectifs, ParametresFiscaux, SurchargeParametre } from '../../params'
+import type { ParametresEffectifs, ParametresFiscaux, SurchargeParametre, SurchargesParametres } from '../../params'
 import type { EtatApplication } from './etat'
 import type { DossierEnregistre } from './stockage'
 
@@ -19,7 +19,13 @@ export interface ActionsApplication {
   readonly selectionnerDossier: (id: string) => void
   readonly renommerDossier: (nom: string) => void
   readonly supprimerDossier: () => void
-  readonly importerDossier: (nom: string, dossier: Dossier, simulation: SimulationVendeur | undefined) => void
+  readonly importerDossier: (
+    nom: string,
+    dossier: Dossier,
+    simulation: SimulationVendeur | undefined,
+    parametresModifies: SurchargesParametres | undefined,
+  ) => void
+  /** Modifie un paramètre fiscal pour le dossier courant seulement. */
   readonly surchargerParametre: (chemin: string, surcharge: SurchargeParametre | null) => void
   readonly reinitialiserParametres: () => void
   readonly choisirScenario: (id: IdScenario) => void
@@ -34,6 +40,7 @@ export interface ContexteApplication {
   /** Dossier sans ses objectifs : son identité ne change pas quand seuls les curseurs bougent (cache des calculs). */
   readonly dossierCalcul: Dossier
   readonly objectifs: Objectifs
+  /** Paramètres du dossier courant : fichier versionné et modifications propres à ce dossier. */
   readonly parametres: ParametresEffectifs
   /** Paramètres du fichier versionné, avant modifications locales. */
   readonly parametresDeBase: ParametresFiscaux

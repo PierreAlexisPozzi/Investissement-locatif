@@ -3,12 +3,12 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { fichierDossier } from '../../src/engine/dossier-json'
-import { parametresFiscaux2026 as p } from '../../src/params'
+import { parametresFiscaux2026 as p, type SurchargesParametres } from '../../src/params'
 import { App } from '../../src/ui/App'
 import { ECRANS } from '../../src/ui/etat/etat'
 import { FournisseurApplication } from '../../src/ui/etat/FournisseurApplication'
 import { etatInitial } from '../../src/ui/etat/initialisation'
-import { CLE_DOSSIER_COURANT, CLE_DOSSIERS, CLE_PARAMETRES, type Stockage } from '../../src/ui/etat/stockage'
+import { CLE_DOSSIER_COURANT, CLE_DOSSIERS, type Stockage } from '../../src/ui/etat/stockage'
 import { LIBELLES_STATUTS } from '../../src/ui/libelles'
 import { dossierAncien, dossierType } from '../engine/fixtures/dossier-type'
 import { simulationOptimiste } from '../engine/fixtures/simulation-vendeur'
@@ -27,16 +27,10 @@ function stockageMemoire(initial: Record<string, string> = {}): Stockage & { con
   }
 }
 
-/** Stockage contenant le dossier d'essai fictif et une simulation de vendeur. */
-function stockageEssai(surcharges?: Record<string, unknown>) {
-  const dossiers = {
-    version: 1,
-    dossiers: [{ id: 'essai', fichier: fichierDossier('Cas type (fictif)', dossierType, '2026-10-07T08:00:00.000Z', simulationOptimiste) }],
-  }
-  return stockageMemoire({
-    [CLE_DOSSIERS]: JSON.stringify(dossiers),
-    ...(surcharges === undefined ? {} : { [CLE_PARAMETRES]: JSON.stringify(surcharges) }),
-  })
+/** Stockage contenant le dossier d'essai fictif, une simulation de vendeur et, le cas échéant, ses paramètres modifiés. */
+function stockageEssai(parametresModifies?: SurchargesParametres) {
+  const fichier = fichierDossier('Cas type (fictif)', dossierType, '2026-10-07T08:00:00.000Z', simulationOptimiste, parametresModifies)
+  return stockageMemoire({ [CLE_DOSSIERS]: JSON.stringify({ version: 1, dossiers: [{ id: 'essai', fichier }] }) })
 }
 
 function monter(stockage: Stockage) {
@@ -126,7 +120,7 @@ describe('application', () => {
     expect(within(tableau).getByText(/Taux qui annule la valeur actuelle des flux/)).toBeTruthy()
   })
 
-  it('paramètres modifiés dans le navigateur : signalés et appliqués', async () => {
+  it('paramètres modifiés du dossier : signalés et appliqués', async () => {
     window.location.hash = '/parametres'
     monter(stockageEssai({ 'micro_foncier.abattement': { valeur: 0.35 } }))
     await titreEcran('Paramètres fiscaux')
@@ -139,6 +133,23 @@ describe('application', () => {
     monter(stockageEssai({ 'micro_foncier.abattement': { valeur: 'trente' } }))
     await titreEcran('Paramètres fiscaux')
     expect(screen.getByText('micro_foncier.abattement : la valeur n’a pas la forme de l’original')).toBeTruthy()
+  })
+
+  it('paramètres modifiés : chaque dossier a sa propre version', async () => {
+    const user = userEvent.setup()
+    window.location.hash = '/parametres'
+    const modifie = fichierDossier('Modifié', dossierType, '2026-10-07T08:00:00.000Z', undefined, { 'micro_foncier.abattement': { valeur: 0.35 } })
+    const intact = fichierDossier('Fichier versionné', dossierType, '2026-10-07T08:00:00.000Z')
+    const dossiers = [
+      { id: 'm', fichier: modifie },
+      { id: 'f', fichier: intact },
+    ]
+    monter(stockageMemoire({ [CLE_DOSSIERS]: JSON.stringify({ version: 1, dossiers }) }))
+    await titreEcran('Paramètres fiscaux')
+    expect(screen.getAllByText('1 paramètre(s) modifié(s)').length).toBeGreaterThan(0)
+    await user.selectOptions(screen.getByLabelText('Dossier'), 'f')
+    expect(screen.queryByText('1 paramètre(s) modifié(s)')).toBeNull()
+    expect(screen.getByText(/Une modification ne vaut que pour le dossier ouvert/)).toBeTruthy()
   })
 
   it('« Imprimer la synthèse » : la synthèse est rendue avant l’ouverture de l’impression, dès le premier clic', async () => {

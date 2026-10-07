@@ -43,6 +43,38 @@ describe('export et relecture d’un dossier JSON', () => {
     expect(erreurs(brut)).toEqual([expect.stringMatching(/^simulation_vendeur\.scenario : valeur admise parmi /) as unknown])
   })
 
+  it('conserve les paramètres fiscaux modifiés pour le dossier ; n’écrit rien quand il n’y en a pas', () => {
+    const modifies = {
+      'micro_foncier.abattement': { valeur: 0.35, statut: 'a_confirmer' as const, date_verification: null },
+      'impot_revenu.plafonnement_global_niches': { date_verification: '2026-10-07' },
+    }
+    const relu = (contenu: unknown) => lireFichierDossier(JSON.parse(JSON.stringify(contenu)))
+    expect(relu(fichierDossier('Essai', dossierType, HORODATAGE, undefined, modifies))).toEqual({
+      ok: true,
+      nom: 'Essai',
+      dossier: dossierType,
+      parametres_modifies: modifies,
+      anomalies: [],
+    })
+    expect('parametres_modifies' in fichierDossier('Essai', dossierType, HORODATAGE, undefined, {})).toBe(false)
+    expect(relu(fichierDossier('Essai', dossierType, HORODATAGE))).toEqual({ ok: true, nom: 'Essai', dossier: dossierType, anomalies: [] })
+  })
+
+  it('refuse des paramètres modifiés mal formés, en citant leur chemin', () => {
+    const avec = (parametres_modifies: unknown) => ({ ...fichierDossier('Essai', dossierType, HORODATAGE), parametres_modifies })
+    expect(erreurs(avec([]))).toEqual(['parametres_modifies : objet attendu'])
+    // Clé « __proto__ » propre, comme la produit JSON.parse : refusée au lieu de changer le prototype.
+    const injecte = JSON.parse('{"__proto__": {"valeur": 1}}') as unknown
+    expect(erreurs(avec(injecte))).toEqual(['parametres_modifies : « __proto__ » n’est pas un chemin de paramètre'])
+    expect(erreurs(avec({ abattement: { valeur: 1 } }))).toEqual(['parametres_modifies : « abattement » n’est pas un chemin de paramètre'])
+    expect(erreurs(avec({ 'micro_foncier.abattement': { statut: 'douteux' } }))).toEqual([
+      expect.stringMatching(/^parametres_modifies\.micro_foncier\.abattement\.statut : valeur admise parmi /) as unknown,
+    ])
+    expect(erreurs(avec({ 'micro_foncier.abattement': { date_verification: '07/10/2026' } }))).toEqual([
+      'parametres_modifies.micro_foncier.abattement.date_verification : date AAAA-MM-JJ attendue',
+    ])
+  })
+
   it('l’en-tête du fichier identifie le format et sa version', () => {
     expect(fichierDossier('Essai', dossierType, HORODATAGE)).toMatchObject({
       format: FORMAT_FICHIER_DOSSIER,

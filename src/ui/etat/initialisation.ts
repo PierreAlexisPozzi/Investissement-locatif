@@ -7,7 +7,7 @@ import type { IdScenario } from '../../engine/scenario'
 import type { ParametresFiscaux } from '../../params'
 import { dateDuJour } from '../format'
 import type { EtatApplication } from './etat'
-import { lireDossiers, lireSurcharges, type DossierEnregistre, type Stockage } from './stockage'
+import { lireDossiers, type DossierEnregistre, type Stockage } from './stockage'
 
 export const NOM_PAR_DEFAUT = 'Dossier'
 const SCENARIO_PAR_DEFAUT: IdScenario = 'S0'
@@ -24,15 +24,13 @@ export function dossierEnregistreVierge(maintenant: Date, p: ParametresFiscaux, 
 export function etatInitial(stockage: Stockage | null, maintenant: Date, p: ParametresFiscaux): EtatApplication {
   const horodatage = maintenant.toISOString()
   const dossiers = lireDossiers(stockage, horodatage)
-  const surcharges = lireSurcharges(stockage, horodatage)
   const existants = dossiers.valeur.dossiers
   const liste = existants.length > 0 ? existants : [dossierEnregistreVierge(maintenant, p)]
   const courant = dossiers.valeur.courant ?? liste[0]?.id ?? ''
   return {
     dossiers: liste,
     courant,
-    surcharges: surcharges.valeur,
     scenario: SCENARIO_PAR_DEFAUT,
-    messages: [...dossiers.erreurs, ...surcharges.erreurs],
+    messages: dossiers.erreurs,
   }
 }

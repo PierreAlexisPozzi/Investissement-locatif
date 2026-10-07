@@ -1,5 +1,5 @@
 /**
- * Persistance locale (§4) : les dossiers et les modifications de paramètres
+ * Persistance locale (§4) : les dossiers, avec leurs paramètres modifiés,
  * vivent dans le `localStorage` du navigateur, jamais dans le dépôt. Chaque
  * dossier est stocké au format du fichier d'export et relu avec les mêmes
  * contrôles. Un contenu illisible est mis de côté avant d'être remplacé.
@@ -7,10 +7,9 @@
 import type { SimulationVendeur } from '../../engine/contre-expertise'
 import type { Dossier } from '../../engine/dossier'
 import { fichierDossier, lireFichierDossier, type FichierDossier } from '../../engine/dossier-json'
-import type { SurchargeParametre, SurchargesParametres } from '../../params'
+import type { SurchargesParametres } from '../../params'
 
 export const CLE_DOSSIERS = 'investissement-locatif/dossiers'
-export const CLE_PARAMETRES = 'investissement-locatif/parametres'
 /**
  * Dossier ouvert, à part des dossiers : chaque onglet garde le sien (deux onglets sur deux dossiers ne se réécrivent
  * pas l'un l'autre) ; le dernier choisi sert au lancement suivant.
@@ -29,6 +28,8 @@ export interface DossierEnregistre {
   readonly nom: string
   readonly dossier: Dossier
   readonly simulation_vendeur?: SimulationVendeur
+  /** Paramètres fiscaux modifiés pour ce dossier seulement (écran 8). */
+  readonly parametres_modifies?: SurchargesParametres
   /** Horodatage ISO de la dernière modification. */
   readonly modifie_le: string
 }
@@ -108,6 +109,7 @@ export function lireDossiers(stockage: Stockage | null, horodatage: string): Lec
       nom: lecture.nom,
       dossier: lecture.dossier,
       ...(lecture.simulation_vendeur === undefined ? {} : { simulation_vendeur: lecture.simulation_vendeur }),
+      ...(lecture.parametres_modifies === undefined ? {} : { parametres_modifies: lecture.parametres_modifies }),
       modifie_le: typeof fichier.enregistre_le === 'string' ? fichier.enregistre_le : horodatage,
     })
   }
@@ -127,7 +129,7 @@ export function ecrireDossiers(stockage: Stockage | null, dossiers: readonly Dos
   if (stockage === null) return 'Stockage du navigateur indisponible : exportez vos dossiers en JSON pour les conserver'
   const contenu = {
     version: VERSION_STOCKAGE,
-    dossiers: dossiers.map((x) => ({ id: x.id, fichier: fichierDossier(x.nom, x.dossier, x.modifie_le, x.simulation_vendeur) })),
+    dossiers: dossiers.map((x) => ({ id: x.id, fichier: fichierDossier(x.nom, x.dossier, x.modifie_le, x.simulation_vendeur, x.parametres_modifies) })),
   }
   try {
     ecrireSiChange(stockage, CLE_DOSSIERS, JSON.stringify(contenu))
@@ -144,26 +146,5 @@ export function ecrireDossierCourant(stockage: Stockage | null, id: string): voi
     ecrireSiChange(stockage, CLE_DOSSIER_COURANT, id)
   } catch {
     // Stockage plein : l'enregistrement des dossiers le signale déjà.
-  }
-}
-
-/** Modifications de paramètres enregistrées ; un contenu illisible est mis de côté. */
-export function lireSurcharges(stockage: Stockage | null, horodatage: string): Lecture<SurchargesParametres> {
-  if (stockage === null) return { valeur: {}, erreurs: [] }
-  const lu = lireJson(stockage, CLE_PARAMETRES)
-  if (lu.ok && lu.contenu === undefined) return { valeur: {}, erreurs: [] }
-  if (!lu.ok || !estObjet(lu.contenu) || !Object.values(lu.contenu).every(estObjet)) {
-    return { valeur: {}, erreurs: [`Paramètres modifiés illisibles : ${mettreDeCote(stockage, CLE_PARAMETRES, horodatage)}`] }
-  }
-  return { valeur: lu.contenu as Record<string, SurchargeParametre>, erreurs: [] }
-}
-
-export function ecrireSurcharges(stockage: Stockage | null, surcharges: SurchargesParametres): string | null {
-  if (stockage === null) return 'Stockage du navigateur indisponible : les paramètres modifiés seront perdus à la fermeture'
-  try {
-    ecrireSiChange(stockage, CLE_PARAMETRES, JSON.stringify(surcharges))
-    return null
-  } catch {
-    return 'Enregistrement des paramètres modifiés impossible : stockage du navigateur plein ou interdit'
   }
 }

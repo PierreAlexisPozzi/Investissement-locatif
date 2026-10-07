@@ -14,7 +14,7 @@ export function BarreDossiers({ onImprimer }: { readonly onImprimer: () => void 
   const [nom, setNom] = useState<string | null>(null)
 
   const exporter = (): void => {
-    const contenu = fichierDossier(enregistre.nom, enregistre.dossier, new Date().toISOString(), enregistre.simulation_vendeur)
+    const contenu = fichierDossier(enregistre.nom, enregistre.dossier, new Date().toISOString(), enregistre.simulation_vendeur, enregistre.parametres_modifies)
     telecharger(`${nomDeFichier(enregistre.nom) || 'dossier'}.dossier.json`, `${JSON.stringify(contenu, null, 2)}\n`, TYPE_JSON)
   }
 
@@ -31,10 +31,10 @@ export function BarreDossiers({ onImprimer }: { readonly onImprimer: () => void 
       actions.signaler(`Import de « ${choisi.name} » refusé : ${lu.erreurs.slice(0, 5).join(' ; ')}`)
       return
     }
-    actions.importerDossier(lu.nom, lu.dossier, lu.simulation_vendeur)
-    actions.signaler(
-      lu.anomalies.length === 0 ? `Dossier « ${lu.nom} » importé` : `Dossier « ${lu.nom} » importé, à corriger : ${lu.anomalies.join(' ; ')}`,
-    )
+    actions.importerDossier(lu.nom, lu.dossier, lu.simulation_vendeur, lu.parametres_modifies)
+    const modifies = Object.keys(lu.parametres_modifies ?? {}).length
+    const importe = `Dossier « ${lu.nom} » importé${modifies === 0 ? '' : `, avec ${String(modifies)} paramètre(s) modifié(s)`}`
+    actions.signaler(lu.anomalies.length === 0 ? importe : `${importe}, à corriger : ${lu.anomalies.join(' ; ')}`)
   }
 
   return (

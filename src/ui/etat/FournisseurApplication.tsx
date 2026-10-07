@@ -2,11 +2,11 @@ import { useEffect, useMemo, useReducer, type ReactNode } from 'react'
 import type { SimulationVendeur } from '../../engine/contre-expertise'
 import { anomaliesDossier, champsAComplete, objectifsParDefaut, type Dossier, type Objectifs } from '../../engine/dossier'
 import type { IdScenario } from '../../engine/scenario'
-import { appliquerSurcharges, type ParametresFiscaux, type SurchargeParametre } from '../../params'
+import { appliquerSurcharges, type ParametresFiscaux, type SurchargeParametre, type SurchargesParametres } from '../../params'
 import { Contexte, type ActionsApplication, type ContexteApplication } from './application'
 import { dossierCourant, reduire, type EtatApplication } from './etat'
 import { dossierEnregistreVierge, nouvelIdentifiant } from './initialisation'
-import { CLE_DOSSIERS, CLE_PARAMETRES, ecrireDossierCourant, ecrireDossiers, ecrireSurcharges, lireDossiers, lireSurcharges, type Stockage } from './stockage'
+import { CLE_DOSSIERS, ecrireDossierCourant, ecrireDossiers, lireDossiers, type Stockage } from './stockage'
 
 interface Proprietes {
   readonly etatInitial: EtatApplication
@@ -17,6 +17,9 @@ interface Proprietes {
 }
 
 const horodatage = (): string => new Date().toISOString()
+
+/** Aucune modification : objet stable, pour que les paramètres d'un dossier non modifié restent ceux du fichier. */
+const AUCUNE_MODIFICATION: SurchargesParametres = {}
 
 export function FournisseurApplication({ etatInitial, stockage, parametresDeBase, children }: Proprietes) {
   const [etat, envoyer] = useReducer(reduire, etatInitial)
@@ -38,33 +41,15 @@ export function FournisseurApplication({ etatInitial, stockage, parametresDeBase
     ecrireDossierCourant(stockage, etat.courant)
   }, [stockage, etat.courant])
 
-  useEffect(() => {
-    const erreur = ecrireSurcharges(stockage, etat.surcharges)
-    if (erreur === null) return
-    const minuteur = window.setTimeout(() => {
-      envoyer({ type: 'signaler', message: erreur })
-    })
-    return () => {
-      window.clearTimeout(minuteur)
-    }
-  }, [stockage, etat.surcharges])
-
   // Un autre onglet a enregistré : son contenu remplace celui-ci, pour qu'aucun des deux n'efface l'autre. Le dossier
   // ouvert, propre à chaque onglet, a sa propre clé, ignorée ici.
   useEffect(() => {
     if (stockage === null) return
     const ecouter = (e: StorageEvent): void => {
-      if (e.key !== null && e.key !== CLE_DOSSIERS && e.key !== CLE_PARAMETRES) return
-      const horodatage = new Date().toISOString()
-      const dossiers = lireDossiers(stockage, horodatage)
-      const surcharges = lireSurcharges(stockage, horodatage)
-      envoyer({
-        type: 'recharger',
-        dossiers: dossiers.valeur.dossiers,
-        surcharges: surcharges.valeur,
-        message: 'Dossiers mis à jour depuis un autre onglet',
-      })
-      for (const message of [...dossiers.erreurs, ...surcharges.erreurs]) envoyer({ type: 'signaler', message })
+      if (e.key !== null && e.key !== CLE_DOSSIERS) return
+      const dossiers = lireDossiers(stockage, new Date().toISOString())
+      envoyer({ type: 'recharger', dossiers: dossiers.valeur.dossiers, message: 'Dossiers mis à jour depuis un autre onglet' })
+      for (const message of dossiers.erreurs) envoyer({ type: 'signaler', message })
     }
     window.addEventListener('storage', ecouter)
     return () => {
@@ -72,7 +57,10 @@ export function FournisseurApplication({ etatInitial, stockage, parametresDeBase
     }
   }, [stockage])
 
-  const parametres = useMemo(() => appliquerSurcharges(parametresDeBase, etat.surcharges), [parametresDeBase, etat.surcharges])
+  // Chaque dossier a sa version des paramètres : le fichier versionné et ses propres modifications.
+  const enregistre = dossierCourant(etat)
+  const modifies = enregistre.parametres_modifies ?? AUCUNE_MODIFICATION
+  const parametres = useMemo(() => appliquerSurcharges(parametresDeBase, modifies), [parametresDeBase, modifies])
   const p = parametres.parametres
 
   const actions = useMemo<ActionsApplication>(
@@ -91,7 +79,7 @@ export function FournisseurApplication({ etatInitial, stockage, parametresDeBase
         envoyer({ type: 'modifier_vendeur', simulation, horodatage: horodatage() })
       },
       nouveauDossier: () => {
-        envoyer({ type: 'ajouter', dossier: dossierEnregistreVierge(new Date(), p) })
+        envoyer({ type: 'ajouter', dossier: dossierEnregistreVierge(new Date(), parametresDeBase) })
       },
       dupliquerDossier: () => {
         const source = dossierCourant(etat)
@@ -104,17 +92,31 @@ export function FournisseurApplication({ etatInitial, stockage, parametresDeBase
         envoyer({ type: 'renommer', nom, horodatage: horodatage() })
       },
       supprimerDossier: () => {
-        envoyer({ type: 'supprimer', remplacant: dossierEnregistreVierge(new Date(), p) })
+        envoyer({ type: 'supprimer', remplacant: dossierEnregistreVierge(new Date(), parametresDeBase) })
       },
-      importerDossier: (nom: string, dossier: Dossier, simulation: SimulationVendeur | undefined) => {
-        const base = { id: nouvelIdentifiant(), nom, dossier, modifie_le: horodatage() }
-        envoyer({ type: 'ajouter', dossier: simulation === undefined ? base : { ...base, simulation_vendeur: simulation } })
+      importerDossier: (
+        nom: string,
+        dossier: Dossier,
+        simulation: SimulationVendeur | undefined,
+        parametresModifies: SurchargesParametres | undefined,
+      ) => {
+        envoyer({
+          type: 'ajouter',
+          dossier: {
+            id: nouvelIdentifiant(),
+            nom,
+            dossier,
+            ...(simulation === undefined ? {} : { simulation_vendeur: simulation }),
+            ...(parametresModifies === undefined ? {} : { parametres_modifies: parametresModifies }),
+            modifie_le: horodatage(),
+          },
+        })
       },
       surchargerParametre: (chemin: string, surcharge: SurchargeParametre | null) => {
-        envoyer({ type: 'surcharger', chemin, surcharge })
+        envoyer({ type: 'surcharger', chemin, surcharge, horodatage: horodatage() })
       },
       reinitialiserParametres: () => {
-        envoyer({ type: 'reinitialiser_surcharges' })
+        envoyer({ type: 'reinitialiser_surcharges', horodatage: horodatage() })
       },
       choisirScenario: (scenario: IdScenario) => {
         envoyer({ type: 'choisir_scenario', scenario })
@@ -126,10 +128,9 @@ export function FournisseurApplication({ etatInitial, stockage, parametresDeBase
         envoyer({ type: 'effacer_messages' })
       },
     }),
-    [etat, p],
+    [etat, parametresDeBase],
   )
 
-  const enregistre = dossierCourant(etat)
   const dossier = enregistre.dossier
   const { foyers, bien, financement, exploitation, hypotheses } = dossier
   const dossierCalcul = useMemo<Dossier>(
