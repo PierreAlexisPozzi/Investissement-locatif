@@ -12,6 +12,7 @@ const EUROS = new Intl.NumberFormat('fr-FR', {
   maximumFractionDigits: 0,
 })
 const TAUX = new Intl.NumberFormat('fr-FR', { style: 'percent', maximumFractionDigits: 2 })
+const NOMBRE = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 })
 
 /** Montant arrondi à l'euro : « 10 700 € ». */
 export function formaterEuros(montant: number): string {
@@ -21,6 +22,16 @@ export function formaterEuros(montant: number): string {
 /** Taux décimal en pourcentage : 0.172 → « 17,2 % ». */
 export function formaterTaux(taux: number): string {
   return TAUX.format(taux)
+}
+
+/** Taux éventuellement indéterminé (TRI sans solution) : « non calculable ». */
+export function formaterTauxCalcule(taux: number | null | undefined): string {
+  return taux === null || taux === undefined ? 'non calculable' : formaterTaux(taux)
+}
+
+/** Nombre décimal à la française : 0.5 → « 0,5 ». */
+export function formaterNombre(n: number): string {
+  return NOMBRE.format(n)
 }
 
 /** Date ISO au format JJ/MM/AAAA. */

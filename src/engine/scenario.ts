@@ -137,16 +137,40 @@ const CONFIGURATIONS: Readonly<Record<IdScenario, Configuration>> = {
   S5_12: { ...base, loyer: 'intermediaire', denormandie: { engagement_initial: 'neuf_ans', prorogations: 1 } },
 }
 
+/** Alerte de simulation reprise, chiffres à l'appui, par les alertes de la recommandation (§10.5). */
+export const ALERTE_JEANBRUN_PLAFONNE = 'Jeanbrun : l’annuité dépasse le plafond annuel du foyer, l’amortissement est plafonné'
+
+/** Caractéristiques d'un scénario utiles hors de la simulation : recommandation, contre-expertise (§10, §12). */
+export interface CaracteristiquesScenario {
+  readonly detention: ModeDetention
+  readonly meuble: boolean
+  /** Acquisition au taux réduit de TVA du LLI. */
+  readonly tva_reduite: boolean
+  /** Niveau du plafond de loyer ; null pour un loyer de marché (S0, S4). */
+  readonly niveau_loyer: NiveauLoyer | null
+}
+
+export function caracteristiquesScenario(id: IdScenario): CaracteristiquesScenario {
+  const cfg = CONFIGURATIONS[id]
+  return {
+    detention: cfg.detention,
+    meuble: cfg.regime === 'lmnp',
+    tva_reduite: cfg.tva_reduite,
+    niveau_loyer: cfg.loyer === 'marche_nu' || cfg.loyer === 'marche_meuble' ? null : cfg.loyer,
+  }
+}
+
 /** Engagements fiscaux d'un scénario : durée de blocage et pénalités de sortie anticipée (§9). */
 export interface EngagementsScenario {
-  readonly jeanbrun: boolean
+  /** Niveau de loyer de l'engagement Jeanbrun ; null sans Jeanbrun. */
+  readonly jeanbrun: NiveauLoyer | null
   readonly lli: boolean
   readonly denormandie: { readonly engagement_initial: EngagementInitialDenormandie; readonly prorogations: number } | null
 }
 
 export function engagementsScenario(id: IdScenario): EngagementsScenario {
   const cfg = CONFIGURATIONS[id]
-  return { jeanbrun: cfg.jeanbrun !== null, lli: cfg.lli, denormandie: cfg.denormandie }
+  return { jeanbrun: cfg.jeanbrun, lli: cfg.lli, denormandie: cfg.denormandie }
 }
 
 /** Régime d'imposition des loyers : réel, micro (S0, S4), ou réel puis micro à partir de l'année de bascule (S4). */
@@ -399,6 +423,11 @@ function loyerMensuelDeBase(d: Dossier, cfg: Configuration, p: ParametresFiscaux
   }
   const plafondM2 = b.plafonds_m2_loc_avantages?.[cfg.loyer]
   return { marche, plafond: plafondM2 === undefined ? null : plafondLoyer(plafondM2, b.surface, p).loyer_plafond_mensuel }
+}
+
+/** Loyer de marché et plafond du scénario pour le bien du dossier, aux valeurs de l'année d'acquisition. */
+export function loyerDeBaseScenario(d: Dossier, id: IdScenario, p: ParametresFiscaux): { marche: number; plafond: number | null } {
+  return loyerMensuelDeBase(d, CONFIGURATIONS[id], p)
 }
 
 function cedants(d: Dossier, cfg: Configuration): Cedants {
@@ -915,7 +944,7 @@ function simulerImpotRevenu(
     t === null ? null : ruptureJeanbrun(t, cal.date_debut_location, cal.date_cession, 'cession', p),
   )
   if (tableaux.some((t) => t?.annees.some((a) => a.plafonne) === true)) {
-    alertes.push('Jeanbrun : l’annuité dépasse le plafond annuel du foyer, l’amortissement est plafonné')
+    alertes.push(ALERTE_JEANBRUN_PLAFONNE)
   }
 
   // Denormandie : réduction de la quote-part de chaque foyer, reprise en cas de cession avant le terme de l'engagement.
@@ -1106,7 +1135,8 @@ function simulerImpotRevenu(
     (plan?.frais_en_charge ?? 0) > 0 &&
     p.plus_value_immobiliere.frais_acquisition_deduits_en_charge.valeur === 'exclus'
   // Travaux de la base Denormandie : exclus de la plus-value, sauf reprise de la réduction (BOI-RFPI-PVI-20-10-20-20, §240).
-  const travauxDenormandieRetenus = ruptureDenormandie || p.plus_value_immobiliere.travaux_denormandie_retenus.valeur
+  const travauxDenormandieRetenus =
+    ruptureDenormandie || (b.travaux_denormandie_dans_plus_value ?? p.plus_value_immobiliere.travaux_denormandie_retenus.valeur)
   const travauxPlusValue =
     b.etat === 'ancien' && (denormandie === null || travauxDenormandieRetenus) && travauxDeductiblesS0 === 0 ? prix.travaux : 0
   const entreePlusValue = {

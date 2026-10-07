@@ -25,5 +25,6 @@ export {
   type Hypothese,
   type HypothesesDefaut,
   type ModeEvolution,
+  type PonderationsObjectifs,
   type ScenarioPrix,
 } from './hypotheses'

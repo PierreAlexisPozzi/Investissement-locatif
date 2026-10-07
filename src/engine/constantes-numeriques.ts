@@ -31,3 +31,16 @@ export const ANNEES_EFFORT_INITIAL = 3
 
 /** Borne haute de la recherche du prix de revente d'équilibre, en multiple du prix central. */
 export const FACTEUR_PRIX_REVENTE_MAXIMUM = 3
+
+/**
+ * Recherche des seuils de bascule sur les revenus (§10.4) : balayage par pas
+ * multiplicatif jusqu'à un facteur extrême (×4 ou ÷4), puis dichotomie jusqu'à
+ * une précision relative de 0,1 %. Le revenu du seuil s'affiche à la centaine d'euros.
+ */
+export const PAS_BALAYAGE_REVENUS = 1.25
+export const FACTEUR_REVENUS_EXTREME = 4
+export const PRECISION_SEUIL_REVENUS = 0.001
+export const ARRONDI_SEUIL_REVENUS = 100
+
+/** Nombre de raisons chiffrées du texte de recommandation (§10.4). */
+export const NOMBRE_RAISONS = 3
