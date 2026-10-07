@@ -141,3 +141,19 @@ describe('application', () => {
     expect(screen.getByText('micro_foncier.abattement : la valeur n’a pas la forme de l’original')).toBeTruthy()
   })
 })
+
+describe('revenus fonciers existants', () => {
+  it('signale un micro-foncier déclaré au-delà du seuil', async () => {
+    const user = userEvent.setup()
+    window.location.hash = '/foyer'
+    monter(stockageEssai())
+    await titreEcran('Mon foyer')
+    await user.click(screen.getByLabelText('Revenus fonciers d’autres biens loués nus'))
+    await user.selectOptions(screen.getByLabelText('Régime'), 'micro')
+    expect(screen.queryByText(/le régime réel est obligatoire/)).toBeNull()
+    const recettes = screen.getByLabelText('Recettes annuelles')
+    await user.clear(recettes)
+    await user.type(recettes, String(p.micro_foncier.seuil_recettes.valeur + 1))
+    expect(screen.getByText(/le régime réel est obligatoire/)).toBeTruthy()
+  })
+})

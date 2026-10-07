@@ -76,12 +76,13 @@ function DepuisEnfants({ communes, onAppliquer }: { readonly communes: boolean; 
 }
 
 function CarteFoyer({ foyer, rang, situation }: { readonly foyer: FoyerFiscal; readonly rang: number; readonly situation: Foyers['situation'] }) {
-  const { actions } = useApplication()
+  const { actions, p } = useApplication()
   const maj = (modifier: (f: FoyerFiscal) => FoyerFiscal): void => {
     actions.modifierDossier((d) => ({ ...d, foyers: { ...d.foyers, foyers: d.foyers.foyers.map((f, k) => (k === rang ? modifier(f) : f)) } }))
   }
   const concubins = situation === 'concubins'
   const existants = foyer.revenus_fonciers_existants
+  const seuilMicro = p.micro_foncier.seuil_recettes.valeur
   const changement = foyer.changement_revenu
   const deficits = foyer.deficits_fonciers_existants ?? []
   return (
@@ -225,6 +226,11 @@ function CarteFoyer({ foyer, rang, situation }: { readonly foyer: FoyerFiscal; r
                 { valeur: 'micro', libelle: 'Micro-foncier' },
                 { valeur: 'reel', libelle: 'Réel' },
               ]}
+              aide={
+                existants.regime === 'micro' && existants.recettes > seuilMicro
+                  ? `Au-delà de ${formaterEuros(seuilMicro)} de recettes, le micro-foncier ne s’applique pas : le régime réel est obligatoire.`
+                  : undefined
+              }
               onChange={(regime) => {
                 maj((f) => ({ ...f, revenus_fonciers_existants: { ...existants, regime } }))
               }}
