@@ -295,7 +295,8 @@ function Detail() {
           <ListeMotifs motifs={r.eligibilite.motifs} />
         </Encart>
       ) : (
-        <Simulation r={r} s={r.simulation} />
+        // Une instance par scénario et horizon : aucune sensibilité d'un autre scénario ne reste affichée pendant le calcul.
+        <Simulation key={`${r.id}-${String(objectifs.horizon)}`} r={r} s={r.simulation} />
       )}
     </>
   )

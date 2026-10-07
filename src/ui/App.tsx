@@ -62,7 +62,7 @@ function Messages() {
 
 export function App() {
   const [ecran] = useEcran()
-  const { p, complet, parametres } = useApplication()
+  const { etat, p, complet, parametres } = useApplication()
   // Date d'édition de la synthèse en cours d'impression ; null hors impression.
   const [impression, setImpression] = useState<string | null>(null)
   const contenu = useRef<HTMLElement>(null)
@@ -128,7 +128,8 @@ export function App() {
         </nav>
         <main id="contenu" className="contenu" tabIndex={-1} ref={contenu}>
           <Suspense fallback={<p className="calcul-en-cours">Chargement…</p>}>
-            <div className="ecran-imprimable">
+            {/* Un dossier par instance : changer de dossier repart de saisies vierges (aucune saisie refusée ne persiste). */}
+            <div className="ecran-imprimable" key={etat.courant}>
               <EcranCourant ecran={ecran} />
             </div>
           </Suspense>

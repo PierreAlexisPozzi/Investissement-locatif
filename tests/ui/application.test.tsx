@@ -165,6 +165,37 @@ describe('application', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'Hypothèses' })).toBeTruthy()
   })
 
+  it('changer de dossier efface une saisie refusée de l’autre dossier', async () => {
+    const user = userEvent.setup()
+    const stockage = stockageEssai()
+    monter(stockage)
+    await titreEcran('Mon foyer')
+    await user.click(screen.getByRole('button', { name: 'Nouveau' }))
+    const revenu = screen.getByLabelText('Revenu net imposable annuel')
+    await user.clear(revenu)
+    await user.type(revenu, '12a')
+    expect(screen.getByRole('alert').textContent).toMatch(/Nombre attendu/)
+    const choix = screen.getByLabelText('Dossier')
+    await user.selectOptions(choix, 'essai')
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.getByLabelText<HTMLInputElement>('Revenu net imposable annuel').value.replace(/\s/g, '')).toBe('90000')
+  })
+
+  it('détail : au changement de scénario, les sensibilités de l’ancien ne restent pas affichées', async () => {
+    window.location.hash = '/detail'
+    monter(stockageEssai())
+    await titreEcran('Détail d’un scénario')
+    await screen.findByText(/^Tornado du TRI/, {}, ATTENTE_CALCUL)
+    const choix = screen.getByLabelText<HTMLSelectElement>('Scénario')
+    act(() => {
+      // Changement synchrone : le calcul différé du nouveau scénario n'a pas encore pu commencer.
+      choix.value = 'S1'
+      choix.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    expect(screen.queryByText(/^Tornado du TRI/)).toBeNull()
+    expect(await screen.findByText(/^Tornado du TRI/, {}, ATTENTE_CALCUL)).toBeTruthy()
+  })
+
   it('un enregistrement fait dans un autre onglet est rechargé ; son choix de dossier ne l’est pas', async () => {
     const stockage = stockageEssai()
     monter(stockage)
