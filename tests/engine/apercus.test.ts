@@ -1,0 +1,121 @@
+import { describe, expect, it } from 'vitest'
+import { apercuBien, situationFiscale } from '../../src/engine/apercus'
+import { anomaliesDossier, champsAComplete, dossierVierge, type Dossier } from '../../src/engine/dossier'
+import { calculerImpot } from '../../src/engine/impot-revenu'
+import { prixTtc } from '../../src/engine/lli'
+import { coefficientSurface, plafondLoyer, plafondLoyerIntermediaire } from '../../src/engine/loyer-plafond'
+import { eligibiliteScenario, SCENARIOS } from '../../src/engine/scenario'
+import { parametresFiscaux2026 as p } from '../../src/params'
+import { dossierAncien, dossierConcubins, dossierType } from './fixtures/dossier-type'
+
+const AUJOURD_HUI = '2026-10-07'
+
+describe('dossier vierge et saisies manquantes', () => {
+  it('le dossier vierge est cohérent mais signale chaque saisie manquante', () => {
+    const v = dossierVierge(AUJOURD_HUI, p)
+    expect(anomaliesDossier(v)).toEqual([])
+    expect(champsAComplete(v)).toEqual([
+      'Revenu imposable (Foyer)',
+      'Capacité d’épargne mensuelle',
+      'Prix hors taxes',
+      'Frais de notaire',
+      'Surface habitable',
+      'Loyer de marché nu',
+      'Loyer de marché meublé',
+    ])
+    expect(v.bien.date_acquisition).toBe(AUJOURD_HUI)
+    expect(v.financement.duree_mois).toBe(p.financement.duree_max_pret_ans.valeur * 12)
+  })
+
+  it('les dossiers d’essai sont complets', () => {
+    for (const d of [dossierType, dossierAncien, dossierConcubins]) expect(champsAComplete(d)).toEqual([])
+  })
+
+  it('la durée du prêt n’est demandée que s’il y a un emprunt ; le prix d’un logement ancien n’est pas hors taxes', () => {
+    const sansDuree: Dossier = { ...dossierType, financement: { ...dossierType.financement, duree_mois: 0 } }
+    expect(champsAComplete(sansDuree)).toEqual(['Durée du prêt'])
+    expect(champsAComplete({ ...sansDuree, financement: { ...sansDuree.financement, emprunt: 0 } })).toEqual([])
+    expect(champsAComplete({ ...dossierAncien, bien: { ...dossierAncien.bien, prix_ht: 0 } })).toEqual(['Prix d’achat'])
+  })
+})
+
+describe('situation fiscale sans l’opération (écran 1)', () => {
+  it('reprend l’impôt et la tranche marginale du barème', () => {
+    const [s] = situationFiscale(dossierType, p)
+    const attendu = calculerImpot(90000, { parts: 2, imposition_commune: true }, p)
+    expect(s?.impot).toBe(attendu.impot_du)
+    expect(s?.tmi).toBe(attendu.tmi)
+    expect(s?.tmi).toBe(0.3)
+    expect(s?.niches_disponibles).toBe(p.impot_revenu.plafonnement_global_niches.valeur)
+  })
+
+  it('déduit les avantages fiscaux déjà utilisés du plafond global des niches, sans descendre sous zéro', () => {
+    const plafond = p.impot_revenu.plafonnement_global_niches.valeur
+    const avec = (utilises: number): Dossier => ({
+      ...dossierType,
+      foyers: { ...dossierType.foyers, foyers: dossierType.foyers.foyers.map((f) => ({ ...f, avantages_niches_deja_utilises: utilises })) },
+    })
+    expect(situationFiscale(avec(4000), p)[0]?.niches_disponibles).toBe(plafond - 4000)
+    expect(situationFiscale(avec(plafond * 2), p)[0]?.niches_disponibles).toBe(0)
+  })
+
+  it('impose séparément chaque concubin', () => {
+    const situations = situationFiscale(dossierConcubins, p)
+    const attendu = calculerImpot(45000, { parts: 1, imposition_commune: false }, p)
+    expect(situations.map((s) => s.libelle)).toEqual(['Concubin 1', 'Concubin 2'])
+    expect(situations.map((s) => s.impot)).toEqual([attendu.impot_du, attendu.impot_du])
+  })
+
+  it('un revenu encore vide donne un impôt nul', () => {
+    expect(situationFiscale(dossierVierge(AUJOURD_HUI, p), p).map((s) => [s.impot, s.tmi])).toEqual([[0, 0]])
+  })
+})
+
+describe('aperçu du bien (écran 2)', () => {
+  it('calcule surface, coefficient, plafond intermédiaire et prix TTC avec les fonctions du moteur', () => {
+    const a = apercuBien(dossierType, p)
+    const surface = dossierType.bien.surface
+    expect(a.surface_prise_en_compte).toBe(45)
+    expect(a.coefficient_surface).toBe(coefficientSurface(45, p))
+    expect(a.loyer_plafond_intermediaire).toBe(plafondLoyerIntermediaire('A', surface, p).loyer_plafond_mensuel)
+    expect(a.loyer_plafond_social).toBeNull()
+    expect(a.prix_ttc_taux_normal).toBe(prixTtc(250000, p.lli.tva_taux_normal.valeur))
+    expect(a.prix_ttc_taux_reduit).toBe(prixTtc(250000, p.lli.tva_taux_reduit.valeur))
+    expect(a.prix_m2).toBeCloseTo(a.prix_ttc_taux_normal / 45, 6)
+    expect(a.anomalies).toEqual([])
+  })
+
+  it('affiche les plafonds social et très social une fois les plafonds au m² de la commune saisis', () => {
+    const d: Dossier = { ...dossierType, bien: { ...dossierType.bien, plafonds_m2_loc_avantages: { social: 12, tres_social: 9 } } }
+    const a = apercuBien(d, p)
+    expect(a.loyer_plafond_social).toBe(plafondLoyer(12, d.bien.surface, p).loyer_plafond_mensuel)
+    expect(a.loyer_plafond_tres_social).toBe(plafondLoyer(9, d.bien.surface, p).loyer_plafond_mensuel)
+  })
+
+  it('un logement ancien n’a pas de TVA : les deux prix valent le prix saisi', () => {
+    const a = apercuBien(dossierAncien, p)
+    expect([a.prix_ttc_taux_normal, a.prix_ttc_taux_reduit]).toEqual([150000, 150000])
+  })
+
+  it('donne l’éligibilité de chaque scénario, avec ses motifs', () => {
+    const a = apercuBien(dossierType, p)
+    expect(a.eligibilites.map((e) => e.id)).toEqual([...SCENARIOS])
+    for (const e of a.eligibilites) expect(e.eligibilite, e.id).toEqual(eligibiliteScenario(dossierType, e.id, p))
+    const s5 = a.eligibilites.find((e) => e.id === 'S5_9')
+    expect(s5?.eligibilite.eligible).toBe(false)
+    expect(s5?.eligibilite.motifs.length).toBeGreaterThan(0)
+  })
+
+  it('reste calculable pendant la saisie : surface vide, montants nuls', () => {
+    const a = apercuBien(dossierVierge(AUJOURD_HUI, p), p)
+    expect([a.surface_prise_en_compte, a.coefficient_surface, a.loyer_plafond_intermediaire, a.prix_m2]).toEqual([null, null, null, null])
+    expect(a.eligibilites).toHaveLength(SCENARIOS.length)
+  })
+
+  it('suspend l’éligibilité tant que le dossier est incohérent', () => {
+    const d: Dossier = { ...dossierConcubins, foyers: { ...dossierConcubins.foyers, foyers: dossierType.foyers.foyers } }
+    const a = apercuBien(d, p)
+    expect(a.anomalies.length).toBeGreaterThan(0)
+    expect(a.eligibilites).toEqual([])
+  })
+})

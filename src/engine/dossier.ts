@@ -9,23 +9,27 @@
  * - le prix saisi comprend le parking et les annexes acquis avec le logement ;
  * - les dates sont ramenées au premier jour de leur mois par le calendrier.
  */
-import type { EnveloppePlacement, ModeEvolution, PonderationsObjectifs, ScenarioPrix, Zone } from '../params'
+import type { EnveloppePlacement, ModeEvolution, ParametresFiscaux, PonderationsObjectifs, ScenarioPrix, Zone } from '../params'
 import { hypothesesDefaut } from '../params'
 import { verifierQuotesParts, type EtatBien, type TypeLogement } from './commun'
+import { MOIS_PAR_AN } from './constantes-numeriques'
 import { comparerDates, lireDate } from './dates'
 import type { Millesime } from './deficits'
 import type { PerimetreAssimileLli } from './lli'
 import type { Surface } from './loyer-plafond'
 import type { FraisSci } from './sci'
 
-export type SituationFoyers = 'personne_seule' | 'marie_pacse' | 'concubins'
+export const SITUATIONS_FOYERS = ['personne_seule', 'marie_pacse', 'concubins'] as const
+export type SituationFoyers = (typeof SITUATIONS_FOYERS)[number]
+
+export const REGIMES_REVENUS_FONCIERS = ['micro', 'reel'] as const
 
 export interface RevenusFonciersExistants {
   /** Recettes brutes annuelles des autres biens loués nus. */
   readonly recettes: number
   /** Charges déductibles annuelles de ces biens, hors intérêts (retenues au régime réel). */
   readonly charges: number
-  readonly regime: 'micro' | 'reel'
+  readonly regime: (typeof REGIMES_REVENUS_FONCIERS)[number]
 }
 
 export interface FoyerFiscal {
@@ -55,6 +59,13 @@ export interface Foyers {
 }
 
 export interface Bien {
+  /** Commune, nombre de pièces, quartier prioritaire, travaux et étiquettes énergétiques : informations sans effet sur le calcul. */
+  readonly commune?: string
+  readonly nombre_pieces?: number
+  readonly qpv?: boolean
+  readonly nature_travaux?: string
+  readonly dpe_avant?: string
+  readonly dpe_apres?: string
   readonly etat: EtatBien
   readonly type_logement: TypeLogement
   readonly zone: Zone
@@ -179,6 +190,74 @@ export function hypothesesParDefaut(marche: ScenarioMarche = 'central'): Hypothe
     ira_appliquees: h.financement.ira_appliquees.valeur,
     csg_deductible: false,
   }
+}
+
+/**
+ * Dossier vierge : montants à zéro, dates du jour, hypothèses par défaut. Couple marié ou pacsé,
+ * comme l'utilisateur du cahier des charges (§2) ; prêt sur la durée maximale usuelle.
+ */
+export function dossierVierge(aujourdHui: string, p: ParametresFiscaux): Dossier {
+  return {
+    foyers: {
+      situation: 'marie_pacse',
+      foyers: [{ libelle: 'Foyer', revenu_imposable: 0, parts: 2, quote_part: 1 }],
+      capacite_epargne_mensuelle: 0,
+      apport_disponible: 0,
+    },
+    bien: {
+      etat: 'vefa',
+      type_logement: 'appartement_collectif',
+      zone: 'A',
+      commune_denormandie: false,
+      programme_lli: false,
+      surface: { habitable: 0 },
+      prix_ht: 0,
+      frais_notaire: 0,
+      date_acquisition: aujourdHui,
+      date_livraison: aujourdHui,
+      date_debut_location: aujourdHui,
+      loyer_marche_nu: 0,
+      loyer_marche_meuble: 0,
+      taxe_fonciere: 0,
+      charges_copropriete_non_recuperables: 0,
+    },
+    financement: {
+      emprunt: 0,
+      taux_annuel: 0,
+      duree_mois: p.financement.duree_max_pret_ans.valeur * MOIS_PAR_AN,
+      differe_mois: 0,
+      taux_assurance_annuel: 0,
+      frais_dossier: 0,
+      frais_garantie: 0,
+    },
+    exploitation: {
+      frais_gestion_part_loyers: 0,
+      assurance_loyers_impayes_part_loyers: 0,
+      assurance_pno_annuelle: 0,
+      lmnp: { mobilier: 0, comptable_annuel: 0, cfe_annuelle: 0 },
+      sci: { constitution: 0, comptabilite_annuelle: 0, frais_bancaires_annuels: 0 },
+    },
+    hypotheses: hypothesesParDefaut('central'),
+  }
+}
+
+/** Saisies encore vides dont la simulation a besoin ; liste vide quand le dossier est complet. */
+export function champsAComplete(d: Dossier): string[] {
+  const manquants: string[] = []
+  for (const f of d.foyers.foyers) {
+    if (!(f.revenu_imposable > 0)) manquants.push(`Revenu imposable (${f.libelle})`)
+    if (!(f.parts > 0)) manquants.push(`Nombre de parts (${f.libelle})`)
+  }
+  if (!(d.foyers.capacite_epargne_mensuelle > 0)) manquants.push('Capacité d’épargne mensuelle')
+  const b = d.bien
+  if (!(b.prix_ht > 0)) manquants.push(b.etat === 'ancien' ? 'Prix d’achat' : 'Prix hors taxes')
+  if (!(b.frais_notaire > 0)) manquants.push('Frais de notaire')
+  if (!(b.surface.habitable > 0)) manquants.push('Surface habitable')
+  if (!(b.loyer_marche_nu > 0)) manquants.push('Loyer de marché nu')
+  if (!(b.loyer_marche_meuble > 0)) manquants.push('Loyer de marché meublé')
+  const f = d.financement
+  if (f.emprunt > 0 && !(f.duree_mois > 0)) manquants.push('Durée du prêt')
+  return manquants
 }
 
 /** Pondérations et horizon par défaut (§5.6), à ajuster dans l'écran Recommandation. */
