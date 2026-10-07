@@ -13,7 +13,7 @@ Application web locale qui simule un investissement locatif sous plusieurs dispo
 | 3 | Moteur : Jeanbrun, LLI/SCI, LMNP, Denormandie, placement de référence | livrée |
 | 4 | Orchestration des scénarios, indicateurs, sensibilités | livrée |
 | 5 | Recommandation et contre-expertise | livrée |
-| 6 | Interface (écrans 1 à 9), exports, persistance | à venir |
+| 6 | Interface (écrans 1 à 9), exports, persistance | livrée |
 | 7 | Jeu d'essai préchargé, README final | à venir |
 
 ## Installation
@@ -31,6 +31,34 @@ npm run build      # contrôle de types puis construction dans dist/
 
 Aucun backend, aucun compte, aucun appel réseau à l'exécution.
 
+## Utilisation
+
+Lancer `npm run dev` puis ouvrir http://localhost:5173. L'application s'ouvre sur un dossier vierge ; tant qu'il manque une saisie, les écrans de résultats disent laquelle et où la faire.
+
+| Écran | Contenu |
+|---|---|
+| 1. Mon foyer | Statut du couple, revenu imposable (aide au calcul depuis les salaires), parts (aide selon les enfants à charge), revenus fonciers et déficits existants, niches déjà utilisées, crédits en cours, changement de revenu prévu, capacité d'épargne, apport ; impôt actuel, tranche marginale, niches disponibles et taux d'endettement en direct |
+| 2. Le bien et le financement | Bien, prix, calendrier, travaux, loyers de marché, charges, prêt, frais d'exploitation ; surface prise en compte, coefficient de surface, loyers plafonds, prix TTC et pastille d'éligibilité de chaque dispositif, avec ses motifs, en direct |
+| 3. Hypothèses | Trois scénarios de prix (pessimiste, central, optimiste), loyers et charges, inflation, barème, revenus, placement de référence ; bouton « Hypothèses prudentes » |
+| 4. Comparaison | Scénarios × indicateurs à l'horizon choisi ; chaque indicateur se déplie jusqu'à sa formule et au tableau annuel ; scénarios inéligibles grisés avec leurs motifs ; flux cumulé après impôt, capital net par horizon, décomposition de l'avantage fiscal ; export CSV ou XLSX |
+| 5. Recommandation | Curseurs d'objectifs, classement recalculé en direct ; recommandation rédigée (phrase, trois raisons chiffrées, risques, seuils de bascule) et alertes ; barèmes qualitatifs modifiables |
+| 6. Détail d'un scénario | Tableau annuel complet, formule de chaque colonne en infobulle, détail des charges, revente et plus-value, sensibilités (tornado, tableau croisé, prix de revente d'équilibre, pénalité de sortie, option écartée des frais d'acquisition en LMNP) ; export CSV ou XLSX (tableau, revente, formules) |
+| 7. Contre-expertise du vendeur | Saisie de la simulation remise par le vendeur ; écarts de plus de 5 %, hypothèses optimistes relevées, rejeu avec les hypothèses prudentes |
+| 8. Paramètres fiscaux | Lecture filtrable de `fiscal-2026.json` : statut, date de lecture de la source, lien officiel, commentaire, arbitrage ; modification contrôlée, retour à la valeur du fichier, export du fichier modifié |
+| 9. Questions à poser | Questions au vendeur, au notaire, à l'expert-comptable et à la banque, selon le scénario, les alertes, les valeurs à confirmer et la contre-expertise ; imprimables |
+
+L'horizon de revente est commun aux écrans Comparaison, Recommandation et Détail : c'est l'horizon envisagé des objectifs, enregistré avec le dossier. Les calculs longs (recommandation complète avec ses seuils de bascule, environ 0,3 s ; sensibilités) partent après une courte pause dans la saisie ; le résultat précédent reste affiché, atténué, pendant le calcul.
+
+Au clavier, le premier arrêt est le lien « Aller au contenu » ; les écrans sont des liens (Tab puis Entrée) ; formules et détails se déplient avec Entrée ou Espace ; au changement d'écran, le focus passe au contenu.
+
+### Dossiers, exports et impression
+
+- **Enregistrement automatique** dans le navigateur (`localStorage`, clés `investissement-locatif/dossiers` et `investissement-locatif/parametres`) : plusieurs dossiers nommés, que l'on crée, copie, renomme ou supprime. Un contenu illisible n'est jamais écrasé : il est copié sous une clé datée et signalé.
+- **Export et import JSON** : « Exporter (JSON) » produit un fichier `*.dossier.json` (dossier, objectifs et simulation du vendeur) ; « Importer (JSON) » le relit en contrôlant chaque champ et refuse un fichier invalide en citant les champs en cause. Ces fichiers sont exclus du dépôt par le `.gitignore`.
+- **Tableaux** : CSV au format français (point-virgule, virgule décimale, UTF-8 avec BOM, lisible directement par Excel) et classeur XLSX (montants et taux formatés, formules dans une feuille dédiée), produits dans le navigateur.
+- **Synthèse imprimable** : « Imprimer la synthèse » ouvre l'impression du navigateur (enregistrement en PDF possible) avec le foyer, le bien, la recommandation, le classement, les indicateurs clés et les valeurs à confirmer du scénario recommandé. L'écran Questions à poser s'imprime aussi.
+- **Paramètres modifiés** : ils s'appliquent à tous les dossiers du navigateur et sont signalés dans le menu. Une modification est refusée si la valeur n'a pas la forme de l'original ou si les paramètres ne passent plus la validation ; un jeu de modifications enregistré devenu invalide est ignoré en bloc, avec son motif. « Exporter fiscal-2026.json » produit le fichier complet modifié, à reporter dans le dépôt avec une source et une date de vérification à jour (indentation de deux espaces : le différentiel montre aussi la mise en forme).
+
 ## Organisation du code
 
 ```
@@ -38,18 +66,22 @@ src/
   params/          paramètres sourcés et leur validation : seul endroit où figurent taux, plafonds et dates
     fiscal-2026.json         règles fiscales, chacune avec sa source officielle
     hypotheses-defaut.json   hypothèses de marché, objectifs et barèmes de la recommandation par défaut (§5.5, §5.6, §10)
-  engine/          moteur de calcul : fonctions pures sans effet de bord (étapes 2 à 5)
-  ui/              interface React, sans aucun calcul fiscal (étape 6)
+    surcharges.ts            modifications locales des paramètres (écran 8), contrôlées avant application
+  engine/          moteur de calcul : fonctions pures sans effet de bord (étapes 2 à 6)
+  export/          exports CSV et XLSX des tableaux du moteur, sans recalcul
+  ui/              interface React (écrans, composants, état, stockage local), sans aucun calcul fiscal
 tests/
   engine/          tests du moteur : valeurs du cahier des charges, exemples officiels, cas complets
     fixtures/      jeu d'essai fictif (T2 de 45 m² en zone A), ses variantes et des simulations de vendeur fictives
-  params/          validation et cohérence des paramètres
+  export/          CSV et XLSX (archive relue, XML contrôlé)
+  ui/              saisie, état, stockage local, application complète dans jsdom
+  params/          validation, cohérence et modifications locales des paramètres
   garde-fous/      aucune valeur fiscale en dur, HYPOTHESES.md à jour
 scripts/           outils de mise à jour annuelle des paramètres
 docs/              cas de test officiels relevés lors de la vérification
 ```
 
-Choix techniques : Vite 8, React 19, TypeScript 6.0 en mode strict, Vitest 5, ESLint 10 avec l'analyse typée de typescript-eslint. TypeScript est figé sur la version 6.0 : la version 7 n'expose plus l'API utilisée par typescript-eslint et par le garde-fou des valeurs en dur. Recharts sera ajouté avec l'interface (étape 6).
+Choix techniques : Vite 8, React 19, TypeScript 6.0 en mode strict, Vitest 5, ESLint 10 avec l'analyse typée de typescript-eslint. TypeScript est figé sur la version 6.0 : la version 7 n'expose plus l'API utilisée par typescript-eslint et par le garde-fou des valeurs en dur. Graphiques Recharts, chargés à la demande avec l'écran Comparaison ; classeurs XLSX écrits avec fflate (compression ZIP), chargé au premier export ; tests d'interface avec Testing Library et jsdom.
 
 ## Moteur de calcul
 
@@ -70,9 +102,13 @@ Le moteur (`src/engine/`) est fait de fonctions pures : chacune reçoit les para
 | `placement-reference.ts` | Mêmes décaissements placés au rendement paramétré, fiscalité de sortie du PEA, de l'assurance-vie ou du compte-titres |
 | `dossier.ts`, `calendrier.ts` | Données saisies (foyers, bien, financement, exploitation, hypothèses) et calendrier de l'opération par année civile |
 | `scenario.ts` | Éligibilité et simulation année par année des scénarios S0 à S5 (dont S3 bis à l'IS) : loyers, charges, emprunt, impôt différentiel complet de chaque foyer, prélèvements sociaux, créance, flux, revente, choix du régime, placement équivalent |
-| `indicateurs.ts`, `actualisation.ts` | Effort d'épargne, économie d'impôt et reprise, rendements, TRI, VAN, capital net, écarts au S0 et au placement, blocage, pénalité de sortie, endettement, prix de revente d'équilibre, tornado et tableau croisé |
+| `indicateurs.ts`, `actualisation.ts` | Effort d'épargne, économie d'impôt et reprise, rendements, TRI, VAN, capital net, écarts au S0 et au placement, blocage, pénalité de sortie, endettement, prix de revente d'équilibre, tornado et tableau croisé, option écartée des frais d'acquisition en LMNP |
 | `recommandation.ts` | Filtres d'éligibilité et de faisabilité, score sur 100 pondéré par les objectifs, classement, « ne pas investir » quand le placement domine, texte généré par règles (phrase, trois raisons chiffrées, risques, seuils de bascule sur le prix de revente, les revenus et l'horizon), alertes du §10.5 |
 | `contre-expertise.ts` | Recalcul de la simulation du vendeur avec ses hypothèses, écarts de plus de 5 % avec ses résultats, hypothèses optimistes relevées, rejeu avec les hypothèses prudentes |
+| `apercus.ts`, `series.ts` | Aperçus pendant la saisie (situation fiscale sans l'opération, loyers plafonds, éligibilité), données des graphiques de la comparaison |
+| `presentation.ts` | Libellé, format et formule de chaque colonne du tableau annuel, de chaque poste de la revente et de chaque indicateur |
+| `questions.ts` | Questions à poser par interlocuteur, chacune avec son motif |
+| `dossier-json.ts` | Fichier `*.dossier.json` : export et relecture contrôlée, champ par champ |
 | `deficits.ts`, `arrondis.ts`, `commun.ts`, `dates.ts`, `format.ts` | Stocks de déficits par millésime, arrondis, éligibilité motivée, quotes-parts, dates ISO, mise en forme des motifs |
 
 ## Paramètres fiscaux
@@ -83,7 +119,7 @@ Chaque valeur de `src/params/fiscal-2026.json` porte `valeur`, `unite`, `source`
 - `texte_non_consulte` : règle rapportée de la loi mais non lue directement ;
 - `a_confirmer` : à valider par un notaire, un expert-comptable ou par rescrit, y compris les hypothèses de modélisation que les textes ne fixent pas.
 
-Un paramètre peut aussi porter un champ `arbitrage` (date, choix retenu, option écartée) : c'est une hypothèse choisie par l'utilisateur lorsqu'une règle admettait plusieurs lectures ou contredisait le cahier des charges. Les arbitrages sont listés dans `HYPOTHESES.md` (section 4) et seront signalés dans l'interface.
+Un paramètre peut aussi porter un champ `arbitrage` (date, choix retenu, option écartée) : c'est une hypothèse choisie par l'utilisateur lorsqu'une règle admettait plusieurs lectures ou contredisait le cahier des charges. Les arbitrages sont listés dans `HYPOTHESES.md` (section 4) et signalés dans l'interface, avec leur paramètre (écran Paramètres fiscaux).
 
 Seuls les domaines de l'État listés dans `src/params/sources-officielles.ts` sont admis comme sources. La liste des points non vérifiés, les écarts relevés avec le cahier des charges et les simplifications figurent dans [`HYPOTHESES.md`](HYPOTHESES.md).
 
@@ -110,7 +146,7 @@ Outils :
 
 ## Données personnelles
 
-Le dépôt ne contient aucune donnée personnelle : ni revenus, ni dossier de simulation, ni export. Les dossiers vivront dans le navigateur (`localStorage`) et dans des exports JSON locaux (étape 6). Le `.gitignore` exclut `dossiers/`, `exports/`, `*.dossier.json`, `docs/plaquettes/` (documents du vendeur) et `.env*`.
+Le dépôt ne contient aucune donnée personnelle : ni revenus, ni dossier de simulation, ni export. Les dossiers vivent dans le navigateur (`localStorage`) et dans des exports JSON locaux ; rien ne quitte l'ordinateur. Le `.gitignore` exclut `dossiers/`, `exports/`, `*.dossier.json`, `docs/plaquettes/` (documents du vendeur) et `.env*` : ranger les exports CSV et XLSX dans `exports/` s'ils doivent rester dans le dossier du projet.
 
 ## Limites
 
@@ -119,6 +155,7 @@ Le dépôt ne contient aucune donnée personnelle : ni revenus, ni dossier de si
 - Le cumul Jeanbrun + LLI n'est mentionné par aucune source officielle consultée, ni pour l'autoriser ni pour l'interdire.
 - Hors périmètre ou simplifiés : SCI à l'IS (variante indicative), loueur en meublé professionnel, IFI, CEHR et CDHR, démembrement de propriété, intérêts intercalaires détaillés (différé simple), CSG déductible (option désactivée par défaut), Jeanbrun dans l'ancien, déficit foncier majoré pour travaux de rénovation énergétique, outre-mer, demi-parts particulières et frais réels, option du PFU pour le barème, sortie du LLI par cession des parts de la SCI. Détail dans `HYPOTHESES.md`, section 6.
 - Les points `a_confirmer` doivent être validés par un notaire ou un expert-comptable avant toute signature.
+- Les dossiers et les paramètres modifiés restent dans le navigateur où ils ont été saisis : exporter le dossier en JSON pour le conserver ou changer d'ordinateur. Vider les données du site efface les dossiers non exportés.
 
 ## Conventions
 
