@@ -1,0 +1,149 @@
+/**
+ * Persistance locale (§4) : les dossiers et les modifications de paramètres
+ * vivent dans le `localStorage` du navigateur, jamais dans le dépôt. Chaque
+ * dossier est stocké au format du fichier d'export et relu avec les mêmes
+ * contrôles. Un contenu illisible est mis de côté avant d'être remplacé.
+ */
+import type { SimulationVendeur } from '../../engine/contre-expertise'
+import type { Dossier } from '../../engine/dossier'
+import { fichierDossier, lireFichierDossier, type FichierDossier } from '../../engine/dossier-json'
+import type { SurchargeParametre, SurchargesParametres } from '../../params'
+
+export const CLE_DOSSIERS = 'investissement-locatif/dossiers'
+export const CLE_PARAMETRES = 'investissement-locatif/parametres'
+const VERSION_STOCKAGE = 1
+
+/** Sous-ensemble de l'interface `Storage`, remplaçable dans les tests. */
+export interface Stockage {
+  getItem(cle: string): string | null
+  setItem(cle: string, valeur: string): void
+}
+
+export interface DossierEnregistre {
+  readonly id: string
+  readonly nom: string
+  readonly dossier: Dossier
+  readonly simulation_vendeur?: SimulationVendeur
+  /** Horodatage ISO de la dernière modification. */
+  readonly modifie_le: string
+}
+
+export interface EtatDossiers {
+  readonly dossiers: readonly DossierEnregistre[]
+  readonly courant: string | null
+}
+
+export interface Lecture<T> {
+  readonly valeur: T
+  /** Contenus écartés, et où ils ont été mis de côté. */
+  readonly erreurs: readonly string[]
+}
+
+/** `localStorage` s'il est accessible (navigation privée stricte, iframe isolée : non). */
+export function stockageNavigateur(): Stockage | null {
+  try {
+    const s = window.localStorage
+    const essai = `${CLE_DOSSIERS}/essai`
+    s.setItem(essai, '1')
+    s.removeItem(essai)
+    return s
+  } catch {
+    return null
+  }
+}
+
+function lireJson(stockage: Stockage, cle: string): { ok: true; contenu: unknown } | { ok: false } {
+  const brut = stockage.getItem(cle)
+  if (brut === null) return { ok: true, contenu: undefined }
+  try {
+    return { ok: true, contenu: JSON.parse(brut) as unknown }
+  } catch {
+    return { ok: false }
+  }
+}
+
+/** Copie un contenu illisible sous une clé datée, pour ne jamais l'écraser sans trace. */
+function mettreDeCote(stockage: Stockage, cle: string, horodatage: string): string {
+  const copie = `${cle}.illisible-${horodatage}`
+  try {
+    stockage.setItem(copie, stockage.getItem(cle) ?? '')
+    return `copie conservée sous la clé « ${copie} »`
+  } catch {
+    return 'copie impossible (stockage plein)'
+  }
+}
+
+function estObjet(x: unknown): x is Record<string, unknown> {
+  return typeof x === 'object' && x !== null && !Array.isArray(x)
+}
+
+/** Dossiers enregistrés ; ceux qui ne se relisent plus sont signalés et mis de côté. */
+export function lireDossiers(stockage: Stockage | null, horodatage: string): Lecture<EtatDossiers> {
+  const vide: EtatDossiers = { dossiers: [], courant: null }
+  if (stockage === null) return { valeur: vide, erreurs: [] }
+  const lu = lireJson(stockage, CLE_DOSSIERS)
+  if (!lu.ok || (lu.contenu !== undefined && (!estObjet(lu.contenu) || lu.contenu.version !== VERSION_STOCKAGE || !Array.isArray(lu.contenu.dossiers)))) {
+    return { valeur: vide, erreurs: [`Dossiers enregistrés illisibles : ${mettreDeCote(stockage, CLE_DOSSIERS, horodatage)}`] }
+  }
+  if (lu.contenu === undefined) return { valeur: vide, erreurs: [] }
+  const contenu = lu.contenu as { dossiers: unknown[]; courant?: unknown }
+  const dossiers: DossierEnregistre[] = []
+  const erreurs: string[] = []
+  for (const [k, entree] of contenu.dossiers.entries()) {
+    const id = estObjet(entree) && typeof entree.id === 'string' ? entree.id : null
+    const lecture = estObjet(entree) ? lireFichierDossier(entree.fichier) : null
+    if (id === null || lecture === null || !lecture.ok) {
+      const detail = lecture !== null && !lecture.ok ? ` (${lecture.erreurs.slice(0, 3).join(' ; ')})` : ''
+      erreurs.push(`Dossier n° ${String(k + 1)} illisible${detail}`)
+      continue
+    }
+    const fichier = (entree as { fichier: FichierDossier }).fichier
+    dossiers.push({
+      id,
+      nom: lecture.nom,
+      dossier: lecture.dossier,
+      ...(lecture.simulation_vendeur === undefined ? {} : { simulation_vendeur: lecture.simulation_vendeur }),
+      modifie_le: typeof fichier.enregistre_le === 'string' ? fichier.enregistre_le : horodatage,
+    })
+  }
+  if (erreurs.length > 0) erreurs.push(`Contenu d’origine : ${mettreDeCote(stockage, CLE_DOSSIERS, horodatage)}`)
+  const courant = typeof contenu.courant === 'string' && dossiers.some((x) => x.id === contenu.courant) ? contenu.courant : (dossiers[0]?.id ?? null)
+  return { valeur: { dossiers, courant }, erreurs }
+}
+
+/** Enregistre les dossiers ; retourne un message si le navigateur refuse (stockage plein ou interdit). */
+export function ecrireDossiers(stockage: Stockage | null, etat: EtatDossiers): string | null {
+  if (stockage === null) return 'Stockage du navigateur indisponible : exportez vos dossiers en JSON pour les conserver'
+  const contenu = {
+    version: VERSION_STOCKAGE,
+    courant: etat.courant,
+    dossiers: etat.dossiers.map((x) => ({ id: x.id, fichier: fichierDossier(x.nom, x.dossier, x.modifie_le, x.simulation_vendeur) })),
+  }
+  try {
+    stockage.setItem(CLE_DOSSIERS, JSON.stringify(contenu))
+    return null
+  } catch {
+    return 'Enregistrement impossible : stockage du navigateur plein ou interdit ; exportez vos dossiers en JSON'
+  }
+}
+
+/** Modifications de paramètres enregistrées ; un contenu illisible est mis de côté. */
+export function lireSurcharges(stockage: Stockage | null, horodatage: string): Lecture<SurchargesParametres> {
+  if (stockage === null) return { valeur: {}, erreurs: [] }
+  const lu = lireJson(stockage, CLE_PARAMETRES)
+  if (lu.ok && lu.contenu === undefined) return { valeur: {}, erreurs: [] }
+  if (!lu.ok || !estObjet(lu.contenu) || !Object.values(lu.contenu).every(estObjet)) {
+    return { valeur: {}, erreurs: [`Paramètres modifiés illisibles : ${mettreDeCote(stockage, CLE_PARAMETRES, horodatage)}`] }
+  }
+  return { valeur: lu.contenu as Record<string, SurchargeParametre>, erreurs: [] }
+}
+
+export function ecrireSurcharges(stockage: Stockage | null, surcharges: SurchargesParametres): string | null {
+  if (stockage === null) return 'Stockage du navigateur indisponible : les paramètres modifiés seront perdus à la fermeture'
+  try {
+    stockage.setItem(CLE_PARAMETRES, JSON.stringify(surcharges))
+    return null
+  } catch {
+    return 'Enregistrement des paramètres modifiés impossible : stockage du navigateur plein ou interdit'
+  }
+}
