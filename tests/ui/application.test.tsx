@@ -154,6 +154,17 @@ describe('application', () => {
     imprimer.mockRestore()
   })
 
+  it('le lien d’évitement déplace le focus sans changer d’écran', async () => {
+    const user = userEvent.setup()
+    window.location.hash = '/hypotheses'
+    monter(stockageEssai())
+    await titreEcran('Hypothèses')
+    await user.click(screen.getByRole('link', { name: 'Aller au contenu' }))
+    expect(window.location.hash).toBe('#/hypotheses')
+    expect(document.activeElement?.id).toBe('contenu')
+    expect(screen.getByRole('heading', { level: 2, name: 'Hypothèses' })).toBeTruthy()
+  })
+
   it('un enregistrement fait dans un autre onglet est rechargé ; son choix de dossier ne l’est pas', async () => {
     const stockage = stockageEssai()
     monter(stockage)

@@ -90,7 +90,15 @@ export function App() {
 
   return (
     <div className={impression === null ? 'page' : 'page impression-synthese'}>
-      <a className="lien-evitement" href="#contenu">
+      <a
+        className="lien-evitement"
+        href="#contenu"
+        onClick={(e) => {
+          // L'ancre de l'adresse désigne l'écran affiché : le lien déplace seulement le focus.
+          e.preventDefault()
+          contenu.current?.focus()
+        }}
+      >
         Aller au contenu
       </a>
       <header className="entete ne-pas-imprimer">
