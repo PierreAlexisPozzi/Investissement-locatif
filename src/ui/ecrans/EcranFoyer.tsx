@@ -342,7 +342,7 @@ export function EcranFoyer() {
               onChange={(situation) => {
                 majFoyers((x) => ({ ...x, situation, foyers: foyersPourSituation(x.foyers, situation, p) }))
               }}
-              aide="Changer de statut ramène les parts aux parts de base : ressaisissez les enfants à charge."
+              aide="Changer de statut ramène les parts aux parts de base (enfants à ressaisir). Deux concubins qui se marient ou se pacsent forment un foyer qui additionne leurs revenus ; vérifiez ensuite ses saisies."
             />
             <ChampMontant
               libelle="Capacité d’épargne mensuelle maximale"

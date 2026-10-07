@@ -244,9 +244,38 @@ export function dossierVierge(aujourdHui: string, p: ParametresFiscaux): Dossier
 const LIBELLES_PAR_DEFAUT = ['Foyer', 'Couple', 'Concubin 1', 'Concubin 2']
 
 /**
+ * Un foyer à partir de deux (concubins devenus mariés ou pacsés) : revenus, avantages déjà utilisés, crédits en
+ * cours et revenus fonciers additionnés, déficits fonciers réunis ; un changement de revenu prévu, propre à une
+ * personne, est à ressaisir pour le foyer. Les revenus fonciers passent au réel si l'un des deux y était, ou si
+ * leurs recettes réunies dépassent le seuil du micro-foncier.
+ */
+function fusionnerFoyers(a: FoyerFiscal, b: FoyerFiscal, p: ParametresFiscaux): FoyerFiscal {
+  const somme = (x: number | undefined, y: number | undefined): number | undefined => (x === undefined && y === undefined ? undefined : (x ?? 0) + (y ?? 0))
+  const fa = a.revenus_fonciers_existants
+  const fb = b.revenus_fonciers_existants
+  const recettes = (fa?.recettes ?? 0) + (fb?.recettes ?? 0)
+  const micro = fa?.regime !== 'reel' && fb?.regime !== 'reel' && recettes <= p.micro_foncier.seuil_recettes.valeur
+  const fonciers =
+    fa === undefined && fb === undefined
+      ? undefined
+      : { recettes, charges: (fa?.charges ?? 0) + (fb?.charges ?? 0), regime: micro ? ('micro' as const) : ('reel' as const) }
+  const deficits = [...(a.deficits_fonciers_existants ?? []), ...(b.deficits_fonciers_existants ?? [])]
+  const optionnels = {
+    revenus_fonciers_existants: fonciers,
+    deficits_fonciers_existants: deficits.length > 0 ? deficits : undefined,
+    avantages_niches_deja_utilises: somme(a.avantages_niches_deja_utilises, b.avantages_niches_deja_utilises),
+    mensualites_credits_en_cours: somme(a.mensualites_credits_en_cours, b.mensualites_credits_en_cours),
+    revenus_activite: somme(a.revenus_activite, b.revenus_activite),
+  }
+  const definis = Object.fromEntries(Object.entries(optionnels).filter(([, v]) => v !== undefined)) as Partial<FoyerFiscal>
+  return { libelle: a.libelle, revenu_imposable: a.revenu_imposable + b.revenu_imposable, parts: a.parts, quote_part: 1, ...definis }
+}
+
+/**
  * Foyers fiscaux d'une nouvelle situation du couple : un seul foyer de quote-part 1, ou deux concubins à parts
- * égales. Les saisies du premier foyer sont conservées ; les parts reviennent aux parts de base de la situation
- * (enfants à ressaisir) et les libellés par défaut suivent la situation.
+ * égales. Deux concubins qui se marient ou se pacsent forment un foyer qui additionne leurs revenus ; une personne
+ * seule garde les saisies du premier foyer. Les parts reviennent aux parts de base de la situation (enfants à
+ * ressaisir) et les libellés par défaut suivent la situation.
  */
 export function foyersPourSituation(actuels: readonly FoyerFiscal[], situation: SituationFoyers, p: ParametresFiscaux): FoyerFiscal[] {
   const parts = p.impot_revenu.parts_quotient_familial.valeur
@@ -262,9 +291,10 @@ export function foyersPourSituation(actuels: readonly FoyerFiscal[], situation: 
     ]
   }
   const couple = situation === 'marie_pacse'
+  const unique = couple && premier !== undefined && second !== undefined ? fusionnerFoyers(premier, second, p) : (premier ?? vide)
   return [
     {
-      ...(premier ?? vide),
+      ...unique,
       libelle: libelle(premier, couple ? 'Couple' : 'Foyer'),
       parts: couple ? parts.couple_marie_pacse : parts.personne_seule,
       quote_part: 1,

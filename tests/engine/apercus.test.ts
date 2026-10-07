@@ -53,6 +53,33 @@ describe('changement de situation du couple', () => {
     expect(anomaliesDossier({ ...dossierType, foyers: { ...dossierType.foyers, situation: 'concubins', foyers: f } })).toEqual([])
   })
 
+  it('concubins qui se marient : un foyer qui additionne revenus, crédits et revenus fonciers', () => {
+    const [a, b] = foyersPourSituation(couple, 'concubins', p)
+    if (a === undefined || b === undefined) throw new Error('deux foyers attendus')
+    const deux = [
+      { ...a, revenu_imposable: 45000, mensualites_credits_en_cours: 300, revenus_fonciers_existants: { recettes: 6000, charges: 1000, regime: 'micro' as const } },
+      { ...b, revenu_imposable: 40000, mensualites_credits_en_cours: 200, deficits_fonciers_existants: [{ annee: 2023, montant: 2000 }] },
+    ]
+    const [foyer, autre] = foyersPourSituation(deux, 'marie_pacse', p)
+    expect(autre).toBeUndefined()
+    expect(foyer).toMatchObject({ libelle: 'Couple', revenu_imposable: 85000, mensualites_credits_en_cours: 500, parts: 2, quote_part: 1 })
+    expect(foyer?.revenus_fonciers_existants).toEqual({ recettes: 6000, charges: 1000, regime: 'micro' })
+    expect(foyer?.deficits_fonciers_existants).toEqual([{ annee: 2023, montant: 2000 }])
+    expect(foyersPourSituation(deux, 'personne_seule', p)[0]?.revenu_imposable).toBe(45000)
+  })
+
+  it('concubins qui se marient : revenus fonciers au réel si leurs recettes réunies dépassent le seuil du micro-foncier', () => {
+    const [a, b] = foyersPourSituation(couple, 'concubins', p)
+    if (a === undefined || b === undefined) throw new Error('deux foyers attendus')
+    const seuil = p.micro_foncier.seuil_recettes.valeur
+    const micro = (recettes: number) => ({ recettes, charges: 0, regime: 'micro' as const })
+    const fusion = (ra: number, rb: number) =>
+      foyersPourSituation([{ ...a, revenus_fonciers_existants: micro(ra) }, { ...b, revenus_fonciers_existants: micro(rb) }], 'marie_pacse', p)[0]
+        ?.revenus_fonciers_existants
+    expect(fusion(seuil / 2, seuil / 2)).toEqual({ recettes: seuil, charges: 0, regime: 'micro' })
+    expect(fusion(seuil / 2, seuil / 2 + 1)).toEqual({ recettes: seuil + 1, charges: 0, regime: 'reel' })
+  })
+
   it('retour à un seul foyer : quote-part 1, parts de base, libellé personnalisé conservé', () => {
     const concubins = foyersPourSituation(couple, 'concubins', p).map((x, k) => (k === 0 ? { ...x, libelle: 'Alice' } : x))
     expect(foyersPourSituation(concubins, 'marie_pacse', p).map((x) => [x.libelle, x.parts, x.quote_part])).toEqual([['Alice', 2, 1]])
