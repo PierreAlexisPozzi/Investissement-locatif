@@ -14,7 +14,7 @@ Application web locale qui simule un investissement locatif sous plusieurs dispo
 | 4 | Orchestration des scénarios, indicateurs, sensibilités | livrée |
 | 5 | Recommandation et contre-expertise | livrée |
 | 6 | Interface (écrans 1 à 9), exports, persistance | livrée |
-| 7 | Jeu d'essai préchargé, README final | à venir |
+| 7 | Jeu d'essai préchargé, README final | livrée |
 
 ## Installation
 
@@ -33,7 +33,7 @@ Aucun backend, aucun compte, aucun appel réseau à l'exécution.
 
 ## Utilisation
 
-Lancer `npm run dev` puis ouvrir http://localhost:5173. L'application s'ouvre sur un dossier vierge ; tant qu'il manque une saisie, les écrans de résultats disent laquelle et où la faire.
+Lancer `npm run dev` puis ouvrir http://localhost:5173. Au premier lancement, l'application s'ouvre sur le jeu d'essai fictif (voir plus bas) ; « Nouveau » crée un dossier vierge. Tant qu'il manque une saisie, les écrans de résultats disent laquelle et où la faire.
 
 | Écran | Contenu |
 |---|---|
@@ -50,6 +50,25 @@ Lancer `npm run dev` puis ouvrir http://localhost:5173. L'application s'ouvre su
 L'horizon de revente est commun aux écrans Comparaison, Recommandation et Détail : c'est l'horizon envisagé des objectifs, enregistré avec le dossier. Les calculs longs (recommandation complète avec ses seuils de bascule, environ 0,3 s ; sensibilités) partent après une courte pause dans la saisie ; le résultat précédent reste affiché, atténué, pendant le calcul.
 
 Au clavier, le premier arrêt est le lien « Aller au contenu » ; les écrans sont des liens (Tab puis Entrée) ; formules et détails se déplient avec Entrée ou Espace ; au changement d'écran, le focus passe au contenu.
+
+### Jeu d'essai
+
+Le cas type du cahier des charges (§14) est préchargé au premier lancement, quand le navigateur n'a encore aucun dossier :
+
+- **Bien** : T2 de 45 m² en zone A, acheté 250 000 € HT en VEFA (signature le 15/11/2026, livraison le 30/06/2028, location à partir du 01/09/2028), financé par un prêt de 250 000 € sur 25 ans.
+- **Foyer** : couple marié, 90 000 € de revenu imposable, 2 parts.
+- **Hypothèses** : valeurs par défaut, scénario de prix central.
+- **Simulation du vendeur** : volontairement optimiste, pour l'écran Contre-expertise.
+
+Toutes ses valeurs sont fictives. « Charger le jeu d'essai » l'ajoute à tout moment comme nouveau dossier.
+
+Il est versionné dans `src/jeu-essai/cas-type.json`, au format d'un export de dossier : « Importer (JSON) » le lit aussi. C'est le cas type des tests de non-régression. Avec les paramètres arrêtés au 06/10/2026 :
+
+- impôt actuel de 13 208 € (§13) ;
+- classement Jeanbrun + LLI, Jeanbrun, location nue, LMNP ;
+- recommandation de ne pas investir, le placement de référence l'emportant à 16 ans.
+
+Le modifier change ces tests : le faire en connaissance de cause.
 
 ### Dossiers, exports et impression
 
@@ -70,9 +89,11 @@ src/
   engine/          moteur de calcul : fonctions pures sans effet de bord (étapes 2 à 6)
   export/          exports CSV et XLSX des tableaux du moteur, sans recalcul
   ui/              interface React (écrans, composants, état, stockage local), sans aucun calcul fiscal
+  jeu-essai/       cas type fictif préchargé (§14), au format d'un export de dossier
 tests/
   engine/          tests du moteur : valeurs du cahier des charges, exemples officiels, cas complets
-    fixtures/      jeu d'essai fictif (T2 de 45 m² en zone A), ses variantes et des simulations de vendeur fictives
+    fixtures/      cas type (relu dans src/jeu-essai), ses variantes et une simulation de vendeur prudente
+  jeu-essai/       conformité du cas type préchargé au cahier des charges
   export/          CSV et XLSX (archive relue, XML contrôlé)
   ui/              saisie, état, stockage local, application complète dans jsdom
   params/          validation, cohérence et modifications locales des paramètres
@@ -141,12 +162,12 @@ Outils :
 1. Créer `src/params/fiscal-AAAA.json` à partir du fichier de l'année précédente et adapter l'import de `src/params/index.ts`.
 2. Pour chaque paramètre, ouvrir `url_officielle`, relire la règle et mettre à jour `valeur`, `source` (version du BOFiP, date de la fiche), `date_verification`, `statut` et `commentaire`. Valeurs révisées chaque année : barème de l'impôt, plafond du quotient familial, décote, abattement de 10 %, plafonds de loyer et de ressources (BOI-BAREME-000017), seuils des régimes micro, taux de prélèvements sociaux, dates de fin des dispositifs. Contrôler aussi la loi de finances de l'année et les textes en discussion (section 7 de `HYPOTHESES.md`).
 3. Mettre à jour la section `meta` (date d'arrêt, textes pris en compte).
-4. Lancer `npm run params:liens`, `npm test` et `npm run params:rapport`, puis mettre à jour `HYPOTHESES.md` (les tests signalent tout écart).
+4. Lancer `npm run params:liens`, `npm test` et `npm run params:rapport`, puis mettre à jour `HYPOTHESES.md` (les tests signalent tout écart). Un changement du classement ou de la recommandation du jeu d'essai (`tests/engine/recommandation.test.ts`) doit s'expliquer par les nouvelles valeurs avant d'être reporté dans le test ; si les dates du jeu d'essai sont passées, les décaler d'un an dans `src/jeu-essai/cas-type.json`.
 5. Ouvrir une pull request dédiée.
 
 ## Données personnelles
 
-Le dépôt ne contient aucune donnée personnelle : ni revenus, ni dossier de simulation, ni export. Les dossiers vivent dans le navigateur (`localStorage`) et dans des exports JSON locaux ; rien ne quitte l'ordinateur. Le `.gitignore` exclut `dossiers/`, `exports/`, `*.dossier.json`, `docs/plaquettes/` (documents du vendeur) et `.env*` : ranger les exports CSV et XLSX dans `exports/` s'ils doivent rester dans le dossier du projet.
+Le dépôt ne contient aucune donnée personnelle : ni revenus, ni dossier de simulation, ni export. Le jeu d'essai versionné (`src/jeu-essai/cas-type.json`) est fictif ; son nom évite l'extension `.dossier.json`, exclue du dépôt. Les dossiers vivent dans le navigateur (`localStorage`) et dans des exports JSON locaux ; rien ne quitte l'ordinateur. Le `.gitignore` exclut `dossiers/`, `exports/`, `*.dossier.json`, `docs/plaquettes/` (documents du vendeur) et `.env*` : ranger les exports CSV et XLSX dans `exports/` s'ils doivent rester dans le dossier du projet.
 
 ## Limites
 
