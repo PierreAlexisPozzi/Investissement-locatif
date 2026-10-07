@@ -11,15 +11,19 @@ describe('forme d’une valeur modifiée', () => {
     expect(memeForme(true, 1)).toBe(false)
   })
 
-  it('objets : mêmes clés ; listes : éléments de la forme du premier ; null échangeable avec un nombre', () => {
+  it('objets : mêmes clés ; listes non vides, chaque élément de la forme d’un élément d’origine ; null seulement là où il était', () => {
     expect(memeForme({ taux: 0.1, minimum: 509 }, { minimum: 510, taux: 0.1 })).toBe(true)
     expect(memeForme({ taux: 0.1, minimum: 509 }, { taux: 0.1 })).toBe(false)
     expect(memeForme({ taux: 0.1 }, { taux: 0.1, autre: 1 })).toBe(false)
-    expect(memeForme(p.impot_revenu.bareme.valeur, [{ jusqua: 12000, taux: 0 }, { jusqua: null, taux: 0.2 }])).toBe(true)
-    expect(memeForme(p.impot_revenu.bareme.valeur, [{ jusqua: 'x', taux: 0 }])).toBe(false)
-    expect(memeForme(['A'], [])).toBe(true)
-    expect(memeForme([], ['A'])).toBe(false)
+    const bareme = p.impot_revenu.bareme.valeur
+    expect(memeForme(bareme, [{ jusqua: 12000, taux: 0 }, { jusqua: 30000, taux: 0.11 }, { jusqua: null, taux: 0.2 }])).toBe(true)
+    expect(memeForme(bareme, [{ jusqua: 'x', taux: 0 }])).toBe(false)
+    expect(memeForme(bareme, [{ jusqua: 12000, taux: null }])).toBe(false)
+    expect(memeForme(bareme, [])).toBe(false)
+    expect(memeForme(0.172, null)).toBe(false)
     expect(memeForme(null, 'texte')).toBe(false)
+    expect(memeForme([], [])).toBe(true)
+    expect(memeForme([], ['A'])).toBe(false)
   })
 })
 
@@ -56,6 +60,15 @@ describe('application des modifications', () => {
       [{ 'micro_foncier.abattement': { date_verification: '01/10/2026' } }, 'micro_foncier.abattement : date de vérification AAAA-MM-JJ attendue'],
       [{ 'lli.zones_eligibles': { valeur: ['A', 'Z'] } }, expect.stringContaining('lli.zones_eligibles : « Z » n\'est pas admis')],
       [{ 'jeanbrun.prorata_premiere_annee': { statut: 'verifie', date_verification: null } }, expect.stringContaining('doit porter sa date de vérification')],
+      [{ 'impot_revenu.bareme': { valeur: [] } }, 'impot_revenu.bareme : la valeur n’a pas la forme de l’original'],
+      [
+        { 'impot_revenu.bareme': { valeur: [{ jusqua: 30000, taux: 0 }, { jusqua: 11600, taux: 0.11 }, { jusqua: null, taux: 0.45 }] } },
+        'impot_revenu.bareme[1] : bornes croissantes attendues',
+      ],
+      [{ 'impot_revenu.bareme': { valeur: [{ jusqua: 11600, taux: null }, { jusqua: null, taux: 0.45 }] } }, 'impot_revenu.bareme : la valeur n’a pas la forme de l’original'],
+      [{ 'micro_foncier.abattement': { valeur: 30 } }, expect.stringContaining('micro_foncier.abattement : taux décimal entre 0 et 1 attendu (30)')],
+      [{ 'lmnp.micro_bic': { valeur: { ...p.lmnp.micro_bic.valeur, abattement: 50 } } }, expect.stringContaining('lmnp.micro_bic.abattement : taux décimal entre 0 et 1')],
+      [{ 'impot_revenu.plafonnement_global_niches': { valeur: -1 } }, expect.stringContaining('nombre positif ou nul attendu')],
     ] as const
     for (const [surcharges, erreur] of cas) {
       const r = appliquerSurcharges(p, { 'micro_foncier.seuil_recettes': { valeur: 20000 }, ...surcharges })

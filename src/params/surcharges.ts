@@ -31,18 +31,16 @@ function estObjet(x: unknown): x is Record<string, unknown> {
 }
 
 /**
- * Même forme : mêmes types, mêmes clés pour un objet, éléments de la forme du premier élément pour une liste.
- * Un nombre et null s'échangent (borne ouverte d'une tranche de barème).
+ * Même forme : mêmes types, mêmes clés pour un objet ; une liste non vide le reste, et chacun de ses éléments a la
+ * forme de l'un des éléments d'origine (une tranche ouverte, de borne null, garde sa place possible). `null` n'est
+ * admis que là où l'original en a un.
  */
 export function memeForme(reference: unknown, valeur: unknown): boolean {
-  if (reference === null || valeur === null) {
-    const autre = reference ?? valeur
-    return autre === null || (typeof autre === 'number' && Number.isFinite(autre))
-  }
+  if (reference === null || valeur === null) return reference === valeur
   if (Array.isArray(reference)) {
     if (!Array.isArray(valeur)) return false
-    const modele: unknown = reference[0]
-    return modele === undefined ? valeur.length === 0 : valeur.every((v) => memeForme(modele, v))
+    if (reference.length === 0) return valeur.length === 0
+    return valeur.length > 0 && valeur.every((v) => reference.some((modele: unknown) => memeForme(modele, v)))
   }
   if (estObjet(reference)) {
     if (!estObjet(valeur)) return false
