@@ -52,26 +52,46 @@ function regimeLoyers(s: ResultatSimulation): string {
   }
 }
 
-/** Calcul du résultat fiscal de l'opération selon le régime retenu par la simulation. */
-function formuleResultat(id: IdScenario, s: ResultatSimulation, p: ParametresFiscaux): string {
+/** Taxe foncière déduite : sans celle des années couvertes par la créance du LLI, si le paramètre l'exclut. */
+function taxeFonciereDeduite(id: IdScenario, p: ParametresFiscaux): string {
+  return engagementsScenario(id).lli && !p.lli.tf_deductible_si_creance.valeur ? 'taxe foncière hors années de créance du LLI' : 'taxe foncière'
+}
+
+/** Calcul du résultat fiscal de l'opération, tel que la colonne l'affiche, selon le régime retenu par la simulation. */
+function formuleResultat(d: Dossier, id: IdScenario, s: ResultatSimulation, p: ParametresFiscaux): string {
   const c = caracteristiquesScenario(id)
-  const jeanbrun = engagementsScenario(id).jeanbrun !== null
+  const e = engagementsScenario(id)
+  const tf = taxeFonciereDeduite(id, p)
+  const fraisEnCharge = p.lmnp.modelisation.valeur.frais_acquisition === 'charge_annee_1'
   if (s.regime === 'is') {
-    return 'Résultat comptable de la SCI : loyers − charges − intérêts − assurance emprunteur − frais d’emprunt et de constitution (première année) − amortissement ; plus-value de cession comprise l’année de la revente.'
+    return (
+      `Résultat comptable de la SCI : loyers − charges (${tf}, copropriété, assurance PNO, gestion, loyers impayés, entretien, frais de la SCI) − intérêts − assurance emprunteur − amortissement ; ` +
+      `l’année de la signature, aussi les frais d’emprunt, de constitution${fraisEnCharge ? ' et d’acquisition (passés en charge, paramètre lmnp.modelisation)' : ''} ; ` +
+      'l’année de la revente, plus-value de cession comprise. La créance de taxe foncière n’est pas imposée.'
+    )
   }
   if (c.meuble) {
     const mb = p.lmnp.micro_bic.valeur
-    const micro = `micro-BIC : loyers × (1 − ${taux(mb.abattement)}), abattement d’au moins ${euros(mb.abattement_minimum)}`
-    const reel = 'réel : loyers − charges − intérêts − assurance emprunteur − frais d’emprunt − amortissements déduits'
-    if (s.regime === 'micro') return `Bénéfice de location meublée au ${micro}.`
-    if (s.regime === 'reel') return `Bénéfice de location meublée au ${reel}.`
-    return `Bénéfice de location meublée au ${reel}, puis au ${micro}.`
+    const micro = `au micro-BIC : loyers de la quote-part de chaque foyer × (1 − ${taux(mb.abattement)}), abattement d’au moins ${euros(mb.abattement_minimum)} par foyer`
+    const reel =
+      `au réel : loyers − charges (intérêts, assurance emprunteur, frais d’emprunt, ${tf}, copropriété, assurance PNO, gestion, loyers impayés, entretien, comptable et CFE) − amortissements déduits. ` +
+      `Nul avant le début de la location : les charges de ces années${fraisEnCharge ? ' et les frais d’acquisition (passés en charge, paramètre lmnp.modelisation)' : ''} s’ajoutent à celles de la première année louée`
+    if (s.regime === 'micro') return `Bénéfice de location meublée ${micro} ; nul avant le début de la location.`
+    if (s.regime === 'reel') return `Bénéfice de location meublée ${reel}.`
+    return `Bénéfice de location meublée ${reel} ; à partir de l’année de bascule, ${micro}.`
   }
-  if (s.regime === 'micro') {
-    return `Revenu foncier au micro-foncier : loyers × (1 − ${taux(p.micro_foncier.abattement.valeur)}).`
+  const deductibles = [tf, 'copropriété', 'assurance PNO', 'gestion', 'loyers impayés', 'entretien', `frais forfaitaires de ${euros(p.revenus_fonciers_reel.frais_gestion_forfaitaires_par_local.valeur)}`]
+  if (c.detention === 'sci_ir') {
+    deductibles.push(p.sci_ir.frais_bancaires_couverts_par_forfait.valeur ? 'comptabilité de la SCI (frais bancaires couverts par le forfait)' : 'frais de la SCI')
+    if (p.sci_ir.frais_constitution_deductibles.valeur) deductibles.push('frais de constitution l’année de la signature')
   }
-  const sci = c.detention === 'sci_ir' ? ', déterminé au niveau de la SCI puis réparti selon les quotes-parts' : ''
-  return `Revenu foncier au réel : loyers − charges déductibles − intérêts − assurance emprunteur − frais d’emprunt${jeanbrun ? ' − amortissement Jeanbrun' : ''}${sci}.`
+  const travauxDeductibles = id === 'S0' && d.bien.etat === 'ancien' && d.bien.travaux_deductibles !== false && s.regime !== 'micro'
+  if (travauxDeductibles) deductibles.push('travaux, l’année de leur achèvement')
+  const jeanbrun = e.jeanbrun === null ? '' : ' − amortissement Jeanbrun'
+  const sci = c.detention === 'sci_ir' ? ', pour toute la SCI, avant répartition entre les associés' : ''
+  const reel = `Revenu foncier de l’opération au réel : loyers − intérêts − assurance emprunteur − frais d’emprunt (année de la signature) − charges déductibles (${deductibles.join(', ')})${jeanbrun}${sci}.`
+  if (s.regime !== 'micro') return reel
+  return `${reel} Le micro-foncier étant retenu, l’impôt est calculé sur les loyers × (1 − ${taux(p.micro_foncier.abattement.valeur)}), sans déduire ces charges : la colonne sert de comparaison.`
 }
 
 /** Calcul de l'amortissement déduit, s'il y en a un dans le scénario. */
@@ -103,20 +123,23 @@ function formuleCharges(d: Dossier, id: IdScenario, p: ParametresFiscaux): strin
   const c = caracteristiquesScenario(id)
   const ex = d.exploitation
   const h = d.hypotheses
+  const ancien = d.bien.etat === 'ancien'
+  const exoneration = h.annees_exoneration_taxe_fonciere
   const postes = [
-    `taxe foncière hors TEOM${d.bien.etat === 'ancien' ? '' : ` (exonérée ${formaterNombre(h.annees_exoneration_taxe_fonciere)} ans après l’achèvement)`}`,
-    'copropriété non récupérable',
-    'assurance PNO',
-    `gestion (${taux(ex.frais_gestion_part_loyers)} des loyers)`,
+    ancien
+      ? 'taxe foncière hors TEOM dès l’achat'
+      : `taxe foncière hors TEOM à partir de l’année suivant l’achèvement${exoneration > 0 ? `, après ${formaterNombre(exoneration)} année(s) d’exonération` : ''}`,
+    `copropriété non récupérable et assurance PNO ${ancien ? 'dès l’achat' : 'dès la livraison'}`,
+    `gestion (${taux(ex.frais_gestion_part_loyers)} des loyers encaissés)`,
     `assurance loyers impayés (${taux(ex.assurance_loyers_impayes_part_loyers)})`,
     `entretien (${taux(h.entretien_part_loyers)})`,
   ]
   if (!c.meuble && c.detention !== 'sci_is') {
-    postes.push(`frais de gestion forfaitaires de ${euros(p.revenus_fonciers_reel.frais_gestion_forfaitaires_par_local.valeur)} par an`)
+    postes.push(`frais de gestion forfaitaires de ${euros(p.revenus_fonciers_reel.frais_gestion_forfaitaires_par_local.valeur)} par année louée`)
   }
   if (c.detention !== 'nom_propre') postes.push('frais annuels de la SCI (comptabilité, banque)')
-  if (c.meuble) postes.push('comptable et CFE')
-  return `Somme : ${postes.join(', ')} ; charges revalorisées de ${taux(h.revalorisation_charges)} par an.`
+  if (c.meuble) postes.push('comptable et CFE les années louées')
+  return `Somme, au prorata des mois détenus : ${postes.join(', ')} ; montants revalorisés de ${taux(h.revalorisation_charges)} par an.`
 }
 
 /** Colonnes du tableau annuel d'un scénario simulé (§11, écran 6), dans l'ordre d'affichage. */
@@ -184,7 +207,7 @@ export function colonnesTableauAnnuel(d: Dossier, id: IdScenario, s: ResultatSim
     amortissement === null
       ? null
       : { cle: 'amortissement_deduit', libelle: 'Amortissement déduit', formule: amortissement, format: 'euros', valeur: (a) => a.amortissement_deduit },
-    { cle: 'resultat_fiscal', libelle: 'Résultat fiscal', formule: formuleResultat(id, s, p), format: 'euros', valeur: (a) => a.resultat_fiscal },
+    { cle: 'resultat_fiscal', libelle: 'Résultat fiscal', formule: formuleResultat(d, id, s, p), format: 'euros', valeur: (a) => a.resultat_fiscal },
     is || c.meuble
       ? null
       : {
@@ -200,8 +223,8 @@ export function colonnesTableauAnnuel(d: Dossier, id: IdScenario, s: ResultatSim
       formule: is
         ? 'Déficits de la SCI reportables sur ses bénéfices suivants.'
         : c.meuble
-          ? `Déficits de location meublée reportables ${formaterNombre(p.lmnp.deficit_report_ans.valeur)} ans sur les bénéfices de même nature.`
-          : `Déficits fonciers reportables ${formaterNombre(p.deficit_foncier.report_revenus_fonciers_ans.valeur)} ans sur les revenus fonciers, en fin d’année.`,
+          ? `Déficits de location meublée en fin d’année, reportables ${formaterNombre(p.lmnp.deficit_report_ans.valeur)} ans sur les bénéfices de même nature ; les amortissements différés, reportables sans limite, n’y figurent pas.`
+          : `Déficits fonciers des foyers en fin d’année, avec l’opération et déficits antérieurs compris, reportables ${formaterNombre(p.deficit_foncier.report_revenus_fonciers_ans.valeur)} ans sur les revenus fonciers.`,
       format: 'euros',
       valeur: (a) => a.deficits_reportables,
     },
@@ -228,8 +251,7 @@ export function colonnesTableauAnnuel(d: Dossier, id: IdScenario, s: ResultatSim
       : {
           cle: 'impot_revenu_differentiel',
           libelle: 'Impôt sur le revenu (écart)',
-          formule:
-            'Impôt de chaque foyer avec l’opération − impôt sans l’opération, chaque foyer étant imposé en entier (barème, quotient familial, décote, réductions) ; négatif quand l’opération fait économiser de l’impôt.',
+          formule: `Impôt de chaque foyer avec l’opération − impôt sans l’opération, chaque foyer étant imposé en entier (barème, quotient familial, décote, réductions) ; négatif quand l’opération fait économiser de l’impôt${e.jeanbrun !== null || e.denormandie !== null ? '. L’année de la revente, reprise des avantages comprise en cas de sortie anticipée' : ''}.`,
           format: 'euros',
           valeur: (a) => a.impot_revenu_differentiel,
         },
@@ -238,7 +260,7 @@ export function colonnesTableauAnnuel(d: Dossier, id: IdScenario, s: ResultatSim
       : {
           cle: 'prelevements_sociaux',
           libelle: 'Prélèvements sociaux (écart)',
-          formule: `${taux(ps)} × écart de ${c.meuble ? 'bénéfice de location meublée' : 'revenu foncier'} imposable avec et sans l’opération.`,
+          formule: `${taux(ps)} × écart de ${c.meuble ? 'bénéfice de location meublée' : 'revenu foncier'} imposable avec et sans l’opération${e.jeanbrun === null ? '' : ', et sur les amortissements Jeanbrun réintégrés en cas de sortie anticipée'}.`,
           format: 'euros',
           valeur: (a) => a.prelevements_sociaux,
         },

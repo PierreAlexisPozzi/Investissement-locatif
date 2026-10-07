@@ -92,6 +92,70 @@ describe('colonnes du tableau annuel (écran 6)', () => {
   })
 })
 
+describe('résultat fiscal : la colonne suit sa formule', () => {
+  const formule = (d: Dossier, id: IdScenario, s: ResultatSimulation): string =>
+    colonnesTableauAnnuel(d, id, s, p).find((c) => c.cle === 'resultat_fiscal')?.formule ?? ''
+  const fraisEmprunt = (d: Dossier, a: LigneAnnuelle): number =>
+    a.annee === Number(d.bien.date_acquisition.slice(0, 4)) ? d.financement.frais_dossier + d.financement.frais_garantie : 0
+
+  it('location nue et Jeanbrun au réel : loyers − intérêts − assurance − frais d’emprunt − charges − amortissement', () => {
+    for (const id of ['S0', 'S1'] as const) {
+      const s = simulation(comparaison, id)
+      expect(s.regime, id).toBe('reel')
+      for (const a of s.annees) {
+        const attendu = a.loyers_encaisses - a.interets - a.assurance_emprunteur - fraisEmprunt(dossierType, a) - a.charges_total - a.amortissement_deduit
+        expect(a.resultat_fiscal, `${id} ${String(a.annee)}`).toBeCloseTo(attendu, PRECISION)
+      }
+      expect(formule(dossierType, id, s)).toContain('frais d’emprunt (année de la signature)')
+    }
+  })
+
+  it('micro-foncier retenu : la colonne reste le résultat au réel, et la formule le dit', () => {
+    // Sans crédit ni charges, l'abattement du micro-foncier l'emporte sur les charges réelles.
+    const sansCredit: Dossier = {
+      ...dossierType,
+      bien: { ...dossierType.bien, taxe_fonciere: 0, teom: 0, charges_copropriete_non_recuperables: 0 },
+      financement: { ...dossierType.financement, emprunt: 0, differe_mois: 0, frais_dossier: 0, frais_garantie: 0 },
+      exploitation: { ...dossierType.exploitation, frais_gestion_part_loyers: 0, assurance_loyers_impayes_part_loyers: 0, assurance_pno_annuelle: 0 },
+      hypotheses: { ...dossierType.hypotheses, entretien_part_loyers: 0 },
+      foyers: { ...dossierType.foyers, apport_disponible: 400000 },
+    }
+    const s = comparerScenarios(sansCredit, 16, p).scenarios.find((r) => r.id === 'S0')?.simulation
+    if (s === null || s === undefined) throw new Error('S0 inéligible')
+    expect(s.regime).toBe('micro')
+    for (const a of s.annees) expect(a.resultat_fiscal, String(a.annee)).toBeCloseTo(a.loyers_encaisses - a.charges_total, PRECISION)
+    expect(formule(sansCredit, 'S0', s)).toContain(`l’impôt est calculé sur les loyers × (1 − ${formaterTaux(p.micro_foncier.abattement.valeur)})`)
+  })
+
+  it('location meublée au réel : nul avant le début de la location, charges reportées sur la première année louée', () => {
+    const s = simulation(comparaison, 'S4')
+    expect(s.regime).toBe('reel')
+    const avant = s.annees.filter((a) => a.mois_location === 0)
+    expect(avant.length).toBeGreaterThan(0)
+    for (const a of avant) expect(a.resultat_fiscal, String(a.annee)).toBe(0)
+    expect(formule(dossierType, 'S4', s)).toContain('Nul avant le début de la location')
+  })
+
+  it('SCI à l’IS, année de la signature : frais d’emprunt, de constitution et d’acquisition en charge', () => {
+    const s = simulation(comparaison, 'S3_IS')
+    const [premiere] = s.annees
+    if (premiere === undefined) throw new Error('aucune année')
+    const f = dossierType.financement
+    const attendu =
+      premiere.loyers_encaisses -
+      premiere.charges_total -
+      premiere.interets -
+      premiere.assurance_emprunteur -
+      (f.frais_dossier + f.frais_garantie) -
+      dossierType.exploitation.sci.constitution -
+      dossierType.bien.frais_notaire -
+      premiere.amortissement_deduit
+    expect(premiere.charges.taxe_fonciere).toBe(0)
+    expect(premiere.resultat_fiscal).toBeCloseTo(attendu, PRECISION)
+    expect(formule(dossierType, 'S3_IS', s)).toContain('d’acquisition (passés en charge, paramètre lmnp.modelisation)')
+  })
+})
+
 describe('revente et indicateurs : la formule décrit le calcul', () => {
   it('produit net = prix − frais − capital restant dû − indemnités − impôt de plus-value − complément de TVA − impôt de distribution', () => {
     for (const { d, id, s } of simulations) {
