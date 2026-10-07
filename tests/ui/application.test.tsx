@@ -166,6 +166,18 @@ describe('application', () => {
     imprimer.mockRestore()
   })
 
+  it('synthèse : liste les paramètres modifiés du dossier', async () => {
+    const user = userEvent.setup()
+    const imprimer = vi.spyOn(window, 'print').mockImplementation(() => undefined)
+    monter(stockageEssai({ 'micro_foncier.abattement': { valeur: 0.35 } }))
+    await titreEcran('Mon foyer')
+    await user.click(screen.getByRole('button', { name: 'Imprimer la synthèse' }))
+    const synthese = screen.getByRole('article', { name: 'Synthèse imprimable' })
+    const titre = within(synthese).getByText('Paramètres fiscaux modifiés pour ce dossier :')
+    expect(titre.parentElement?.textContent).toContain('micro_foncier.abattement')
+    imprimer.mockRestore()
+  })
+
   it('le lien d’évitement déplace le focus sans changer d’écran', async () => {
     const user = userEvent.setup()
     window.location.hash = '/hypotheses'

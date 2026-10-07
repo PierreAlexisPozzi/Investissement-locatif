@@ -24,7 +24,7 @@ const INDICATEURS_SYNTHESE = [
 
 /** Synthèse imprimable du dossier courant (PDF par l'impression du navigateur). */
 export function Synthese({ editeeLe }: { readonly editeeLe: string }) {
-  const { dossier, dossierCalcul, p, objectifs, enregistre } = useApplication()
+  const { dossier, dossierCalcul, p, parametres, objectifs, enregistre } = useApplication()
   const recommandation = useMemo(() => essayer(() => calculs.recommandation(dossierCalcul, p, objectifs)), [dossierCalcul, p, objectifs])
   const comparaison = useMemo(() => essayer(() => calculs.comparaison(dossierCalcul, p, objectifs.horizon)), [dossierCalcul, p, objectifs.horizon])
   const situations = useMemo(() => essayer(() => situationFiscale(dossier, p)), [dossier, p])
@@ -38,6 +38,16 @@ export function Synthese({ editeeLe }: { readonly editeeLe: string }) {
       <p className="attenue">
         Éditée le {formaterDate(editeeLe)} ; paramètres fiscaux arrêtés au {formaterDate(p.meta.date_arret)} ; revente après {objectifs.horizon} ans de location.
       </p>
+      {parametres.modifies.length > 0 ? (
+        <p>
+          <strong>Paramètres fiscaux modifiés pour ce dossier :</strong> {parametres.modifies.join(', ')}.
+        </p>
+      ) : null}
+      {parametres.erreurs.length > 0 ? (
+        <p>
+          <strong>Paramètres modifiés de ce dossier ignorés, car invalides :</strong> les résultats suivent le fichier versionné.
+        </p>
+      ) : null}
 
       <h2>Foyer</h2>
       <p>{LIBELLES_SITUATIONS[dossier.foyers.situation]}.</p>
