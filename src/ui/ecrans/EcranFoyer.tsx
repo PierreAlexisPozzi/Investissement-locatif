@@ -289,6 +289,7 @@ function SituationActuelle() {
           <thead>
             <tr>
               <th scope="col">Foyer</th>
+              <th scope="col">Revenu imposé</th>
               <th scope="col">Impôt actuel</th>
               <th scope="col">Tranche marginale</th>
               <th scope="col">Niches disponibles</th>
@@ -298,6 +299,7 @@ function SituationActuelle() {
             {situations.valeur.map((s) => (
               <tr key={s.libelle}>
                 <th scope="row">{s.libelle}</th>
+                <td className="nombre">{formaterEuros(s.revenu_global_net)}</td>
                 <td className="nombre">{formaterEuros(s.impot)}</td>
                 <td className="nombre">{formaterTaux(s.tmi)}</td>
                 <td className="nombre">{formaterEuros(s.niches_disponibles)}</td>
@@ -308,8 +310,9 @@ function SituationActuelle() {
       ) : (
         <Encart genre="erreur">{situations.message}</Encart>
       )}
-      <p>
-        Barème des revenus {p.meta.annee_revenus}, plafond global des niches de {formaterEuros(p.impot_revenu.plafonnement_global_niches.valeur)}.
+      <p className="champ-aide">
+        Barème des revenus {p.meta.annee_revenus}, après décote, revenus fonciers des autres biens compris (déficits antérieurs imputés) ; avant les
+        réductions et crédits d’impôt déjà obtenus. Plafond global des niches : {formaterEuros(p.impot_revenu.plafonnement_global_niches.valeur)}.
       </p>
       <p>
         Taux d’endettement actuel : <strong>{endettement === null ? '—' : formaterTaux(endettement)}</strong>

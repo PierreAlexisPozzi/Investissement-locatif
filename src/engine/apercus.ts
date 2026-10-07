@@ -9,16 +9,22 @@
 import type { ParametresFiscaux } from '../params'
 import type { Eligibilite } from './commun'
 import { anomaliesDossier, type Dossier } from './dossier'
-import { calculerImpot, type DetailImpot } from './impot-revenu'
+import { calculerImpot, calculerRevenuGlobal, type DetailImpot } from './impot-revenu'
 import { tauxEndettementActuel } from './indicateurs'
 import { prixTtc } from './lli'
 import { coefficientSurface, plafondLoyer, plafondLoyerIntermediaire, surfacePriseEnCompte } from './loyer-plafond'
+import { revenuFoncierMicro, revenuFoncierReel } from './revenus-fonciers'
 import { eligibiliteScenario, LIBELLES_SCENARIOS, SCENARIOS, type IdScenario } from './scenario'
 
 export interface SituationFoyer {
   readonly libelle: string
+  /** Revenu imposable saisi, hors revenus fonciers. */
   readonly revenu_imposable: number
-  /** Impôt dû sans l'opération, année des revenus des paramètres. */
+  /** Revenus fonciers imposables des autres biens, déficits fonciers antérieurs imputés. */
+  readonly revenus_fonciers: number
+  /** Revenu global net imposé : revenu saisi et revenus fonciers, déficit foncier imputable déduit. */
+  readonly revenu_global_net: number
+  /** Impôt dû sans l'opération (barème, quotient familial, décote), année des revenus des paramètres. */
   readonly impot: number
   readonly tmi: number
   /** Plafond global des niches restant après les avantages déjà utilisés. */
@@ -26,15 +32,40 @@ export interface SituationFoyer {
   readonly detail: DetailImpot
 }
 
-/** Impôt, tranche marginale et niches disponibles de chaque foyer, sans l'opération (écran 1). */
+/**
+ * Impôt, tranche marginale et niches disponibles de chaque foyer, sans l'opération (écran 1) : comme la situation
+ * de référence du moteur, avec les revenus fonciers des autres biens et les déficits fonciers antérieurs.
+ */
 export function situationFiscale(d: Dossier, p: ParametresFiscaux): SituationFoyer[] {
   const communes = d.foyers.situation === 'marie_pacse'
   const plafondNiches = p.impot_revenu.plafonnement_global_niches.valeur
+  const annee = p.meta.annee_revenus
   return d.foyers.foyers.map((f) => {
-    const detail = calculerImpot(Math.max(0, f.revenu_imposable), { parts: f.parts, imposition_commune: communes }, p)
+    const existants = f.revenus_fonciers_existants
+    const deficits = f.deficits_fonciers_existants ?? []
+    const foncier =
+      existants?.regime === 'micro'
+        ? revenuFoncierMicro(annee, existants.recettes, p, { deficits_anterieurs: deficits })
+        : revenuFoncierReel(
+            { annee, recettes: existants?.recettes ?? 0, charges: { interets: 0, autres_charges: existants?.charges ?? 0 }, deficits_anterieurs: deficits },
+            p,
+          )
+    const global = calculerRevenuGlobal(
+      {
+        annee,
+        revenus_categoriels: Math.max(0, f.revenu_imposable) + foncier.revenu_foncier_imposable,
+        deficit_foncier_imputable: 'deficit_imputable_revenu_global' in foncier ? foncier.deficit_imputable_revenu_global : 0,
+      },
+      p,
+    )
+    const detail = calculerImpot(global.revenu_global_net, { parts: f.parts, imposition_commune: communes }, p, {
+      avantages_niches_deja_utilises: f.avantages_niches_deja_utilises ?? 0,
+    })
     return {
       libelle: f.libelle,
       revenu_imposable: f.revenu_imposable,
+      revenus_fonciers: foncier.revenu_foncier_imposable,
+      revenu_global_net: global.revenu_global_net,
       impot: detail.impot_du,
       tmi: detail.tmi,
       niches_disponibles: Math.max(0, plafondNiches - (f.avantages_niches_deja_utilises ?? 0)),

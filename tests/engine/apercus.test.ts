@@ -87,6 +87,25 @@ describe('situation fiscale sans l’opération (écran 1)', () => {
     expect(situations.map((s) => s.impot)).toEqual([attendu.impot_du, attendu.impot_du])
   })
 
+  it('compte les revenus fonciers des autres biens et impute les déficits fonciers antérieurs', () => {
+    const avec = (foyer: Partial<Dossier['foyers']['foyers'][number]>): Dossier => ({
+      ...dossierType,
+      foyers: { ...dossierType.foyers, foyers: dossierType.foyers.foyers.map((f) => ({ ...f, ...foyer })) },
+    })
+    const couple = { parts: 2, imposition_commune: true }
+    const reel = situationFiscale(avec({ revenus_fonciers_existants: { recettes: 30000, charges: 0, regime: 'reel' } }), p)[0]
+    expect(reel?.revenu_global_net).toBe(120000)
+    expect(reel?.impot).toBe(calculerImpot(120000, couple, p).impot_du)
+    const deficits = situationFiscale(
+      avec({ revenus_fonciers_existants: { recettes: 30000, charges: 0, regime: 'reel' }, deficits_fonciers_existants: [{ annee: 2022, montant: 10000 }] }),
+      p,
+    )[0]
+    expect(deficits?.revenus_fonciers).toBe(20000)
+    expect(deficits?.impot).toBe(calculerImpot(110000, couple, p).impot_du)
+    const micro = situationFiscale(avec({ revenus_fonciers_existants: { recettes: 10000, charges: 0, regime: 'micro' } }), p)[0]
+    expect(micro?.revenus_fonciers).toBeCloseTo(10000 * (1 - p.micro_foncier.abattement.valeur), 6)
+  })
+
   it('un revenu encore vide donne un impôt nul', () => {
     expect(situationFiscale(dossierVierge(AUJOURD_HUI, p), p).map((s) => [s.impot, s.tmi])).toEqual([[0, 0]])
   })
