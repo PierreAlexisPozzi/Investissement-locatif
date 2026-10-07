@@ -154,25 +154,42 @@ interface ProprietesDate extends ProprietesCommunes {
   readonly onChange: (valeur: string) => void
 }
 
-/** Date AAAA-MM-JJ ; une date incomplète n'est pas transmise. */
+/** Années admises pour une date du dossier : une année en cours de frappe (0002, 0020…) n'est pas transmise. */
+const ANNEE_MINIMALE = 1900
+const ANNEE_MAXIMALE = 2200
+
+function dateAdmise(texte: string): boolean {
+  try {
+    const { annee } = lireDate(texte)
+    return annee >= ANNEE_MINIMALE && annee <= ANNEE_MAXIMALE
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Date AAAA-MM-JJ. Pendant la frappe, le navigateur transmet des dates partielles (année 0002, puis 0020…) : elles
+ * restent affichées sans être transmises, jusqu'à une date complète et plausible.
+ */
 export function ChampDate({ libelle, aide, desactive, valeur, onChange }: ProprietesDate) {
   const id = useId()
+  const [saisie, setSaisie] = useState<string | null>(null)
   return (
     <div className="champ">
       <label htmlFor={id}>{libelle}</label>
       <input
         id={id}
         type="date"
-        value={valeur}
+        value={saisie ?? valeur}
         disabled={desactive}
         aria-describedby={aide === undefined ? undefined : `${id}-aide`}
         onChange={(e) => {
-          try {
-            lireDate(e.target.value)
-            onChange(e.target.value)
-          } catch {
-            // Date en cours de saisie : la valeur précédente reste en vigueur.
-          }
+          const texte = e.target.value
+          setSaisie(texte)
+          if (dateAdmise(texte)) onChange(texte)
+        }}
+        onBlur={() => {
+          setSaisie(null)
         }}
       />
       {aide === undefined ? null : <Aide id={`${id}-aide`} aide={aide} />}

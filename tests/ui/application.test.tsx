@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, render, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { fichierDossier } from '../../src/engine/dossier-json'
@@ -231,5 +231,26 @@ describe('revenus fonciers existants', () => {
     await user.clear(recettes)
     await user.type(recettes, String(p.micro_foncier.seuil_recettes.valeur + 1))
     expect(screen.getByText(/le régime réel est obligatoire/)).toBeTruthy()
+  })
+})
+
+describe('saisie d’une date', () => {
+  it('une date en cours de frappe (année 0002) reste affichée sans être transmise', async () => {
+    const { ChampDate } = await import('../../src/ui/composants/Champs')
+    const transmises: string[] = []
+    render(
+      <ChampDate
+        libelle="Signature"
+        valeur="2026-11-15"
+        onChange={(v) => {
+          transmises.push(v)
+        }}
+      />,
+    )
+    const champ = screen.getByLabelText<HTMLInputElement>('Signature')
+    fireEvent.change(champ, { target: { value: '0002-11-15' } })
+    expect(champ.value).toBe('0002-11-15')
+    fireEvent.change(champ, { target: { value: '2027-11-15' } })
+    expect(transmises).toEqual(['2027-11-15'])
   })
 })
