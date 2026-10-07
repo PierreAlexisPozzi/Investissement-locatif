@@ -89,6 +89,9 @@ export function BarreDossiers({ onImprimer }: { readonly onImprimer: () => void 
           >
             Importer (JSON)
           </button>
+          <button type="button" title="Cas type fictif du cahier des charges, ajouté comme nouveau dossier" onClick={actions.chargerJeuEssai}>
+            Charger le jeu d’essai
+          </button>
           <input
             ref={fichier}
             type="file"

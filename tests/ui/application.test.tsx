@@ -78,6 +78,16 @@ describe('application', () => {
     expect(await screen.findByRole('button', { name: 'Exporter en XLSX' })).toBeTruthy()
   })
 
+  it('« Charger le jeu d’essai » l’ajoute comme nouveau dossier, sous un nom libre', async () => {
+    const user = userEvent.setup()
+    monter(stockageEssai())
+    await titreEcran('Mon foyer')
+    await user.click(screen.getByRole('button', { name: 'Charger le jeu d’essai' }))
+    const choix = screen.getByLabelText<HTMLSelectElement>('Dossier')
+    expect([...choix.options].map((o) => o.textContent)).toEqual(['Cas type (fictif)', 'Cas type (fictif) (2)'])
+    expect(choix.selectedOptions[0]?.textContent).toBe('Cas type (fictif) (2)')
+  })
+
   it('dossier vierge : la tranche marginale suit la saisie, les résultats attendent un dossier complet', async () => {
     const user = userEvent.setup()
     const stockage = stockageMemoire()
