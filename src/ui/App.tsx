@@ -3,6 +3,7 @@ import { BarreDossiers } from './BarreDossiers'
 import { EcranBien } from './ecrans/EcranBien'
 import { EcranFoyer } from './ecrans/EcranFoyer'
 import { EcranHypotheses } from './ecrans/EcranHypotheses'
+import { Synthese } from './ecrans/Synthese'
 import { useApplication } from './etat/application'
 import { ECRANS, type IdEcran } from './etat/etat'
 import { useEcran } from './etat/navigation'
@@ -15,7 +16,6 @@ const EcranDetail = lazy(() => import('./ecrans/EcranDetail').then((m) => ({ def
 const EcranContreExpertise = lazy(() => import('./ecrans/EcranContreExpertise').then((m) => ({ default: m.EcranContreExpertise })))
 const EcranParametres = lazy(() => import('./ecrans/EcranParametres').then((m) => ({ default: m.EcranParametres })))
 const EcranQuestions = lazy(() => import('./ecrans/EcranQuestions').then((m) => ({ default: m.EcranQuestions })))
-const Synthese = lazy(() => import('./ecrans/Synthese').then((m) => ({ default: m.Synthese })))
 
 /** Écrans de résultats : ils attendent un dossier complet. */
 const ECRANS_DE_RESULTATS: readonly IdEcran[] = ['comparaison', 'recommandation', 'detail', 'contre_expertise', 'questions']
@@ -75,6 +75,7 @@ export function App() {
     contenu.current?.focus()
   }, [ecran])
 
+  // La synthèse est rendue avant cet effet (effets des enfants d'abord) : l'impression la contient dès le premier clic.
   useEffect(() => {
     if (impression === null) return
     const terminer = (): void => {
@@ -122,8 +123,8 @@ export function App() {
             <div className="ecran-imprimable">
               <EcranCourant ecran={ecran} />
             </div>
-            {impression === null ? null : <Synthese editeeLe={impression} />}
           </Suspense>
+          {impression === null ? null : <Synthese editeeLe={impression} />}
         </main>
       </div>
       <footer className="pied">

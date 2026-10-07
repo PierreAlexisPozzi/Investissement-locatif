@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { fichierDossier } from '../../src/engine/dossier-json'
 import { parametresFiscaux2026 as p } from '../../src/params'
 import { App } from '../../src/ui/App'
@@ -138,6 +138,20 @@ describe('application', () => {
     monter(stockageEssai({ 'micro_foncier.abattement': { valeur: 'trente' } }))
     await titreEcran('Paramètres fiscaux')
     expect(screen.getByText('micro_foncier.abattement : la valeur n’a pas la forme de l’original')).toBeTruthy()
+  })
+
+  it('« Imprimer la synthèse » : la synthèse est rendue avant l’ouverture de l’impression, dès le premier clic', async () => {
+    const user = userEvent.setup()
+    let synthesePresente: boolean | null = null
+    const imprimer = vi.spyOn(window, 'print').mockImplementation(() => {
+      synthesePresente = document.querySelector('article.synthese') !== null
+    })
+    monter(stockageEssai())
+    await titreEcran('Mon foyer')
+    await user.click(screen.getByRole('button', { name: 'Imprimer la synthèse' }))
+    expect(imprimer).toHaveBeenCalledTimes(1)
+    expect(synthesePresente).toBe(true)
+    imprimer.mockRestore()
   })
 
   it('un enregistrement fait dans un autre onglet est rechargé ; son choix de dossier ne l’est pas', async () => {
