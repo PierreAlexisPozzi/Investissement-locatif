@@ -16,6 +16,7 @@ describe('saisie des nombres à la française', () => {
     expect(lireSaisie('1,2,3').ok).toBe(false)
     expect(lireSaisie('')).toEqual({ ok: false, erreur: 'Valeur obligatoire' })
     expect(lireSaisie('  ', { optionnel: true })).toEqual({ ok: true, valeur: undefined })
+    expect(lireSaisie('9'.repeat(400))).toEqual({ ok: false, erreur: 'Nombre trop grand' })
   })
 
   it('pourcentages saisis en points, bornes et entiers', () => {

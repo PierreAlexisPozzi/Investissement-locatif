@@ -39,6 +39,7 @@ export function lireSaisie(texte: string, contraintes: ContraintesSaisie = {}): 
   if (brut === '') return contraintes.optionnel === true ? { ok: true, valeur: undefined } : { ok: false, erreur: 'Valeur obligatoire' }
   if (!FORMAT_NOMBRE.test(brut)) return { ok: false, erreur: 'Nombre attendu, par exemple 1 250,50' }
   const saisi = Number(brut.replace(',', '.'))
+  if (!Number.isFinite(saisi)) return { ok: false, erreur: 'Nombre trop grand' }
   const valeur = contraintes.pourcentage === true ? nettoyer(saisi / POURCENT) : saisi
   if (contraintes.entier === true && !Number.isInteger(saisi)) return { ok: false, erreur: 'Nombre entier attendu' }
   const unite = contraintes.pourcentage === true ? ' %' : ''
