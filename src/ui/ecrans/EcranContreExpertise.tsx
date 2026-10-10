@@ -127,51 +127,55 @@ function Resultats({ c }: { readonly c: ContreExpertise }) {
       {c.ecarts.length === 0 ? (
         <p>Aucun résultat annoncé saisi.</p>
       ) : (
+        <div className="defilement-horizontal">
+          <table className="tableau-compact">
+            <thead>
+              <tr>
+                <th scope="col">Indicateur</th>
+                <th scope="col">Annoncé</th>
+                <th scope="col">Recalculé</th>
+                <th scope="col">Écart</th>
+                <th scope="col">Écart relatif</th>
+              </tr>
+            </thead>
+            <tbody>
+              {c.ecarts.map((e) => (
+                <tr key={e.indicateur} className={e.significatif ? 'ecart-significatif' : undefined}>
+                  <th scope="row">{e.libelle}</th>
+                  <td className="nombre">{valeurAnnoncee(e.indicateur, e.annonce)}</td>
+                  <td className="nombre">{valeurAnnoncee(e.indicateur, e.recalcule)}</td>
+                  <td className="nombre">{e.indicateur === 'tri' ? formaterPoints(e.ecart) : valeurAnnoncee(e.indicateur, e.ecart)}</td>
+                  <td className="nombre">
+                    {Number.isFinite(e.ecart_relatif) ? formaterTaux(e.ecart_relatif) : '—'}
+                    {e.significatif ? <span className="badge badge-a_confirmer"> au-delà de {formaterTaux(tolerance)}</span> : null}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <h4>Hypothèses du vendeur et hypothèses prudentes</h4>
+      <div className="defilement-horizontal">
         <table className="tableau-compact">
           <thead>
             <tr>
               <th scope="col">Indicateur</th>
-              <th scope="col">Annoncé</th>
-              <th scope="col">Recalculé</th>
-              <th scope="col">Écart</th>
-              <th scope="col">Écart relatif</th>
+              <th scope="col">Hypothèses du vendeur</th>
+              <th scope="col">Hypothèses prudentes</th>
             </tr>
           </thead>
           <tbody>
-            {c.ecarts.map((e) => (
-              <tr key={e.indicateur} className={e.significatif ? 'ecart-significatif' : undefined}>
-                <th scope="row">{e.libelle}</th>
-                <td className="nombre">{valeurAnnoncee(e.indicateur, e.annonce)}</td>
-                <td className="nombre">{valeurAnnoncee(e.indicateur, e.recalcule)}</td>
-                <td className="nombre">{e.indicateur === 'tri' ? formaterPoints(e.ecart) : valeurAnnoncee(e.indicateur, e.ecart)}</td>
-                <td className="nombre">
-                  {Number.isFinite(e.ecart_relatif) ? formaterTaux(e.ecart_relatif) : '—'}
-                  {e.significatif ? <span className="badge badge-a_confirmer"> au-delà de {formaterTaux(tolerance)}</span> : null}
-                </td>
+            {lignes.map((l) => (
+              <tr key={l.libelle}>
+                <th scope="row">{l.libelle}</th>
+                <td className="nombre">{c.recalcul_vendeur === null ? '—' : l.valeur(c.recalcul_vendeur)}</td>
+                <td className="nombre">{c.rejeu_prudent === null ? '—' : l.valeur(c.rejeu_prudent)}</td>
               </tr>
             ))}
           </tbody>
         </table>
-      )}
-      <h4>Hypothèses du vendeur et hypothèses prudentes</h4>
-      <table className="tableau-compact">
-        <thead>
-          <tr>
-            <th scope="col">Indicateur</th>
-            <th scope="col">Hypothèses du vendeur</th>
-            <th scope="col">Hypothèses prudentes</th>
-          </tr>
-        </thead>
-        <tbody>
-          {lignes.map((l) => (
-            <tr key={l.libelle}>
-              <th scope="row">{l.libelle}</th>
-              <td className="nombre">{c.recalcul_vendeur === null ? '—' : l.valeur(c.recalcul_vendeur)}</td>
-              <td className="nombre">{c.rejeu_prudent === null ? '—' : l.valeur(c.rejeu_prudent)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      </div>
       <p>
         Écart d’effort d’épargne : <strong>{c.ecart_effort_prudent === null ? '—' : eurosParMois(c.ecart_effort_prudent)}</strong> ; écart de TRI :{' '}
         <strong>{formaterPoints(c.ecart_tri_prudent)}</strong> (hypothèses prudentes moins hypothèses du vendeur).
