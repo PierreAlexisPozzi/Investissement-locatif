@@ -1019,9 +1019,13 @@ tbody th {
     font-size: 16px;
   }
 
-  /* Cibles plus hautes pour le doigt. */
-  button {
+  /* Cibles plus grandes pour le doigt ; les boutons présentés comme des liens restent dans leur ligne de texte. */
+  button:not(.lien) {
     min-height: 2.25rem;
+  }
+
+  .infobulle > summary {
+    padding: 0.2rem 0.35rem;
   }
 
   .navigation a {
