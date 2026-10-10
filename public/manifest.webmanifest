@@ -1,0 +1,17 @@
+{
+  "name": "Investissement locatif — aide à la décision",
+  "short_name": "Invest. locatif",
+  "description": "Simulateur d'investissement locatif : comparaison des dispositifs fiscaux, recommandation et contre-expertise d'une simulation de vendeur.",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f7f5",
+  "theme_color": "#1f4e79",
+  "icons": [
+    { "src": "icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
