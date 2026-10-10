@@ -5,6 +5,7 @@ import { App } from './ui/App'
 import { FournisseurApplication } from './ui/etat/FournisseurApplication'
 import { etatInitial } from './ui/etat/initialisation'
 import { stockageNavigateur } from './ui/etat/stockage'
+import { demanderStockagePersistant, enregistrerServiceWorker } from './ui/installation'
 import './ui/styles.css'
 
 const racine = document.getElementById('racine')
@@ -22,3 +23,14 @@ createRoot(racine).render(
     </FournisseurApplication>
   </StrictMode>,
 )
+
+// Version construite seulement : en développement, le service worker servirait des fichiers périmés.
+if (import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    const signaler = (erreur: unknown): void => {
+      console.warn('Installation de l’application :', erreur)
+    }
+    enregistrerServiceWorker(navigator.serviceWorker as ServiceWorkerContainer | undefined, import.meta.env.BASE_URL).catch(signaler)
+    demanderStockagePersistant(navigator.storage as StorageManager | undefined, matchMedia('(display-mode: standalone)').matches).catch(signaler)
+  })
+}

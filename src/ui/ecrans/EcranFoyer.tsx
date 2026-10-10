@@ -291,28 +291,30 @@ function SituationActuelle() {
     <aside className="apercu" aria-label="Situation fiscale actuelle">
       <h3>Sans l’opération</h3>
       {situations.ok ? (
-        <table className="tableau-compact">
-          <thead>
-            <tr>
-              <th scope="col">Foyer</th>
-              <th scope="col">Revenu imposé</th>
-              <th scope="col">Impôt actuel</th>
-              <th scope="col">Tranche marginale</th>
-              <th scope="col">Niches disponibles</th>
-            </tr>
-          </thead>
-          <tbody>
-            {situations.valeur.map((s) => (
-              <tr key={s.libelle}>
-                <th scope="row">{s.libelle}</th>
-                <td className="nombre">{formaterEuros(s.revenu_global_net)}</td>
-                <td className="nombre">{formaterEuros(s.impot)}</td>
-                <td className="nombre">{formaterTaux(s.tmi)}</td>
-                <td className="nombre">{formaterEuros(s.niches_disponibles)}</td>
+        <div className="defilement-horizontal">
+          <table className="tableau-compact">
+            <thead>
+              <tr>
+                <th scope="col">Foyer</th>
+                <th scope="col">Revenu imposé</th>
+                <th scope="col">Impôt actuel</th>
+                <th scope="col">Tranche marginale</th>
+                <th scope="col">Niches disponibles</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {situations.valeur.map((s) => (
+                <tr key={s.libelle}>
+                  <th scope="row">{s.libelle}</th>
+                  <td className="nombre">{formaterEuros(s.revenu_global_net)}</td>
+                  <td className="nombre">{formaterEuros(s.impot)}</td>
+                  <td className="nombre">{formaterTaux(s.tmi)}</td>
+                  <td className="nombre">{formaterEuros(s.niches_disponibles)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
         <Encart genre="erreur">{situations.message}</Encart>
       )}

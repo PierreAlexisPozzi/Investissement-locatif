@@ -1,5 +1,5 @@
 /*
- * Mise en page sobre et dense, lisible sur un ordinateur portable (§11),
+ * Mise en page sobre et dense, lisible sur un ordinateur portable (§11) comme sur un téléphone,
  * utilisable au clavier : focus visible, lien d'évitement, contrastes AA.
  */
 :root {
@@ -21,6 +21,8 @@
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-size: 14px;
   line-height: 1.4;
+  /* Un mot trop long (chemin de paramètre, valeur JSON) passe à la ligne plutôt que d'élargir la page. */
+  overflow-wrap: break-word;
   color: var(--texte);
   background: var(--fond);
 }
@@ -111,6 +113,7 @@ input[type='date'],
 select,
 textarea {
   min-width: 0;
+  max-width: 100%;
   padding: 0.2rem 0.35rem;
   color: var(--texte);
   background: var(--surface);
@@ -380,6 +383,8 @@ code {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .champ label {
@@ -690,6 +695,11 @@ code {
   box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
 }
 
+/* Bouton utile sur un écran étroit seulement, où l'infobulle s'affiche en bas de l'écran. */
+.infobulle-fermer {
+  display: none;
+}
+
 /* --- Tableaux --------------------------------------------------------- */
 
 .tableau-defilant {
@@ -822,7 +832,7 @@ tbody th {
 
 .graphiques {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(26rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(26rem, 100%), 1fr));
   gap: 1rem;
   margin-top: 1rem;
 }
@@ -898,6 +908,11 @@ tbody th {
   align-items: center;
 }
 
+.parametre-entete code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .parametre-source {
   font-size: 0.82rem;
 }
@@ -933,14 +948,88 @@ tbody th {
 }
 
 @media (width <= 760px) {
+  .entete {
+    padding: 0.4rem 0.75rem;
+  }
+
   .corps {
     flex-direction: column;
   }
 
   .navigation {
     flex-basis: auto;
+    padding: 0.3rem 0.5rem;
     border-right: none;
     border-bottom: 1px solid var(--bordure);
+  }
+
+  /* Les neuf écrans tiennent sur une ligne qui défile : le contenu commence en haut de l'écran. */
+  .navigation ol {
+    display: flex;
+    gap: 0.25rem;
+    overflow-x: auto;
+  }
+
+  .navigation a {
+    white-space: nowrap;
+  }
+
+  .navigation .badge {
+    margin: 0.3rem 0 0;
+  }
+
+  .contenu {
+    padding: 0.5rem 0.75rem 1.5rem;
+  }
+
+  /* Un tableau trop large défile dans son cadre ; la page, elle, ne défile que verticalement. */
+  .defilement-horizontal {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  /* L'infobulle devient un panneau en bas de l'écran, quelle que soit la position du symbole. */
+  .infobulle-texte {
+    position: fixed;
+    top: auto;
+    right: 0.5rem;
+    bottom: 0.5rem;
+    left: 0.5rem;
+    z-index: 20;
+    width: auto;
+    max-width: none;
+    max-height: 50vh;
+    overflow-y: auto;
+    font-size: 0.9rem;
+  }
+
+  .infobulle-fermer {
+    display: block;
+    margin: 0.4rem 0 0 auto;
+  }
+}
+
+/* --- Écrans tactiles -------------------------------------------------- */
+
+@media (pointer: coarse) {
+  /* En dessous de 16 px, Safari sur iPhone agrandit la page à chaque saisie. */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  /* Cibles plus grandes pour le doigt ; les boutons présentés comme des liens restent dans leur ligne de texte. */
+  button:not(.lien) {
+    min-height: 2.25rem;
+  }
+
+  .infobulle > summary {
+    padding: 0.2rem 0.35rem;
+  }
+
+  .navigation a {
+    padding: 0.5rem 0.6rem;
   }
 }
 
@@ -971,6 +1060,10 @@ tbody th {
     max-height: none;
     overflow: visible;
     border: none;
+  }
+
+  .defilement-horizontal {
+    overflow: visible;
   }
 
   thead th,
