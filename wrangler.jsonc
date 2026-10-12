@@ -1,0 +1,9 @@
+// Publication sur Cloudflare Workers (Workers Builds) : site statique, sans script Worker.
+// « name » doit être le nom du Worker dans le tableau de bord Cloudflare.
+{
+  "name": "investissement-locatif",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist"
+  }
+}
