@@ -12,6 +12,15 @@ export function Infobulle({ texte, libelle = 'Formule' }: { readonly texte: Reac
       </summary>
       <div className="infobulle-texte" role="note">
         {texte}
+        <button
+          type="button"
+          className="infobulle-fermer"
+          onClick={(e) => {
+            e.currentTarget.closest('details')?.removeAttribute('open')
+          }}
+        >
+          Fermer
+        </button>
       </div>
     </details>
   )

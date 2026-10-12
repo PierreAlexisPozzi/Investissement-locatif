@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Fond plein et dessin dans le cercle central de 80 % : l'icône reste entière une fois masquée (Android). -->
+  <rect width="512" height="512" fill="#1f4e79"/>
+  <path d="M256 112 404 240h-32v144H140V240h-32z" fill="#fff"/>
+  <path d="M172 300h40v60h-40zM236 268h40v92h-40zM300 236h40v124h-40z" fill="#1f4e79"/>
+</svg>

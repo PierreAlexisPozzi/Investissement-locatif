@@ -66,7 +66,16 @@ export function App() {
   // Date d'édition de la synthèse en cours d'impression ; null hors impression.
   const [impression, setImpression] = useState<string | null>(null)
   const contenu = useRef<HTMLElement>(null)
+  const navigation = useRef<HTMLOListElement>(null)
   const ecranPrecedent = useRef(ecran)
+
+  // Sur un écran étroit, la navigation tient sur une ligne qui défile : l'écran affiché y reste visible.
+  useEffect(() => {
+    const liste = navigation.current
+    const lien = liste?.querySelector<HTMLElement>('[aria-current="page"]')
+    if (!liste || !lien || liste.scrollWidth <= liste.clientWidth) return
+    liste.scrollLeft += lien.getBoundingClientRect().left - liste.getBoundingClientRect().left - (liste.clientWidth - lien.offsetWidth) / 2
+  }, [ecran])
 
   // Au changement d'écran (pas à l'ouverture), le focus passe au contenu : le clavier et les lecteurs d'écran suivent.
   useEffect(() => {
@@ -112,7 +121,7 @@ export function App() {
       <Messages />
       <div className="corps">
         <nav className="navigation ne-pas-imprimer" aria-label="Écrans">
-          <ol>
+          <ol ref={navigation}>
             {ECRANS.map((e) => (
               <li key={e.id}>
                 <a href={`#/${e.id}`} aria-current={ecran === e.id ? 'page' : undefined}>

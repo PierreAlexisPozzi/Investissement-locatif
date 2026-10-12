@@ -1,6 +1,6 @@
 # Investissement locatif — aide à la décision
 
-Application web locale qui simule un investissement locatif sous plusieurs dispositifs fiscaux français (location nue, Jeanbrun, LLI, Jeanbrun + LLI en SCI, LMNP, Denormandie), les compare à un placement financier de référence, recommande le plus adapté au foyer et contre-expertise la simulation d'un vendeur.
+Application web, utilisable sur téléphone comme sur ordinateur, qui simule un investissement locatif sous plusieurs dispositifs fiscaux français (location nue, Jeanbrun, LLI, Jeanbrun + LLI en SCI, LMNP, Denormandie), les compare à un placement financier de référence, recommande le plus adapté au foyer et contre-expertise la simulation d'un vendeur.
 
 > Outil d'aide à la décision personnelle : il ne remplace ni un notaire ni un expert-comptable. Paramètres fiscaux arrêtés au 06/10/2026.
 
@@ -15,8 +15,44 @@ Application web locale qui simule un investissement locatif sous plusieurs dispo
 | 5 | Recommandation et contre-expertise | livrée |
 | 6 | Interface (écrans 1 à 9), exports, persistance | livrée |
 | 7 | Jeu d'essai préchargé, README final | livrée |
+| Suite | Affichage sur téléphone, application installable et hors connexion, mise en ligne | en relecture |
 
-## Installation
+## Utiliser l'application en ligne (téléphone et ordinateur)
+
+L'application est un site statique : une fois construite (`dist/`), n'importe quel hébergeur de fichiers statiques la sert, sans serveur applicatif ni base de données. Les calculs et les dossiers restent dans le navigateur de chaque appareil.
+
+### Mise en ligne, une fois (Cloudflare Pages, offre gratuite)
+
+1. Créer un compte sur https://dash.cloudflare.com.
+2. **Workers & Pages** > **Create application** > **Pages** > **Connect to Git** (Cloudflare oriente aussi vers « Workers » : choisir Pages). Autoriser l'application GitHub de Cloudflare sur ce seul dépôt (*Only select repositories*) : le dépôt reste privé.
+3. Réglages de construction : branche de production `main`, préréglage **React (Vite)** ou aucun, commande `npm run build`, dossier de sortie `dist`. La version de Node est lue dans `.nvmrc` ; aucune variable d'environnement, aucun secret.
+4. **Save and Deploy** : le site est publié sous `https://<nom-du-projet>.pages.dev`.
+
+Ensuite, chaque fusion dans `main` republie le site. Chaque branche poussée reçoit sa propre adresse d'aperçu : une pull request peut être essayée sur le téléphone avant sa fusion. Une adresse d'aperçu a ses propres données : saisir ses dossiers sur l'adresse de production seulement.
+
+Offre gratuite : 500 constructions par mois et 20 000 fichiers par site, très au-delà des besoins (une construction par fusion, une vingtaine de fichiers).
+
+Autres hébergeurs possibles, avec les mêmes réglages (commande `npm run build`, dossier `dist`) : Netlify ou Vercel, gratuits avec un dépôt privé. GitHub Pages demande l'abonnement GitHub Pro pour un dépôt privé, et le site publié reste public. Les chemins relatifs de la construction permettent l'hébergement à la racine d'un domaine comme dans un sous-dossier.
+
+### Qui peut ouvrir l'adresse
+
+Le site publié ne contient que le code, les paramètres fiscaux (publics) et le jeu d'essai fictif ; aucune saisie ne lui est envoyée. Quiconque connaît l'adresse peut toutefois utiliser l'outil. Pour la réserver à soi, Cloudflare Access (offre Zero Trust) demande un code reçu par e-mail avant d'ouvrir le site : la procédure pour l'adresse `*.pages.dev`, et pas seulement les aperçus, est décrite dans les [problèmes connus de Cloudflare Pages](https://developers.cloudflare.com/pages/platform/known-issues/) (section *Enable Access on your `*.pages.dev` domain*). Le code est redemandé à l'expiration de la session.
+
+### Installer l'application sur l'écran d'accueil
+
+- **iPhone ou iPad** : ouvrir l'adresse dans Safari > bouton Partager > **Sur l'écran d'accueil**.
+- **Android** : ouvrir l'adresse dans Chrome > menu ⋮ > **Installer l'application** (ou **Ajouter à l'écran d'accueil**).
+- **Ordinateur** : dans Chrome ou Edge, icône d'installation à droite de la barre d'adresse ; ou simplement un favori.
+
+L'application s'ouvre alors en plein écran, comme une application, et fonctionne sans connexion : tous ses fichiers sont gardés en cache à la première ouverture. En ligne, la dernière version publiée s'affiche ; si le réseau ne répond pas sous 3 secondes, la version en cache s'ouvre. Une fois installée, elle demande au navigateur de ne pas effacer ses données quand l'espace manque.
+
+Sur iPhone, l'installation sur l'écran d'accueil compte aussi pour les données : dans Safari, un site non visité pendant sept jours d'utilisation de Safari voit ses données effacées, dossiers compris ; une application de l'écran d'accueil a son propre décompte, fondé sur ses jours d'utilisation, et WebKit n'y prévoit pas d'effacement.
+
+### Passer d'un appareil à l'autre
+
+Chaque appareil, et chaque navigateur, garde ses propres dossiers : il n'y a pas de synchronisation. Pour reprendre un dossier ailleurs : « Exporter (JSON) » sur le premier appareil, transmettre le fichier `*.dossier.json` par un canal privé (AirDrop, Quick Share, son propre stockage en ligne), puis « Importer (JSON) » sur le second. Le fichier contient les revenus du foyer : ne pas le déposer dans le dépôt (le `.gitignore` l'exclut) ni le partager.
+
+## Installation locale (développement)
 
 Prérequis : Node.js 22.12 ou plus récent (voir `.nvmrc`) et npm.
 
@@ -29,11 +65,11 @@ npm run lint       # ESLint, aucun avertissement toléré
 npm run build      # contrôle de types puis construction dans dist/
 ```
 
-Aucun backend, aucun compte, aucun appel réseau à l'exécution.
+Aucun backend, aucun compte, aucun appel réseau à l'exécution en dehors du chargement de l'application elle-même. Le service worker n'est actif que dans la version construite (`npm run build` puis `npm run preview` pour l'essayer en local).
 
 ## Utilisation
 
-Lancer `npm run dev` puis ouvrir http://localhost:5173. Au premier lancement, l'application s'ouvre sur le jeu d'essai fictif (voir plus bas) ; « Nouveau » crée un dossier vierge. Tant qu'il manque une saisie, les écrans de résultats disent laquelle et où la faire.
+Ouvrir l'adresse du site (ou lancer `npm run dev` puis ouvrir http://localhost:5173). Au premier lancement, l'application s'ouvre sur le jeu d'essai fictif (voir plus bas) ; « Nouveau » crée un dossier vierge. Tant qu'il manque une saisie, les écrans de résultats disent laquelle et où la faire.
 
 | Écran | Contenu |
 |---|---|
@@ -48,6 +84,8 @@ Lancer `npm run dev` puis ouvrir http://localhost:5173. Au premier lancement, l'
 | 9. Questions à poser | Questions au vendeur, au notaire, à l'expert-comptable et à la banque, selon le scénario, les alertes, les valeurs à confirmer et la contre-expertise ; imprimables |
 
 L'horizon de revente est commun aux écrans Comparaison, Recommandation et Détail : c'est l'horizon envisagé des objectifs, enregistré avec le dossier. Les calculs longs (recommandation complète avec ses seuils de bascule, environ 0,3 s ; sensibilités) partent après une courte pause dans la saisie ; le résultat précédent reste affiché, atténué, pendant le calcul.
+
+Sur un écran étroit, les écrans tiennent sur une ligne qui défile horizontalement, les tableaux larges défilent dans leur cadre et une formule s'affiche en bas de l'écran, avec un bouton « Fermer ».
 
 Au clavier, le premier arrêt est le lien « Aller au contenu » ; les écrans sont des liens (Tab puis Entrée) ; formules et détails se déplient avec Entrée ou Espace ; au changement d'écran, le focus passe au contenu.
 
@@ -90,6 +128,8 @@ src/
   export/          exports CSV et XLSX des tableaux du moteur, sans recalcul
   ui/              interface React (écrans, composants, état, stockage local), sans aucun calcul fiscal
   jeu-essai/       cas type fictif préchargé (§14), au format d'un export de dossier
+public/            manifeste et icônes de l'application installable, copiés tels quels dans dist/
+pwa/               service worker : modèle et plugin de construction qui y inscrit les fichiers de la version
 tests/
   engine/          tests du moteur : valeurs du cahier des charges, exemples officiels, cas complets
     fixtures/      cas type (relu dans src/jeu-essai), ses variantes et une simulation de vendeur prudente
@@ -98,11 +138,12 @@ tests/
   ui/              saisie, état, stockage local, application complète dans jsdom
   params/          validation, cohérence et modifications locales des paramètres
   garde-fous/      aucune valeur fiscale en dur, HYPOTHESES.md à jour
+  pwa/             service worker généré, manifeste et icônes
 scripts/           outils de mise à jour annuelle des paramètres
 docs/              cas de test officiels relevés lors de la vérification
 ```
 
-Choix techniques : Vite 8, React 19, TypeScript 6.0 en mode strict, Vitest 5, ESLint 10 avec l'analyse typée de typescript-eslint. TypeScript est figé sur la version 6.0 : la version 7 n'expose plus l'API utilisée par typescript-eslint et par le garde-fou des valeurs en dur. Graphiques Recharts, chargés à la demande avec l'écran Comparaison ; classeurs XLSX écrits avec fflate (compression ZIP), chargé au premier export ; tests d'interface avec Testing Library et jsdom.
+Choix techniques : Vite 8, React 19, TypeScript 6.0 en mode strict, Vitest 5, ESLint 10 avec l'analyse typée de typescript-eslint. TypeScript est figé sur la version 6.0 : la version 7 n'expose plus l'API utilisée par typescript-eslint et par le garde-fou des valeurs en dur. Graphiques Recharts, chargés à la demande avec l'écran Comparaison ; classeurs XLSX écrits avec fflate (compression ZIP), chargé au premier export ; tests d'interface avec Testing Library et jsdom. Service worker écrit à la main (une cinquantaine de lignes, sans dépendance) : le plugin `pwa/plugin-service-worker.ts` y inscrit à la construction la liste des fichiers et une version tirée de leur contenu, si bien que chaque publication installe une nouvelle version complète et supprime l'ancienne.
 
 ## Moteur de calcul
 
@@ -167,7 +208,7 @@ Outils :
 
 ## Données personnelles
 
-Le dépôt ne contient aucune donnée personnelle : ni revenus, ni dossier de simulation, ni export. Le jeu d'essai versionné (`src/jeu-essai/cas-type.json`) est fictif ; son nom évite l'extension `.dossier.json`, exclue du dépôt. Les dossiers vivent dans le navigateur (`localStorage`) et dans des exports JSON locaux ; rien ne quitte l'ordinateur. Le `.gitignore` exclut `dossiers/`, `exports/`, `*.dossier.json`, `docs/plaquettes/` (documents du vendeur) et `.env*` : ranger les exports CSV et XLSX dans `exports/` s'ils doivent rester dans le dossier du projet.
+Le dépôt ne contient aucune donnée personnelle : ni revenus, ni dossier de simulation, ni export. Le jeu d'essai versionné (`src/jeu-essai/cas-type.json`) est fictif ; son nom évite l'extension `.dossier.json`, exclue du dépôt. Les dossiers vivent dans le navigateur (`localStorage`) et dans des exports JSON locaux ; rien ne quitte l'appareil, y compris quand l'application est utilisée en ligne : le site hébergé ne fait que servir le code, aucune saisie ne lui est envoyée. Le `.gitignore` exclut `dossiers/`, `exports/`, `*.dossier.json`, `docs/plaquettes/` (documents du vendeur) et `.env*` : ranger les exports CSV et XLSX dans `exports/` s'ils doivent rester dans le dossier du projet.
 
 ## Limites
 
@@ -176,7 +217,7 @@ Le dépôt ne contient aucune donnée personnelle : ni revenus, ni dossier de si
 - Le cumul Jeanbrun + LLI n'est mentionné par aucune source officielle consultée, ni pour l'autoriser ni pour l'interdire.
 - Hors périmètre ou simplifiés : SCI à l'IS (variante indicative), loueur en meublé professionnel, IFI, CEHR et CDHR, démembrement de propriété, intérêts intercalaires détaillés (différé simple), CSG déductible (option désactivée par défaut), Jeanbrun dans l'ancien, déficit foncier majoré pour travaux de rénovation énergétique, outre-mer, demi-parts particulières et frais réels, option du PFU pour le barème, sortie du LLI par cession des parts de la SCI. Détail dans `HYPOTHESES.md`, section 6.
 - Les points `a_confirmer` doivent être validés par un notaire ou un expert-comptable avant toute signature.
-- Les dossiers, avec leurs paramètres modifiés, restent dans le navigateur où ils ont été saisis : exporter le dossier en JSON pour le conserver ou changer d'ordinateur. Vider les données du site efface les dossiers non exportés.
+- Les dossiers, avec leurs paramètres modifiés, restent dans le navigateur où ils ont été saisis, sans synchronisation entre appareils : exporter le dossier en JSON pour le conserver ou changer d'appareil. Vider les données du site efface les dossiers non exportés ; sur iPhone, Safari les efface aussi après sept jours d'utilisation sans visite du site, sauf pour l'application installée sur l'écran d'accueil.
 
 ## Conventions
 

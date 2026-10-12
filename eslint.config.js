@@ -29,17 +29,27 @@ export default defineConfig([
     },
   },
   {
-    files: ['tests/**/*.{ts,tsx}', 'vite.config.ts'],
+    files: ['tests/**/*.{ts,tsx}', 'vite.config.ts', 'pwa/**/*.ts'],
     languageOptions: {
       globals: globals.node,
     },
   },
   {
     files: ['**/*.{js,mjs}'],
+    ignores: ['pwa/service-worker.js'],
     extends: [js.configs.recommended],
     languageOptions: {
       ecmaVersion: 2023,
       globals: globals.node,
+    },
+  },
+  {
+    files: ['pwa/service-worker.js'],
+    extends: [js.configs.recommended],
+    languageOptions: {
+      ecmaVersion: 2023,
+      sourceType: 'script',
+      globals: globals.serviceworker,
     },
   },
 ])

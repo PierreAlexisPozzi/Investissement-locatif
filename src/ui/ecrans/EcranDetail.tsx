@@ -101,58 +101,62 @@ function SensibilitesScenario({ s, horizon }: { readonly s: Sensibilites; readon
             Tornado du TRI <Infobulle texte={sens.commentaire} libelle="Amplitudes du tornado" />
           </h4>
           <p>TRI central : {formaterTauxCalcule(s.tornado.tri_central)}</p>
-          <table className="tableau-compact">
-            <thead>
-              <tr>
-                <th scope="col">Variable</th>
-                <th scope="col">TRI, variable basse</th>
-                <th scope="col">TRI, variable haute</th>
-                <th scope="col">Amplitude</th>
-              </tr>
-            </thead>
-            <tbody>
-              {s.tornado.branches.map((b) => (
-                <tr key={b.variable}>
-                  <th scope="row">{b.libelle}</th>
-                  <td className="nombre">{formaterTauxCalcule(b.tri_bas)}</td>
-                  <td className="nombre">{formaterTauxCalcule(b.tri_haut)}</td>
-                  <td className="nombre">{formaterPoints(b.amplitude)}</td>
+          <div className="defilement-horizontal">
+            <table className="tableau-compact">
+              <thead>
+                <tr>
+                  <th scope="col">Variable</th>
+                  <th scope="col">TRI, variable basse</th>
+                  <th scope="col">TRI, variable haute</th>
+                  <th scope="col">Amplitude</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {s.tornado.branches.map((b) => (
+                  <tr key={b.variable}>
+                    <th scope="row">{b.libelle}</th>
+                    <td className="nombre">{formaterTauxCalcule(b.tri_bas)}</td>
+                    <td className="nombre">{formaterTauxCalcule(b.tri_haut)}</td>
+                    <td className="nombre">{formaterPoints(b.amplitude)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
       {s.croise === null ? null : (
         <>
           <h4>TRI selon la décote du neuf et la revalorisation du prix (revente après {horizon} ans)</h4>
-          <table className="tableau-compact tableau-croise">
-            <thead>
-              <tr>
-                <th scope="col">Décote \ revalorisation</th>
-                {s.croise.revalorisations.map((r) => (
-                  <th key={r} scope="col">
-                    {formaterTaux(r)}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {s.croise.decotes.map((decote, i) => (
-                <tr key={decote}>
-                  <th scope="row">{formaterTaux(decote)}</th>
-                  {s.croise?.revalorisations.map((r, j) => (
-                    <td
-                      key={r}
-                      className={decote === prixActuel.decote_neuf && r === prixActuel.revalorisation_annuelle ? 'nombre cellule-courante' : 'nombre'}
-                    >
-                      {formaterTauxCalcule(s.croise?.tri[i]?.[j])}
-                    </td>
+          <div className="defilement-horizontal">
+            <table className="tableau-compact tableau-croise">
+              <thead>
+                <tr>
+                  <th scope="col">Décote \ revalorisation</th>
+                  {s.croise.revalorisations.map((r) => (
+                    <th key={r} scope="col">
+                      {formaterTaux(r)}
+                    </th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {s.croise.decotes.map((decote, i) => (
+                  <tr key={decote}>
+                    <th scope="row">{formaterTaux(decote)}</th>
+                    {s.croise?.revalorisations.map((r, j) => (
+                      <td
+                        key={r}
+                        className={decote === prixActuel.decote_neuf && r === prixActuel.revalorisation_annuelle ? 'nombre cellule-courante' : 'nombre'}
+                      >
+                        {formaterTauxCalcule(s.croise?.tri[i]?.[j])}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
       {s.equilibre === null ? null : (
