@@ -5,7 +5,7 @@ import { EcranFoyer } from './ecrans/EcranFoyer'
 import { EcranHypotheses } from './ecrans/EcranHypotheses'
 import { Synthese } from './ecrans/Synthese'
 import { useApplication } from './etat/application'
-import { ECRANS, type IdEcran } from './etat/etat'
+import { ECRANS, GROUPES_ECRANS, type IdEcran } from './etat/etat'
 import { useEcran } from './etat/navigation'
 import { dateDuJour, formaterDate } from './format'
 
@@ -66,7 +66,7 @@ export function App() {
   // Date d'édition de la synthèse en cours d'impression ; null hors impression.
   const [impression, setImpression] = useState<string | null>(null)
   const contenu = useRef<HTMLElement>(null)
-  const navigation = useRef<HTMLOListElement>(null)
+  const navigation = useRef<HTMLDivElement>(null)
   const ecranPrecedent = useRef(ecran)
 
   // Sur un écran étroit, la navigation tient sur une ligne qui défile : l'écran affiché y reste visible.
@@ -111,7 +111,12 @@ export function App() {
         Aller au contenu
       </a>
       <header className="entete ne-pas-imprimer">
-        <h1>Investissement locatif — aide à la décision</h1>
+        <h1 className="marque">
+          <img src={`${import.meta.env.BASE_URL}icone.svg`} alt="" width={32} height={32} />
+          <span>
+            Investissement locatif<span className="marque-sous-titre"> — aide à la décision</span>
+          </span>
+        </h1>
         <BarreDossiers
           onImprimer={() => {
             setImpression(dateDuJour(new Date()))
@@ -121,16 +126,25 @@ export function App() {
       <Messages />
       <div className="corps">
         <nav className="navigation ne-pas-imprimer" aria-label="Écrans">
-          <ol ref={navigation}>
-            {ECRANS.map((e) => (
-              <li key={e.id}>
-                <a href={`#/${e.id}`} aria-current={ecran === e.id ? 'page' : undefined}>
-                  {e.titre}
-                  {!complet && ECRANS_DE_RESULTATS.includes(e.id) ? <span className="attenue"> (dossier à compléter)</span> : null}
-                </a>
-              </li>
+          <div className="navigation-liste" ref={navigation}>
+            {GROUPES_ECRANS.map((g) => (
+              <div key={g.id} className={`navigation-groupe navigation-${g.id}`}>
+                <p className="navigation-titre" id={`navigation-${g.id}`}>
+                  {g.titre}
+                </p>
+                <ul aria-labelledby={`navigation-${g.id}`}>
+                  {ECRANS.filter((e) => e.groupe === g.id).map((e) => (
+                    <li key={e.id}>
+                      <a href={`#/${e.id}`} aria-current={ecran === e.id ? 'page' : undefined}>
+                        {e.titre}
+                        {!complet && ECRANS_DE_RESULTATS.includes(e.id) ? <span className="attenue"> (dossier à compléter)</span> : null}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
-          </ol>
+          </div>
           {parametres.modifies.length > 0 ? (
             <p className="badge badge-modifie">{parametres.modifies.length} paramètre(s) modifié(s)</p>
           ) : null}

@@ -43,6 +43,11 @@ function monter(stockage: Stockage) {
 
 const titreEcran = (nom: string | RegExp) => screen.findByRole('heading', { level: 2, name: nom }, ATTENTE_CALCUL)
 
+/** Ouvre le menu des actions du dossier (dupliquer, exporter, imprimer…). */
+async function ouvrirMenu(user: ReturnType<typeof userEvent.setup>): Promise<void> {
+  await user.click(screen.getByText('Actions du dossier'))
+}
+
 beforeAll(() => {
   // Les graphiques mesurent leur conteneur ; jsdom ne fait pas de mise en page et mesurerait zéro.
   const rectangle = { x: 0, y: 0, top: 0, left: 0, width: 600, height: 300, right: 600, bottom: 300 }
@@ -82,6 +87,7 @@ describe('application', () => {
     const user = userEvent.setup()
     monter(stockageEssai())
     await titreEcran('Mon foyer')
+    await ouvrirMenu(user)
     await user.click(screen.getByRole('button', { name: 'Charger le jeu d’essai' }))
     const choix = screen.getByLabelText<HTMLSelectElement>('Dossier')
     expect([...choix.options].map((o) => o.textContent)).toEqual(['Cas type (fictif)', 'Cas type (fictif) (2)'])
@@ -190,6 +196,7 @@ describe('application', () => {
     })
     monter(stockageEssai())
     await titreEcran('Mon foyer')
+    await ouvrirMenu(user)
     await user.click(screen.getByRole('button', { name: 'Imprimer la synthèse' }))
     expect(imprimer).toHaveBeenCalledTimes(1)
     expect(synthesePresente).toBe(true)
@@ -201,6 +208,7 @@ describe('application', () => {
     const imprimer = vi.spyOn(window, 'print').mockImplementation(() => undefined)
     monter(stockageEssai({ 'micro_foncier.abattement': { valeur: 0.35 } }))
     await titreEcran('Mon foyer')
+    await ouvrirMenu(user)
     await user.click(screen.getByRole('button', { name: 'Imprimer la synthèse' }))
     const synthese = screen.getByRole('article', { name: 'Synthèse imprimable' })
     const titre = within(synthese).getByText('Paramètres fiscaux modifiés pour ce dossier :')
@@ -269,6 +277,23 @@ describe('application', () => {
     })
     expect(screen.getByRole('option', { name: 'Renommé ailleurs' })).toBeTruthy()
     expect(screen.getByText('Dossiers mis à jour depuis un autre onglet')).toBeTruthy()
+  })
+})
+
+describe('menu des actions du dossier', () => {
+  it('le menu des actions du dossier se referme après un choix et sur Échap', async () => {
+    const user = userEvent.setup()
+    monter(stockageEssai())
+    await titreEcran('Mon foyer')
+    const menu = screen.getByText('Actions du dossier').closest('details')
+    await ouvrirMenu(user)
+    expect(menu?.open).toBe(true)
+    await user.keyboard('{Escape}')
+    expect(menu?.open).toBe(false)
+    await ouvrirMenu(user)
+    await user.click(screen.getByRole('button', { name: 'Dupliquer' }))
+    expect(menu?.open).toBe(false)
+    expect(screen.getByLabelText<HTMLSelectElement>('Dossier').selectedOptions[0]?.textContent).toBe('Cas type (fictif) (copie)')
   })
 })
 

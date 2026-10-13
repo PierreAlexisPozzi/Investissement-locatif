@@ -9,16 +9,23 @@ import type { IdScenario } from '../../engine/scenario'
 import type { SurchargeParametre } from '../../params'
 import type { DossierEnregistre } from './stockage'
 
+/** Groupes du menu de navigation, dans leur ordre d'affichage. */
+export const GROUPES_ECRANS = [
+  { id: 'saisie', titre: 'Saisie' },
+  { id: 'analyse', titre: 'Analyse' },
+  { id: 'reference', titre: 'Référence' },
+] as const
+
 export const ECRANS = [
-  { id: 'foyer', titre: 'Mon foyer' },
-  { id: 'bien', titre: 'Le bien et le financement' },
-  { id: 'hypotheses', titre: 'Hypothèses' },
-  { id: 'comparaison', titre: 'Comparaison' },
-  { id: 'recommandation', titre: 'Recommandation' },
-  { id: 'detail', titre: 'Détail d’un scénario' },
-  { id: 'contre_expertise', titre: 'Contre-expertise du vendeur' },
-  { id: 'parametres', titre: 'Paramètres fiscaux' },
-  { id: 'questions', titre: 'Questions à poser' },
+  { id: 'foyer', titre: 'Mon foyer', groupe: 'saisie' },
+  { id: 'bien', titre: 'Le bien et le financement', groupe: 'saisie' },
+  { id: 'hypotheses', titre: 'Hypothèses', groupe: 'saisie' },
+  { id: 'comparaison', titre: 'Comparaison', groupe: 'analyse' },
+  { id: 'recommandation', titre: 'Recommandation', groupe: 'analyse' },
+  { id: 'detail', titre: 'Détail d’un scénario', groupe: 'analyse' },
+  { id: 'contre_expertise', titre: 'Contre-expertise du vendeur', groupe: 'analyse' },
+  { id: 'parametres', titre: 'Paramètres fiscaux', groupe: 'reference' },
+  { id: 'questions', titre: 'Questions à poser', groupe: 'reference' },
 ] as const
 
 export type IdEcran = (typeof ECRANS)[number]['id']
