@@ -1,12 +1,13 @@
 /**
- * Données des graphiques de l'écran Comparaison (§11, écran 4) : flux de
- * trésorerie cumulés après impôt, capital net à la sortie par horizon,
+ * Données des graphiques des écrans Tableau de bord et Comparaison (§11,
+ * écran 4) : flux de trésorerie cumulés après impôt, capital net à la sortie
+ * par horizon et comparé au placement, effort d'épargne par année,
  * décomposition de l'avantage fiscal. Ce sont des regroupements des résultats
  * du moteur ; aucune règle fiscale ici.
  */
 import { lireDate } from './dates'
 import type { ComparaisonHorizon, Indicateurs } from './indicateurs'
-import type { IdScenario } from './scenario'
+import type { IdScenario, ResultatSimulation } from './scenario'
 
 export interface PointSerie {
   readonly abscisse: number
@@ -73,4 +74,30 @@ export function decompositionAvantage(indicateurs: readonly Indicateurs[]): Deco
 export function anneeDeCession(c: ComparaisonHorizon): number | null {
   const s = c.scenarios.find((r) => r.simulation !== null)?.simulation
   return s === undefined || s === null ? null : lireDate(s.calendrier.date_cession).annee
+}
+
+export interface EffortAnnuel {
+  readonly annee: number
+  /** Effort d'épargne mensuel moyen de l'année : négatif quand l'opération dégage de la trésorerie. */
+  readonly mensuel: number
+}
+
+/** Effort d'épargne mensuel de chaque année de détention, flux de l'année réparti sur ses mois de détention (comme les indicateurs). */
+export function effortParAnnee(s: ResultatSimulation): EffortAnnuel[] {
+  return s.annees.filter((a) => a.mois_detention > 0).map((a) => ({ annee: a.annee, mensuel: -a.flux_tresorerie / a.mois_detention }))
+}
+
+export interface CapitalCompare {
+  readonly id: IdScenario
+  readonly capital: number
+  /** Capital net des mêmes décaissements placés au rendement de référence. */
+  readonly placement: number
+  readonly ecart: number
+}
+
+/** Capital net à la sortie de chaque scénario éligible et de son placement équivalent, du plus élevé au plus faible. */
+export function capitalCompareAuPlacement(indicateurs: readonly Indicateurs[]): CapitalCompare[] {
+  return indicateurs
+    .map((i) => ({ id: i.id, capital: i.capital_net_sortie, placement: i.capital_net_placement, ecart: i.ecart_capital_placement }))
+    .sort((a, b) => b.capital - a.capital)
 }

@@ -15,7 +15,8 @@ Application web, utilisable sur téléphone comme sur ordinateur, qui simule un 
 | 5 | Recommandation et contre-expertise | livrée |
 | 6 | Interface (écrans 1 à 9), exports, persistance | livrée |
 | 7 | Jeu d'essai préchargé, README final | livrée |
-| Suite | Affichage sur téléphone, application installable et hors connexion, mise en ligne | en relecture |
+| Suite | Affichage sur téléphone, application installable et hors connexion, mise en ligne | livrée |
+| 8 | Tableau de bord (verdict, indicateurs clés, graphiques), refonte visuelle | en relecture |
 
 ## Utiliser l'application en ligne (téléphone et ordinateur)
 
@@ -69,16 +70,19 @@ Aucun backend, aucun compte, aucun appel réseau à l'exécution en dehors du ch
 
 ## Utilisation
 
-Ouvrir l'adresse du site (ou lancer `npm run dev` puis ouvrir http://localhost:5173). Au premier lancement, l'application s'ouvre sur le jeu d'essai fictif (voir plus bas) ; « Nouveau » crée un dossier vierge. Tant qu'il manque une saisie, les écrans de résultats disent laquelle et où la faire.
+Ouvrir l'adresse du site (ou lancer `npm run dev` puis ouvrir http://localhost:5173). L'application s'ouvre sur le tableau de bord ; au premier lancement, il présente le jeu d'essai fictif (voir plus bas). « Nouveau » crée un dossier vierge et ouvre sa première étape de saisie. Tant qu'il manque une saisie, les écrans de résultats disent laquelle et où la faire. Les autres actions du dossier (dupliquer, renommer, exporter, importer, charger le jeu d'essai, imprimer, supprimer) sont dans le menu « Actions du dossier ».
+
+Le menu regroupe les écrans en quatre parties : Synthèse, Saisie (trois étapes numérotées), Analyse et Référence.
 
 | Écran | Contenu |
 |---|---|
+| Tableau de bord | En un coup d'œil : verdict de la recommandation (investir dans tel scénario, ou ne pas investir) ; six indicateurs clés du scénario analysé (recommandé par défaut, ou la meilleure option immobilière), chacun avec son état : effort d'épargne mensuel face à la capacité d'épargne (jauge), capital net à la sortie et TRI face au placement de référence, économie d'impôt nette, taux d'endettement face à la limite (jauge), durée de blocage ; classement des scénarios en barres de score ; points de vigilance ; graphiques du capital net à la sortie face au placement équivalent, de l'effort d'épargne année par année face à la capacité, et de la trésorerie cumulée, le scénario analysé mis en avant |
 | 1. Mon foyer | Statut du couple, revenu imposable (aide au calcul depuis les salaires), parts (aide selon les enfants à charge), revenus fonciers et déficits existants, niches déjà utilisées, crédits en cours, changement de revenu prévu, capacité d'épargne, apport ; revenu imposé, impôt actuel (revenus fonciers des autres biens compris), tranche marginale, niches disponibles et taux d'endettement en direct |
 | 2. Le bien et le financement | Bien, prix, calendrier, travaux, loyers de marché, charges, prêt, frais d'exploitation ; surface prise en compte, coefficient de surface, loyers plafonds, prix TTC et pastille d'éligibilité de chaque dispositif, avec ses motifs, en direct |
 | 3. Hypothèses | Trois scénarios de prix (pessimiste, central, optimiste), loyers et charges, inflation, barème, revenus, placement de référence ; bouton « Hypothèses prudentes » |
 | 4. Comparaison | Scénarios × indicateurs à l'horizon choisi ; chaque indicateur se déplie jusqu'à sa formule et au tableau annuel ; scénarios inéligibles grisés avec leurs motifs ; flux cumulé après impôt, capital net par horizon, décomposition de l'avantage fiscal ; export CSV ou XLSX |
 | 5. Recommandation | Curseurs d'objectifs, classement recalculé en direct (valeur, note et points de chaque critère) ; recommandation rédigée (phrase, trois raisons chiffrées, risques, seuils de bascule) et alertes ; barèmes qualitatifs modifiables |
-| 6. Détail d'un scénario | Tableau annuel complet, formule de chaque colonne en infobulle, détail des charges, revente et plus-value, sensibilités (tornado, tableau croisé, prix de revente d'équilibre, pénalité de sortie, option écartée des frais d'acquisition en LMNP) ; export CSV ou XLSX (tableau, revente, formules) |
+| 6. Détail d'un scénario | Les six indicateurs clés du tableau de bord pour le scénario choisi, tableau annuel complet, formule de chaque colonne en infobulle, détail des charges, revente et plus-value, sensibilités (tornado, tableau croisé, prix de revente d'équilibre, pénalité de sortie, option écartée des frais d'acquisition en LMNP) ; export CSV ou XLSX (tableau, revente, formules) |
 | 7. Contre-expertise du vendeur | Saisie de la simulation remise par le vendeur ; écarts de plus de 5 %, hypothèses optimistes relevées, rejeu avec les hypothèses prudentes |
 | 8. Paramètres fiscaux | Lecture filtrable de `fiscal-2026.json` : statut, date de lecture de la source, lien officiel, commentaire, arbitrage ; modification contrôlée, propre au dossier ouvert, retour à la valeur du fichier, export du fichier modifié |
 | 9. Questions à poser | Questions au vendeur, au notaire, à l'expert-comptable et à la banque, selon le scénario, les alertes, les valeurs à confirmer et la contre-expertise ; imprimables |
@@ -86,6 +90,8 @@ Ouvrir l'adresse du site (ou lancer `npm run dev` puis ouvrir http://localhost:5
 L'horizon de revente est commun aux écrans Comparaison, Recommandation et Détail : c'est l'horizon envisagé des objectifs, enregistré avec le dossier. Les calculs longs (recommandation complète avec ses seuils de bascule, environ 0,3 s ; sensibilités) partent après une courte pause dans la saisie ; le résultat précédent reste affiché, atténué, pendant le calcul.
 
 Sur un écran étroit, les écrans tiennent sur une ligne qui défile horizontalement, les tableaux larges défilent dans leur cadre et une formule s'affiche en bas de l'écran, avec un bouton « Fermer ».
+
+Chaque graphique a sa légende écrite et, sous « Voir les données », ses valeurs en tableau : rien ne repose sur la couleur ou le survol seuls. Les états (dans la capacité, au-delà de la limite, face au placement) portent une icône et un libellé. La palette des scénarios a été vérifiée pour les daltonismes ; chaque scénario garde sa couleur d'un graphique à l'autre.
 
 Au clavier, le premier arrêt est le lien « Aller au contenu » ; les écrans sont des liens (Tab puis Entrée) ; formules et détails se déplient avec Entrée ou Espace ; au changement d'écran, le focus passe au contenu.
 

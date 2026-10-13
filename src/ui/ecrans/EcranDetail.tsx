@@ -8,6 +8,7 @@ import { hypothesesDefaut } from '../../params'
 import { ChampListe } from '../composants/Champs'
 import { DossierIncomplet, Ecran } from '../composants/Ecran'
 import { BadgesParametres, EnCours, Encart, Infobulle, ListeMotifs } from '../composants/Elements'
+import { IndicateursCles } from '../composants/IndicateursCles'
 import { SelecteurHorizon } from '../composants/SelecteurHorizon'
 import { useApplication } from '../etat/application'
 import { calculs, essayer, useCalculDiffere, type Sensibilites } from '../etat/calculs'
@@ -274,12 +275,13 @@ function Simulation({ r, s }: { readonly r: ResultatScenario; readonly s: Result
 }
 
 function Detail() {
-  const { dossierCalcul, p, objectifs, etat, actions } = useApplication()
+  const { dossierCalcul, dossier, p, objectifs, etat, actions } = useApplication()
   const horizon = objectifs.horizon
   const resultat = useMemo(() => essayer(() => calculs.comparaison(dossierCalcul, p, horizon)), [dossierCalcul, p, horizon])
   if (!resultat.ok) return <Encart genre="erreur">{resultat.message}</Encart>
   const scenarios = resultat.valeur.scenarios
   const r = scenarios.find((x) => x.id === etat.scenario)
+  const indicateurs = resultat.valeur.indicateurs.find((x) => x.id === etat.scenario)
   return (
     <>
       <div className="barre-outils ne-pas-imprimer">
@@ -299,8 +301,11 @@ function Detail() {
           <ListeMotifs motifs={r.eligibilite.motifs} />
         </Encart>
       ) : (
-        // Une instance par scénario et horizon : aucune sensibilité d'un autre scénario ne reste affichée pendant le calcul.
-        <Simulation key={`${r.id}-${String(objectifs.horizon)}`} r={r} s={r.simulation} />
+        <>
+          {indicateurs === undefined ? null : <IndicateursCles i={indicateurs} capacite={dossier.foyers.capacite_epargne_mensuelle} />}
+          {/* Une instance par scénario et horizon : aucune sensibilité d'un autre scénario ne reste affichée pendant le calcul. */}
+          <Simulation key={`${r.id}-${String(objectifs.horizon)}`} r={r} s={r.simulation} />
+        </>
       )}
     </>
   )

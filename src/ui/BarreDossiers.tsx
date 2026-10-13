@@ -1,13 +1,16 @@
 import { useId, useRef, useState } from 'react'
 import { fichierDossier, lireFichierDossier } from '../engine/dossier-json'
 import { nomDeFichier } from '../export/exports-scenario'
+import { Menu } from './composants/Menu'
 import { useApplication } from './etat/application'
+import { useEcran } from './etat/navigation'
 import { dateDuJour, formaterDate } from './format'
 import { lireFichierTexte, telecharger, TYPE_JSON } from './telechargement'
 
 /** Gestion des dossiers : choix, création, copie, renommage, suppression, export et import JSON, impression. */
 export function BarreDossiers({ onImprimer }: { readonly onImprimer: () => void }) {
   const { etat, enregistre, complet, actions } = useApplication()
+  const [, allerA] = useEcran()
   const idListe = useId()
   const idNom = useId()
   const fichier = useRef<HTMLInputElement>(null)
@@ -53,45 +56,58 @@ export function BarreDossiers({ onImprimer }: { readonly onImprimer: () => void 
           </option>
         ))}
       </select>
-      <span className="attenue">modifié le {formaterDate(dateDuJour(new Date(enregistre.modifie_le)))}</span>
+      <span className="attenue modifie-le">modifié le {formaterDate(dateDuJour(new Date(enregistre.modifie_le)))}</span>
       {nom === null ? (
         <>
-          <button type="button" onClick={actions.nouveauDossier}>
+          <button
+            type="button"
+            className="bouton-principal"
+            onClick={() => {
+              actions.nouveauDossier()
+              allerA('foyer')
+            }}
+          >
             Nouveau
           </button>
-          <button type="button" onClick={actions.dupliquerDossier}>
-            Dupliquer
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setNom(enregistre.nom)
-            }}
-          >
-            Renommer
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (window.confirm(`Supprimer le dossier « ${enregistre.nom} » de ce navigateur ? Exportez-le avant pour le conserver.`)) actions.supprimerDossier()
-            }}
-          >
-            Supprimer
-          </button>
-          <button type="button" onClick={exporter}>
-            Exporter (JSON)
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              fichier.current?.click()
-            }}
-          >
-            Importer (JSON)
-          </button>
-          <button type="button" title="Cas type fictif du cahier des charges, ajouté comme nouveau dossier" onClick={actions.chargerJeuEssai}>
-            Charger le jeu d’essai
-          </button>
+          <Menu libelle="Actions du dossier">
+            <button type="button" onClick={actions.dupliquerDossier}>
+              Dupliquer
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setNom(enregistre.nom)
+              }}
+            >
+              Renommer
+            </button>
+            <button type="button" onClick={exporter}>
+              Exporter (JSON)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                fichier.current?.click()
+              }}
+            >
+              Importer (JSON)
+            </button>
+            <button type="button" title="Cas type fictif du cahier des charges, ajouté comme nouveau dossier" onClick={actions.chargerJeuEssai}>
+              Charger le jeu d’essai
+            </button>
+            <button type="button" disabled={!complet} title={complet ? undefined : 'Dossier à compléter'} onClick={onImprimer}>
+              Imprimer la synthèse
+            </button>
+            <button
+              type="button"
+              className="menu-danger"
+              onClick={() => {
+                if (window.confirm(`Supprimer le dossier « ${enregistre.nom} » de ce navigateur ? Exportez-le avant pour le conserver.`)) actions.supprimerDossier()
+              }}
+            >
+              Supprimer
+            </button>
+          </Menu>
           <input
             ref={fichier}
             type="file"
@@ -104,9 +120,6 @@ export function BarreDossiers({ onImprimer }: { readonly onImprimer: () => void 
               if (choisi !== undefined) void importer(choisi)
             }}
           />
-          <button type="button" disabled={!complet} title={complet ? undefined : 'Dossier à compléter'} onClick={onImprimer}>
-            Imprimer la synthèse
-          </button>
         </>
       ) : (
         <form

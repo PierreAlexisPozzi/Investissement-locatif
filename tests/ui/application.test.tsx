@@ -2,13 +2,17 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { objectifsParDefaut } from '../../src/engine/dossier'
 import { fichierDossier } from '../../src/engine/dossier-json'
+import { comparerScenarios } from '../../src/engine/indicateurs'
+import { classer } from '../../src/engine/recommandation'
 import { parametresFiscaux2026 as p, type SurchargesParametres } from '../../src/params'
 import { App } from '../../src/ui/App'
 import { ECRANS } from '../../src/ui/etat/etat'
 import { FournisseurApplication } from '../../src/ui/etat/FournisseurApplication'
 import { etatInitial } from '../../src/ui/etat/initialisation'
 import { CLE_DOSSIER_COURANT, CLE_DOSSIERS, type Stockage } from '../../src/ui/etat/stockage'
+import { formaterEuros } from '../../src/ui/format'
 import { LIBELLES_STATUTS } from '../../src/ui/libelles'
 import { dossierAncien, dossierType } from '../engine/fixtures/dossier-type'
 import { simulationOptimiste } from '../engine/fixtures/simulation-vendeur'
@@ -43,6 +47,11 @@ function monter(stockage: Stockage) {
 
 const titreEcran = (nom: string | RegExp) => screen.findByRole('heading', { level: 2, name: nom }, ATTENTE_CALCUL)
 
+/** Ouvre le menu des actions du dossier (dupliquer, exporter, imprimer…). */
+async function ouvrirMenu(user: ReturnType<typeof userEvent.setup>): Promise<void> {
+  await user.click(screen.getByText('Actions du dossier'))
+}
+
 beforeAll(() => {
   // Les graphiques mesurent leur conteneur ; jsdom ne fait pas de mise en page et mesurerait zéro.
   const rectangle = { x: 0, y: 0, top: 0, left: 0, width: 600, height: 300, right: 600, bottom: 300 }
@@ -69,8 +78,11 @@ describe('application', () => {
   it('premier lancement : le jeu d’essai fictif est préchargé et ses résultats sont calculés', async () => {
     const user = userEvent.setup()
     monter(stockageMemoire())
-    await titreEcran('Mon foyer')
+    await titreEcran('Tableau de bord')
     expect(screen.getByLabelText<HTMLSelectElement>('Dossier').selectedOptions[0]?.textContent).toBe('Cas type (fictif)')
+    expect(screen.getByRole('meter', { name: 'Taux d’endettement face à la limite' })).toBeTruthy()
+    await user.click(screen.getByRole('link', { name: /Mon foyer/ }))
+    await titreEcran('Mon foyer')
     expect(screen.getByLabelText<HTMLInputElement>('Revenu net imposable annuel').value.replace(/\s/g, '')).toBe('90000')
     await user.click(screen.getByRole('link', { name: /Comparaison/ }))
     await titreEcran('Comparaison')
@@ -81,7 +93,8 @@ describe('application', () => {
   it('« Charger le jeu d’essai » l’ajoute comme nouveau dossier, sous un nom libre', async () => {
     const user = userEvent.setup()
     monter(stockageEssai())
-    await titreEcran('Mon foyer')
+    await titreEcran('Tableau de bord')
+    await ouvrirMenu(user)
     await user.click(screen.getByRole('button', { name: 'Charger le jeu d’essai' }))
     const choix = screen.getByLabelText<HTMLSelectElement>('Dossier')
     expect([...choix.options].map((o) => o.textContent)).toEqual(['Cas type (fictif)', 'Cas type (fictif) (2)'])
@@ -92,8 +105,10 @@ describe('application', () => {
     const user = userEvent.setup()
     const stockage = stockageMemoire()
     monter(stockage)
-    await titreEcran('Mon foyer')
+    await titreEcran('Tableau de bord')
     await user.click(screen.getByRole('button', { name: 'Nouveau' }))
+    // Un nouveau dossier s'ouvre sur la première étape de saisie.
+    await titreEcran('Mon foyer')
     const revenu = screen.getByLabelText('Revenu net imposable annuel')
     await user.clear(revenu)
     await user.type(revenu, '85000')
@@ -118,6 +133,7 @@ describe('application', () => {
     const user = userEvent.setup()
     monter(stockageEssai())
     const attendus: Record<string, () => Promise<unknown>> = {
+      tableau_de_bord: () => screen.findByRole('heading', { name: 'Classement des scénarios' }),
       foyer: () => screen.findByText('Sans l’opération'),
       bien: () => screen.findByText('Éligibilité par dispositif'),
       hypotheses: () => screen.findByRole('button', { name: 'Hypothèses prudentes' }),
@@ -139,7 +155,9 @@ describe('application', () => {
     window.location.hash = '/comparaison'
     monter(stockageEssai())
     await titreEcran('Comparaison')
-    const tableau = await screen.findByRole('table')
+    // Les graphiques ont aussi leurs données en tableau : on retient celui de la comparaison.
+    const tableau = (await screen.findAllByRole('table')).find((x) => x.classList.contains('tableau-comparaison'))
+    if (tableau === undefined) throw new Error('tableau de comparaison absent')
     const enTetes = within(tableau).getAllByRole('columnheader')
     const s59 = enTetes.find((th) => th.textContent.startsWith('S5_9'))
     expect(s59?.className).toBe('ineligible')
@@ -187,7 +205,8 @@ describe('application', () => {
       synthesePresente = document.querySelector('article.synthese') !== null
     })
     monter(stockageEssai())
-    await titreEcran('Mon foyer')
+    await titreEcran('Tableau de bord')
+    await ouvrirMenu(user)
     await user.click(screen.getByRole('button', { name: 'Imprimer la synthèse' }))
     expect(imprimer).toHaveBeenCalledTimes(1)
     expect(synthesePresente).toBe(true)
@@ -198,7 +217,8 @@ describe('application', () => {
     const user = userEvent.setup()
     const imprimer = vi.spyOn(window, 'print').mockImplementation(() => undefined)
     monter(stockageEssai({ 'micro_foncier.abattement': { valeur: 0.35 } }))
-    await titreEcran('Mon foyer')
+    await titreEcran('Tableau de bord')
+    await ouvrirMenu(user)
     await user.click(screen.getByRole('button', { name: 'Imprimer la synthèse' }))
     const synthese = screen.getByRole('article', { name: 'Synthèse imprimable' })
     const titre = within(synthese).getByText('Paramètres fiscaux modifiés pour ce dossier :')
@@ -221,8 +241,9 @@ describe('application', () => {
     const user = userEvent.setup()
     const stockage = stockageEssai()
     monter(stockage)
-    await titreEcran('Mon foyer')
+    await titreEcran('Tableau de bord')
     await user.click(screen.getByRole('button', { name: 'Nouveau' }))
+    await titreEcran('Mon foyer')
     const revenu = screen.getByLabelText('Revenu net imposable annuel')
     await user.clear(revenu)
     await user.type(revenu, '12a')
@@ -251,7 +272,7 @@ describe('application', () => {
   it('un enregistrement fait dans un autre onglet est rechargé ; son choix de dossier ne l’est pas', async () => {
     const stockage = stockageEssai()
     monter(stockage)
-    await titreEcran('Mon foyer')
+    await titreEcran('Tableau de bord')
     stockage.contenu.set(CLE_DOSSIER_COURANT, 'autre')
     act(() => {
       window.dispatchEvent(new StorageEvent('storage', { key: CLE_DOSSIER_COURANT }))
@@ -267,6 +288,78 @@ describe('application', () => {
     })
     expect(screen.getByRole('option', { name: 'Renommé ailleurs' })).toBeTruthy()
     expect(screen.getByText('Dossiers mis à jour depuis un autre onglet')).toBeTruthy()
+  })
+})
+
+describe('tableau de bord', () => {
+  const objectifs = dossierType.objectifs ?? objectifsParDefaut()
+  const comparaison = comparerScenarios(dossierType, objectifs.horizon, p)
+  const classement = classer(dossierType, objectifs, p, comparaison)
+  const indicateurs = (id: string) => {
+    const i = comparaison.indicateurs.find((x) => x.id === id)
+    if (i === undefined) throw new Error(id)
+    return i
+  }
+  /** Valeur affichée par une tuile, retrouvée par son libellé. */
+  const tuile = (libelle: string) => {
+    const carte = screen.getByText(libelle, { selector: '.tuile-libelle' }).parentElement
+    if (carte === null) throw new Error(libelle)
+    return carte.querySelector('.tuile-valeur')?.textContent
+  }
+
+  it('verdict, indicateurs clés et jauges du scénario retenu, calculés par le moteur', async () => {
+    monter(stockageEssai())
+    await titreEcran('Tableau de bord')
+    // Cas type : le placement l'emporte, le tableau de bord analyse la meilleure option immobilière.
+    expect(classement.choix).toBe('placement')
+    const meilleur = classement.meilleur_immobilier
+    if (meilleur === null) throw new Error('aucun scénario classé')
+    expect(screen.getByText(/^Ne pas investir : le placement de référence l’emporte/)).toBeTruthy()
+    expect(screen.getByLabelText<HTMLSelectElement>('Scénario analysé').value).toBe(meilleur)
+    const i = indicateurs(meilleur)
+    expect(tuile('Capital net à la sortie')).toBe(formaterEuros(i.capital_net_sortie))
+    expect(tuile('Économie d’impôt nette')).toBe(formaterEuros(i.economie_impot_nette))
+    expect(screen.getByRole('meter', { name: 'Taux d’endettement face à la limite' }).getAttribute('aria-valuenow')).toBe(String(i.taux_endettement_apres))
+    expect(screen.getByRole('meter', { name: 'Effort de la pire année face à la capacité d’épargne' }).getAttribute('aria-valuenow')).toBe(String(i.effort_mensuel_pire))
+    // La phrase de la recommandation arrive après le calcul complet.
+    expect(await screen.findByText(/^Ne pas investir : aucun scénario immobilier/, {}, ATTENTE_CALCUL)).toBeTruthy()
+  })
+
+  it('choisir un scénario du classement met à jour les indicateurs', async () => {
+    const user = userEvent.setup()
+    monter(stockageEssai())
+    await titreEcran('Tableau de bord')
+    const classes = classement.evaluations.filter((e) => e.rang !== null)
+    expect(screen.getAllByRole('button', { pressed: false }).filter((b) => b.classList.contains('classement-nom'))).toHaveLength(classes.length - 1)
+    await user.click(screen.getByRole('button', { name: /^S1 Jeanbrun neuf, loyer intermédiaire/ }))
+    expect(screen.getByLabelText<HTMLSelectElement>('Scénario analysé').value).toBe('S1')
+    expect(tuile('Capital net à la sortie')).toBe(formaterEuros(indicateurs('S1').capital_net_sortie))
+  })
+
+  it('dossier incomplet : le tableau de bord dit quoi saisir', async () => {
+    const user = userEvent.setup()
+    monter(stockageEssai())
+    await titreEcran('Tableau de bord')
+    await user.click(screen.getByRole('button', { name: 'Nouveau' }))
+    await titreEcran('Mon foyer')
+    await user.click(screen.getByRole('link', { name: /Tableau de bord/ }))
+    await titreEcran('Tableau de bord')
+    expect(screen.getByText('Le dossier n’est pas encore calculable.')).toBeTruthy()
+  })
+
+  it('le menu des actions du dossier se referme après un choix et sur Échap', async () => {
+    const user = userEvent.setup()
+    monter(stockageEssai())
+    await titreEcran('Tableau de bord')
+    const menu = screen.getByText('Actions du dossier').closest('details')
+    await ouvrirMenu(user)
+    expect(menu?.open).toBe(true)
+    await user.keyboard('{Escape}')
+    expect(menu?.open).toBe(false)
+    await ouvrirMenu(user)
+    await user.click(screen.getByRole('button', { name: 'Dupliquer' }))
+    expect(menu?.open).toBe(false)
+    expect(screen.getByLabelText<HTMLSelectElement>('Dossier').selectedOptions[0]?.textContent).toBe('Cas type (fictif) (copie)')
   })
 })
 
