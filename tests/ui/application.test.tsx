@@ -139,7 +139,9 @@ describe('application', () => {
     window.location.hash = '/comparaison'
     monter(stockageEssai())
     await titreEcran('Comparaison')
-    const tableau = await screen.findByRole('table')
+    // Les graphiques ont aussi leurs données en tableau : on retient celui de la comparaison.
+    const tableau = (await screen.findAllByRole('table')).find((x) => x.classList.contains('tableau-comparaison'))
+    if (tableau === undefined) throw new Error('tableau de comparaison absent')
     const enTetes = within(tableau).getAllByRole('columnheader')
     const s59 = enTetes.find((th) => th.textContent.startsWith('S5_9'))
     expect(s59?.className).toBe('ineligible')
