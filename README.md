@@ -22,22 +22,28 @@ Application web, utilisable sur téléphone comme sur ordinateur, qui simule un 
 
 L'application est un site statique : une fois construite (`dist/`), n'importe quel hébergeur de fichiers statiques la sert, sans serveur applicatif ni base de données. Les calculs et les dossiers restent dans le navigateur de chaque appareil.
 
-### Mise en ligne, une fois (Cloudflare Pages, offre gratuite)
+### Mise en ligne, une fois (Cloudflare Workers, offre gratuite)
+
+`wrangler.jsonc` décrit la publication : Cloudflare sert le dossier `dist/` comme site statique, sans script Worker.
 
 1. Créer un compte sur https://dash.cloudflare.com.
-2. **Workers & Pages** > **Create application** > **Pages** > **Connect to Git** (Cloudflare oriente aussi vers « Workers » : choisir Pages). Autoriser l'application GitHub de Cloudflare sur ce seul dépôt (*Only select repositories*) : le dépôt reste privé.
-3. Réglages de construction : branche de production `main`, préréglage **React (Vite)** ou aucun, commande `npm run build`, dossier de sortie `dist`. La version de Node est lue dans `.nvmrc` ; aucune variable d'environnement, aucun secret.
-4. **Save and Deploy** : le site est publié sous `https://<nom-du-projet>.pages.dev`.
+2. **Workers & Pages** > **Create application**, puis connecter le dépôt GitHub. Autoriser l'application GitHub de Cloudflare sur ce seul dépôt (*Only select repositories*) : le dépôt reste privé.
+3. Nommer le Worker `investissement-locatif`, comme le champ `name` de `wrangler.jsonc` : la construction échoue si les deux diffèrent.
+4. Réglages de construction (**Settings** > **Build** > **Build configuration** pour un Worker déjà créé) :
+   - *Build command* : `npm run build` ;
+   - *Deploy command* : `npx wrangler deploy` ;
+   - *Root directory* : vide, c'est-à-dire la racine du dépôt, là où se trouve `package.json`. Ce n'est pas le dossier de sortie : `dist/` n'existe pas dans le dépôt, il est créé par la construction.
 
-Ensuite, chaque fusion dans `main` republie le site. Chaque branche poussée reçoit sa propre adresse d'aperçu : une pull request peut être essayée sur le téléphone avant sa fusion. Une adresse d'aperçu a ses propres données : saisir ses dossiers sur l'adresse de production seulement.
+   La version de Node est lue dans `.nvmrc`. Aucune variable, aucun secret.
+5. Lancer le déploiement : le site est publié sous `https://investissement-locatif.<sous-domaine du compte>.workers.dev`.
 
-Offre gratuite : 500 constructions par mois et 20 000 fichiers par site, très au-delà des besoins (une construction par fusion, une vingtaine de fichiers).
+Ensuite, chaque fusion dans `main` republie le site. Une autre adresse (aperçu, nom de domaine) a ses propres données : saisir ses dossiers sur une seule adresse.
 
-Autres hébergeurs possibles, avec les mêmes réglages (commande `npm run build`, dossier `dist`) : Netlify ou Vercel, gratuits avec un dépôt privé. GitHub Pages demande l'abonnement GitHub Pro pour un dépôt privé, et le site publié reste public. Les chemins relatifs de la construction permettent l'hébergement à la racine d'un domaine comme dans un sous-dossier.
+Autres hébergeurs possibles, avec la commande `npm run build` et le dossier de sortie `dist` : Cloudflare Pages, Netlify ou Vercel, gratuits avec un dépôt privé et sans fichier de configuration. GitHub Pages demande l'abonnement GitHub Pro pour un dépôt privé, et le site publié reste public. Les chemins relatifs de la construction permettent l'hébergement à la racine d'un domaine comme dans un sous-dossier.
 
 ### Qui peut ouvrir l'adresse
 
-Le site publié ne contient que le code, les paramètres fiscaux (publics) et le jeu d'essai fictif ; aucune saisie ne lui est envoyée. Quiconque connaît l'adresse peut toutefois utiliser l'outil. Pour la réserver à soi, Cloudflare Access (offre Zero Trust) demande un code reçu par e-mail avant d'ouvrir le site : la procédure pour l'adresse `*.pages.dev`, et pas seulement les aperçus, est décrite dans les [problèmes connus de Cloudflare Pages](https://developers.cloudflare.com/pages/platform/known-issues/) (section *Enable Access on your `*.pages.dev` domain*). Le code est redemandé à l'expiration de la session.
+Le site publié ne contient que le code, les paramètres fiscaux (publics) et le jeu d'essai fictif ; aucune saisie ne lui est envoyée. Quiconque connaît l'adresse peut toutefois utiliser l'outil. Pour la réserver à soi, Cloudflare Access demande un code reçu par e-mail avant d'ouvrir le site : dans le Worker, **Settings** > **Domains & Routes** > `workers.dev` > **Enable Cloudflare Access**, puis **Manage Cloudflare Access** pour choisir les adresses e-mail autorisées. Le code est redemandé à l'expiration de la session.
 
 ### Installer l'application sur l'écran d'accueil
 
@@ -135,6 +141,7 @@ src/
   ui/              interface React (écrans, composants, état, stockage local), sans aucun calcul fiscal
   jeu-essai/       cas type fictif préchargé (§14), au format d'un export de dossier
 public/            manifeste et icônes de l'application installable, copiés tels quels dans dist/
+wrangler.jsonc     publication du dossier dist/ sur Cloudflare Workers
 pwa/               service worker : modèle et plugin de construction qui y inscrit les fichiers de la version
 tests/
   engine/          tests du moteur : valeurs du cahier des charges, exemples officiels, cas complets
@@ -144,7 +151,7 @@ tests/
   ui/              saisie, état, stockage local, application complète dans jsdom
   params/          validation, cohérence et modifications locales des paramètres
   garde-fous/      aucune valeur fiscale en dur, HYPOTHESES.md à jour
-  pwa/             service worker généré, manifeste et icônes
+  pwa/             service worker généré, manifeste, icônes et configuration Cloudflare
 scripts/           outils de mise à jour annuelle des paramètres
 docs/              cas de test officiels relevés lors de la vérification
 ```
