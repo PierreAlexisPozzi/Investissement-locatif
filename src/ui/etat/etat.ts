@@ -11,12 +11,14 @@ import type { DossierEnregistre } from './stockage'
 
 /** Groupes du menu de navigation, dans leur ordre d'affichage. */
 export const GROUPES_ECRANS = [
+  { id: 'synthese', titre: 'Synthèse' },
   { id: 'saisie', titre: 'Saisie' },
   { id: 'analyse', titre: 'Analyse' },
   { id: 'reference', titre: 'Référence' },
 ] as const
 
 export const ECRANS = [
+  { id: 'tableau_de_bord', titre: 'Tableau de bord', groupe: 'synthese' },
   { id: 'foyer', titre: 'Mon foyer', groupe: 'saisie' },
   { id: 'bien', titre: 'Le bien et le financement', groupe: 'saisie' },
   { id: 'hypotheses', titre: 'Hypothèses', groupe: 'saisie' },

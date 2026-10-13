@@ -3,6 +3,7 @@ import { BarreDossiers } from './BarreDossiers'
 import { EcranBien } from './ecrans/EcranBien'
 import { EcranFoyer } from './ecrans/EcranFoyer'
 import { EcranHypotheses } from './ecrans/EcranHypotheses'
+import { EcranTableauDeBord } from './ecrans/EcranTableauDeBord'
 import { Synthese } from './ecrans/Synthese'
 import { useApplication } from './etat/application'
 import { ECRANS, GROUPES_ECRANS, type IdEcran } from './etat/etat'
@@ -18,10 +19,12 @@ const EcranParametres = lazy(() => import('./ecrans/EcranParametres').then((m) =
 const EcranQuestions = lazy(() => import('./ecrans/EcranQuestions').then((m) => ({ default: m.EcranQuestions })))
 
 /** Écrans de résultats : ils attendent un dossier complet. */
-const ECRANS_DE_RESULTATS: readonly IdEcran[] = ['comparaison', 'recommandation', 'detail', 'contre_expertise', 'questions']
+const ECRANS_DE_RESULTATS: readonly IdEcran[] = ['tableau_de_bord', 'comparaison', 'recommandation', 'detail', 'contre_expertise', 'questions']
 
 function EcranCourant({ ecran }: { readonly ecran: IdEcran }) {
   switch (ecran) {
+    case 'tableau_de_bord':
+      return <EcranTableauDeBord />
     case 'foyer':
       return <EcranFoyer />
     case 'bien':

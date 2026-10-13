@@ -6,7 +6,8 @@
 import { useCallback, useSyncExternalStore } from 'react'
 import { estEcran, type IdEcran } from './etat'
 
-const ECRAN_PAR_DEFAUT: IdEcran = 'foyer'
+/** L'application s'ouvre sur la synthèse : verdict, indicateurs clés et graphiques, ou ce qu'il reste à saisir. */
+const ECRAN_PAR_DEFAUT: IdEcran = 'tableau_de_bord'
 
 function lireEcran(): IdEcran {
   const ancre = window.location.hash.replace(/^#\/?/, '')
